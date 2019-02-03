@@ -14,6 +14,7 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS)
 	$(STRIP) $(TARGET)
+	./package
 
 main.o: main.cpp def.h resourceManager.h commander.h sdlutils.h
 	$(CC) $(CFLAGS) -c main.cpp

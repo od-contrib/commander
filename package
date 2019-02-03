@@ -1,8 +1,7 @@
 #!/bin/bash
 
-mv commander.dge bin/
-
-cp -R bin/commander.dge ipkg/home/retrofw/apps/commander/commander.dge
+mkdir -p bin
+mv commander.dge ipkg/home/retrofw/apps/commander/commander.dge
 cp -R res ipkg/home/retrofw/apps/commander/
 cd ipkg
 
