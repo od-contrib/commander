@@ -45,7 +45,7 @@
 #define MYKEY_OPERATION     SDLK_SPACE        // X
 #define MYKEY_SELECT        SDLK_ESCAPE       // SELECT
 #define MYKEY_TRANSFER      SDLK_RETURN       // START
-#define PATH_DEFAULT        "/media"
+#define PATH_DEFAULT        "/home/retrofw"
 #define FILE_SYSTEM         "/dev/mmcblk0p4"
 #else
 // Keys for PC keyboard
