@@ -1,4 +1,5 @@
 *.o
 .DS_Store
 nbproject/**
-**/*,ipk
+**/*.ipk
+bin/**
