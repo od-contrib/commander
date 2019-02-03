@@ -46,6 +46,7 @@
 #define MYKEY_SELECT        SDLK_ESCAPE       // SELECT
 #define MYKEY_TRANSFER      SDLK_RETURN       // START
 #define PATH_DEFAULT        "/home/retrofw"
+#define PATH_DEFAULT_RIGHT  "/media"
 #define FILE_SYSTEM         "/dev/mmcblk0p4"
 #else
 // Keys for PC keyboard
@@ -62,6 +63,7 @@
 #define MYKEY_SELECT        SDLK_INSERT
 #define MYKEY_TRANSFER      SDLK_w
 #define PATH_DEFAULT        "/"
+#define PATH_DEFAULT_RIGHT  "/"
 #define FILE_SYSTEM         "/dev/sda4"
 #endif
 

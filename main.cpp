@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     // Create instances
     CResourceManager::instance();
     #ifdef PLATFORM_DINGOO
-    CCommander l_commander(PATH_DEFAULT, PATH_DEFAULT);
+    CCommander l_commander(PATH_DEFAULT, PATH_DEFAULT_RIGHT);
     #else
     std::string l_path = getenv("HOME");
     l_path += "/Dev/DinguxCommander/test";
