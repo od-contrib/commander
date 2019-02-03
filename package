@@ -1,0 +1,19 @@
+#!/bin/bash
+
+mv commander.dge bin/
+
+cp -R bin/commander.dge ipkg/home/retrofw/apps/commander/commander.dge
+cp -R res ipkg/home/retrofw/apps/commander/
+cd ipkg
+
+tar -czvf control.tar.gz control
+tar -czvf data.tar.gz home
+ar rv commander.ipk control.tar.gz data.tar.gz debian-binary
+
+cd ..
+
+mv ipkg/commander.ipk bin/
+rm ipkg/control.tar.gz
+rm ipkg/data.tar.gz
+rm ipkg/home/retrofw/apps/commander/commander.dge
+rm -R ipkg/home/retrofw/apps/commander/res
