@@ -2,8 +2,8 @@
 #define _KEYBOARD_H_
 
 #include <string>
-#include "SDL/SDL.h"
-#include "SDL/SDL_ttf.h"
+#include <SDL.h>
+#include <SDL_ttf.h>
 #include "window.h"
 
 #define NB_KEY_SETS 5

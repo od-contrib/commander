@@ -43,6 +43,9 @@ const int CWindow::execute(void)
                 if (m_retVal)
                     l_loop = false;
             }
+            else if (l_event.type == SDL_QUIT) {
+                return m_retVal;
+            }
         }
         // Handle key hold
         if (l_loop)
@@ -54,7 +57,6 @@ const int CWindow::execute(void)
             // Flip twice to avoid graphical glitch on Dingoo
             //SDL_Flip(Globals::g_screen);
             //SDL_Flip(Globals::g_screen);
-            SDL_SoftStretch(Globals::g_screen, NULL, ScreenSurface, NULL);
             SDL_Flip(ScreenSurface);
             l_render = false;
             INHIBIT(std::cout << "Render time: " << SDL_GetTicks() - l_time << "ms"<< std::endl;)

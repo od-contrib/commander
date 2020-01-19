@@ -3,8 +3,8 @@
 
 #include <string>
 #include <set>
-#include "SDL/SDL.h"
-#include "SDL/SDL_ttf.h"
+#include <SDL.h>
+#include <SDL_ttf.h>
 #include "fileLister.h"
 #include "def.h"
 

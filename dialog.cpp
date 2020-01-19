@@ -99,32 +99,33 @@ void CDialog::init(void)
     if (l_width > SCREEN_WIDTH)
         l_width = SCREEN_WIDTH;
     // Create dialog image
-    m_image = SDL_utils::createImage(l_width, m_linesImg.size() * LINE_HEIGHT + 2 * DIALOG_BORDER, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+    const int m_image_h = m_linesImg.size() * LINE_HEIGHT + 2 * DIALOG_BORDER;
+    m_image = SDL_utils::createImage(l_width, m_image_h * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
     {
         SDL_Rect l_rect;
         l_rect.x = DIALOG_BORDER;
-        l_rect.y = DIALOG_BORDER + m_nbTitle * LINE_HEIGHT;
+        l_rect.y = (DIALOG_BORDER + m_nbTitle * LINE_HEIGHT) * PPU_Y;
         l_rect.w = m_image->w - 2 * DIALOG_BORDER;
-        l_rect.h = m_image->h - 2 * DIALOG_BORDER - m_nbTitle * LINE_HEIGHT;
+        l_rect.h = (m_image_h - 2 * DIALOG_BORDER - m_nbTitle * LINE_HEIGHT) * PPU_Y;
         SDL_FillRect(m_image, &l_rect, SDL_MapRGB(m_image->format, COLOR_BG_1));
     }
     // Create cursor image
-    m_cursor1 = SDL_utils::createImage(l_cursorWidth, LINE_HEIGHT, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
-    m_cursor2 = SDL_utils::createImage(l_cursorWidth, LINE_HEIGHT, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
+    m_cursor1 = SDL_utils::createImage(l_cursorWidth, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
+    m_cursor2 = SDL_utils::createImage(l_cursorWidth, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
     // Adjust dialog coordinates
     if (!m_x)
         m_x = (SCREEN_WIDTH - m_image->w) >> 1;
     if (!m_y)
     {
-        m_y = (SCREEN_HEIGHT - m_image->h) >> 1;
+        m_y = (SCREEN_HEIGHT - m_image_h) >> 1;
     }
     else
     {
-        m_y = m_y - (m_image->h >> 1) + (LINE_HEIGHT >> 1);
+        m_y = m_y - (m_image_h >> 1) + (LINE_HEIGHT >> 1);
         if (m_y < Y_LIST)
             m_y = Y_LIST;
-        if (m_y + m_image->h > Y_FOOTER + 1)
-            m_y = Y_FOOTER + 1 - m_image->h;
+        if (m_y + m_image_h > Y_FOOTER + 1)
+            m_y = Y_FOOTER + 1 - m_image_h;
     }
     // Cursor coordinates
     m_cursorX = m_x + DIALOG_BORDER;
