@@ -2,8 +2,9 @@
 #include <cstdlib>
 #endif
 #include <iostream>
-#include "SDL/SDL.h"
-#include "SDL/SDL_ttf.h"
+#include <unistd.h>
+#include <SDL.h>
+#include <SDL_ttf.h>
 #include "def.h"
 #include "sdlutils.h"
 #include "resourceManager.h"
@@ -30,8 +31,8 @@ int main(int argc, char** argv)
     SDL_Init(SDL_INIT_VIDEO);
 
     // Screen
-    ScreenSurface = SDL_SetVideoMode(320, 480, SCREEN_BPP, SURFACE_FLAGS);
-    Globals::g_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_WIDTH, SCREEN_HEIGHT, 16, 0, 0, 0, 0);
+    ScreenSurface = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT * PPU_Y, SCREEN_BPP, SURFACE_FLAGS);
+    Globals::g_screen = ScreenSurface;
     if (Globals::g_screen == NULL)
     {
         std::cerr << "SDL_SetVideoMode failed: " << SDL_GetError() << std::endl;
@@ -54,7 +55,10 @@ int main(int argc, char** argv)
     CCommander l_commander(PATH_DEFAULT, PATH_DEFAULT_RIGHT);
     #else
     std::string l_path = getenv("HOME");
-    l_path += "/Dev/DinguxCommander/test";
+    static const char kDefaultPath[] = "/Dev/DinguxCommander/test";
+    l_path += kDefaultPath;
+    if (access(l_path.c_str(), F_OK) != 0)
+        l_path.resize(l_path.length() - (sizeof(kDefaultPath) - 1));
     CCommander l_commander(l_path, l_path);
     #endif
 

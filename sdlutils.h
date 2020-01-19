@@ -3,8 +3,8 @@
 
 #include <string>
 #include <vector>
-#include "SDL/SDL.h"
-#include "SDL/SDL_ttf.h"
+#include <SDL.h>
+#include <SDL_ttf.h>
 #include "window.h"
 
 namespace SDL_utils
@@ -31,7 +31,7 @@ namespace SDL_utils
     SDL_Surface *renderText(TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg);
 
     // Render a text and apply on a given surface
-    void applyText(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_destination, TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const T_TEXT_ALIGN p_align = T_TEXT_ALIGN_LEFT);
+    void applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const T_TEXT_ALIGN p_align = T_TEXT_ALIGN_LEFT);
 
     // Create an image filled with the given color
     SDL_Surface *createImage(const int p_width, const int p_height, const Uint32 p_color);

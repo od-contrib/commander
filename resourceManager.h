@@ -1,8 +1,8 @@
 #ifndef _RESOURCEMANAGER_H_
 #define _RESOURCEMANAGER_H_
 
-#include "SDL/SDL.h"
-#include "SDL/SDL_ttf.h"
+#include <SDL.h>
+#include <SDL_ttf.h>
 
 #define NB_SURFACES 6
 

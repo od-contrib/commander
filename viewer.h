@@ -3,8 +3,8 @@
 
 #include <string>
 #include <vector>
-#include "SDL/SDL.h"
-#include "SDL/SDL_ttf.h"
+#include <SDL.h>
+#include <SDL_ttf.h>
 #include "window.h"
 
 #define VIEWER_LINE_HEIGHT   13

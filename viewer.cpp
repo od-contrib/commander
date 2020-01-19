@@ -17,13 +17,13 @@ CViewer::CViewer(const std::string &p_fileName):
     m_clip.y = 0;
     m_clip.w = SCREEN_WIDTH - 2 * VIEWER_MARGIN;
     // Create background image
-    m_image = SDL_utils::createImage(SCREEN_WIDTH, SCREEN_HEIGHT, SDL_MapRGB(Globals::g_screen->format, COLOR_BG_1));
+    m_image = SDL_utils::createImage(SCREEN_WIDTH, SCREEN_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BG_1));
     {
         SDL_Rect l_rect;
         l_rect.x = 0;
         l_rect.y = 0;
         l_rect.w = SCREEN_WIDTH;
-        l_rect.h = Y_LIST;
+        l_rect.h = Y_LIST * PPU_Y;
         SDL_FillRect(m_image, &l_rect, SDL_MapRGB(m_image->format, COLOR_BORDER));
     }
     // Print title

@@ -47,6 +47,16 @@ target_link_libraries(${BIN_TARGET} PRIVATE
   m
 )
 
+foreach(
+  def_name
+  PPU_Y
+)
+  if(DEFINED ${def_name})
+    list(APPEND def_list ${def_name}=${${def_name}})
+  endif()
+endforeach(def_name)
+target_compile_definitions(${BIN_TARGET} PRIVATE ${def_list})
+
 if(RETROFW)
   target_compile_definitions(${BIN_TARGET} PRIVATE PLATFORM_DINGOO)
   set_target_properties(${BIN_TARGET} PROPERTIES OUTPUT_NAME "commander.dge")

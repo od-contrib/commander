@@ -14,12 +14,15 @@ CResourceManager::CResourceManager(void) :
     m_font(NULL)
 {
     // Load images
-    m_surfaces[T_SURFACE_BG] = SDL_utils::loadImage("res/background.png");
-    m_surfaces[T_SURFACE_FILE] = SDL_utils::loadImage("res/file.png");
-    m_surfaces[T_SURFACE_FOLDER] = SDL_utils::loadImage("res/folder.png");
-    m_surfaces[T_SURFACE_UP] = SDL_utils::loadImage("res/up.png");
-    m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(159, 15, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
-    m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(159, 15, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
+    std::string img_ext = ".";
+    img_ext += '0' + PPU_Y;
+    img_ext.append(".png");
+    m_surfaces[T_SURFACE_BG] = SDL_utils::loadImage("res/background" + img_ext);
+    m_surfaces[T_SURFACE_FILE] = SDL_utils::loadImage("res/file" + img_ext);
+    m_surfaces[T_SURFACE_FOLDER] = SDL_utils::loadImage("res/folder" + img_ext);
+    m_surfaces[T_SURFACE_UP] = SDL_utils::loadImage("res/up" + img_ext);
+    m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(159, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
+    m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(159, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
     // Load font
     m_font = SDL_utils::loadFont("res/wy_scorpio.ttf", 8);
 }

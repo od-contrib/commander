@@ -37,6 +37,7 @@ build() {
   cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DRETROFW=1 \
+    -DPPU_Y=2 \
     -DCMAKE_TOOLCHAIN_FILE="$BUILDROOT/output/host/usr/share/buildroot/toolchainfile.cmake"
   cmake --build . -j $(getconf _NPROCESSORS_ONLN)
   cd -

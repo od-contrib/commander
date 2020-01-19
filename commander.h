@@ -1,7 +1,7 @@
 #ifndef _COMMANDER_H_
 #define _COMMANDER_H_
 
-#include "SDL/SDL.h"
+#include <SDL.h>
 #include "panel.h"
 #include "window.h"
 
