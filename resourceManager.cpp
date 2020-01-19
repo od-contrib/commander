@@ -2,7 +2,6 @@
 #include "resourceManager.h"
 #include "def.h"
 #include "sdlutils.h"
-#include "def.h"
 
 CResourceManager& CResourceManager::instance(void)
 {
@@ -17,14 +16,14 @@ CResourceManager::CResourceManager(void) :
     std::string img_ext = ".";
     img_ext += '0' + PPU_Y;
     img_ext.append(".png");
-    m_surfaces[T_SURFACE_BG] = SDL_utils::loadImage("res/background" + img_ext);
-    m_surfaces[T_SURFACE_FILE] = SDL_utils::loadImage("res/file" + img_ext);
-    m_surfaces[T_SURFACE_FOLDER] = SDL_utils::loadImage("res/folder" + img_ext);
-    m_surfaces[T_SURFACE_UP] = SDL_utils::loadImage("res/up" + img_ext);
+    m_surfaces[T_SURFACE_BG] = SDL_utils::loadImage(RES_DIR "background" + img_ext);
+    m_surfaces[T_SURFACE_FILE] = SDL_utils::loadImage(RES_DIR "file" + img_ext);
+    m_surfaces[T_SURFACE_FOLDER] = SDL_utils::loadImage(RES_DIR "folder" + img_ext);
+    m_surfaces[T_SURFACE_UP] = SDL_utils::loadImage(RES_DIR "up" + img_ext);
     m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(159, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
     m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(159, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
     // Load font
-    m_font = SDL_utils::loadFont("res/wy_scorpio.ttf", 8);
+    m_font = SDL_utils::loadFont(RES_DIR "wy_scorpio.ttf", 8);
 }
 
 void CResourceManager::sdlCleanup(void)

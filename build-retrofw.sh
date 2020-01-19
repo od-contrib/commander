@@ -38,6 +38,7 @@ build() {
     -DCMAKE_BUILD_TYPE=Release \
     -DRETROFW=1 \
     -DPPU_Y=2 \
+    -DRES_DIR='' \
     -DCMAKE_TOOLCHAIN_FILE="$BUILDROOT/output/host/usr/share/buildroot/toolchainfile.cmake"
   cmake --build . -j $(getconf _NPROCESSORS_ONLN)
   cd -
@@ -45,20 +46,16 @@ build() {
 
 package_opk() {
   cd build-retrofw
-  cp -r ../ipkg ipkg
-  mv commander.dge ipkg/home/retrofw/apps/commander/commander.dge
-  cp -R ../res ipkg/home/retrofw/apps/commander/
-  rm ipkg/home/retrofw/apps/commander/*.1.png
-  cd ipkg
-
-  tar -czvf control.tar.gz control
-  tar -czvf data.tar.gz home
-  ar rv commander.ipk control.tar.gz data.tar.gz debian-binary
-  mv commander.ipk ..
-
-  cd ..
-  rm -rf ipkg
-  cd ..
+  mksquashfs \
+    ../opkg/default.retrofw.desktop \
+    ../opkg/readme.retrofw.txt \
+    ../opkg/commander.png \
+    ../res/*.2.png \
+    ../res/wy_scorpio.ttf \
+    commander.dge \
+    commander.opk \
+    -all-root -no-xattrs -noappend -no-exports
+  cd -
 }
 
 main() {
