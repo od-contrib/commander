@@ -1,6 +1,6 @@
 *.o
 .DS_Store
 commander
+/build/
+/build-retrofw/
 nbproject/**
-**/*.ipk
-bin/**
