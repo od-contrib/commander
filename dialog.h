@@ -60,7 +60,10 @@ class CDialog : public CWindow
 
     // List of lines
     std::vector<std::string> m_lines;
+    SDL_Surface *m_titleImg;
     std::vector<SDL_Surface *> m_linesImg;
+    std::vector<SDL_Surface *> m_linesImgCursor1;
+    std::vector<SDL_Surface *> m_linesImgCursor2;
 
     // The highlighted item
     unsigned int m_highlightedLine;

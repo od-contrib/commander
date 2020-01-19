@@ -27,7 +27,7 @@ CViewer::CViewer(const std::string &p_fileName):
         SDL_FillRect(m_image, &l_rect, SDL_MapRGB(m_image->format, COLOR_BORDER));
     }
     // Print title
-    SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_font, m_fileName, Globals::g_colorTextTitle);
+    SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_font, m_fileName, Globals::g_colorTextTitle, {COLOR_TITLE_BG});
     if (l_surfaceTmp->w > m_image->w - 2 * VIEWER_MARGIN)
     {
         SDL_Rect l_rect;
@@ -83,7 +83,7 @@ void CViewer::render(const bool p_focus) const
     {
         if (!l_it->empty())
         {
-            l_surfaceTmp = SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextNormal);
+            l_surfaceTmp = SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextNormal, {COLOR_BG_1});
             SDL_utils::applySurface(VIEWER_MARGIN, VIEWER_Y_LIST + l_i * VIEWER_LINE_HEIGHT, l_surfaceTmp, Globals::g_screen, &m_clip);
             SDL_FreeSurface(l_surfaceTmp);
         }

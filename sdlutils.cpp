@@ -50,14 +50,14 @@ TTF_Font *SDL_utils::loadFont(const std::string &p_font, const int p_size)
     return l_font;
 }
 
-SDL_Surface *SDL_utils::renderText(TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg)
+SDL_Surface *SDL_utils::renderText(TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg)
 {
-    return TTF_RenderUTF8_Solid(p_font, p_text.c_str(), p_fg);
+    return TTF_RenderUTF8_Shaded(p_font, p_text.c_str(), p_fg, p_bg);
 }
 
-void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const T_TEXT_ALIGN p_align)
+void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
 {
-    SDL_Surface *l_text = renderText(p_font, p_text, p_fg);
+    SDL_Surface *l_text = renderText(p_font, p_text, p_fg, p_bg);
     switch (p_align)
     {
         case T_TEXT_ALIGN_LEFT:
@@ -113,7 +113,7 @@ void SDL_utils::hastalavista(void)
 
 void SDL_utils::pleaseWait(void)
 {
-    SDL_Surface *l_surfaceTmp = renderText(CResourceManager::instance().getFont(), "Please wait...", Globals::g_colorTextNormal);
+    SDL_Surface *l_surfaceTmp = renderText(CResourceManager::instance().getFont(), "Please wait...", Globals::g_colorTextNormal, {COLOR_BG_1});
     SDL_Rect l_rect;
     l_rect.x = (SCREEN_WIDTH - (l_surfaceTmp->w + 2 * DIALOG_MARGIN + 2 * DIALOG_BORDER)) >> 1;
     l_rect.y = ((SCREEN_HEIGHT * PPU_Y - (l_surfaceTmp->h + 9)) >> 1);
