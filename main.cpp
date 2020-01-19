@@ -1,4 +1,4 @@
-#ifndef PLATFORM_DINGOO
+#ifndef PLATFORM_RETROFW
 #include <cstdlib>
 #endif
 #include <iostream>
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 
     // Create instances
     CResourceManager::instance();
-    #ifdef PLATFORM_DINGOO
+    #ifdef PLATFORM_RETROFW
     CCommander l_commander(PATH_DEFAULT, PATH_DEFAULT_RIGHT);
     #else
     std::string l_path = getenv("HOME");

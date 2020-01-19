@@ -268,10 +268,11 @@ const unsigned long int File_utils::getFileSize(const std::string &p_file)
 void File_utils::diskInfo(void)
 {
     std::string l_line("");
+    SDL_utils::pleaseWait();
     // Execute command df -h
     {
         char l_buffer[256];
-        FILE *l_pipe = popen("df -h", "r");
+        FILE *l_pipe = popen("df -h " FILE_SYSTEM, "r");
         if (l_pipe == NULL)
         {
             std::cerr << "File_utils::diskInfo: Error popen" << std::endl;

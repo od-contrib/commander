@@ -40,8 +40,8 @@
 #define COLOR_BG_2            232,228,224
 #define COLOR_BORDER          102,85,74
 
-#ifdef PLATFORM_DINGOO
-// Keys for Dingoo
+#ifdef PLATFORM_RETROFW
+// Keys for RetroFW
 #define MYKEY_UP            SDLK_UP           // Up
 #define MYKEY_RIGHT         SDLK_RIGHT        // Right
 #define MYKEY_DOWN          SDLK_DOWN         // Down
@@ -56,7 +56,7 @@
 #define MYKEY_TRANSFER      SDLK_RETURN       // START
 #define PATH_DEFAULT        "/home/retrofw"
 #define PATH_DEFAULT_RIGHT  "/media"
-#define FILE_SYSTEM         "/dev/mmcblk0p4"
+#define FILE_SYSTEM         "/dev/mmcblk1p1"
 #else
 // Keys for PC keyboard
 #define MYKEY_UP            SDLK_UP
