@@ -77,7 +77,7 @@ CKeyboard::CKeyboard(const std::string &p_inputText):
     }
     // Create footer
     m_footer = SDL_utils::createImage(SCREEN_WIDTH, H_FOOTER * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
-    SDL_utils::applyText(SCREEN_WIDTH >> 1, 1, m_footer, m_font, "A-Input   B-Cancel   START-OK   L/R-Change   Y-Backspace   X-Space", Globals::g_colorTextTitle, SDL_utils::T_TEXT_ALIGN_CENTER);
+    SDL_utils::applyText(SCREEN_WIDTH >> 1, 1, m_footer, m_font, "A-Input   B-Cancel   START-OK   L/R-Change   Y-Backspace   X-Space", Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_CENTER);
 }
 
 CKeyboard::~CKeyboard(void)
@@ -108,7 +108,7 @@ void CKeyboard::render(const bool p_focus) const
     // Input text
     if (!m_inputText.empty())
     {
-        SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_font, m_inputText, Globals::g_colorTextNormal);
+        SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_font, m_inputText, Globals::g_colorTextNormal, {COLOR_BG_1});
         if (l_surfaceTmp->w > FIELD_W)
         {
             // Text is too big => clip it
@@ -125,29 +125,32 @@ void CKeyboard::render(const bool p_focus) const
     // Draw keyboard
     SDL_utils::applySurface(KB_X, KB_Y, m_imageKeyboard, Globals::g_screen);
     // Cursor
+    unsigned int selected_letter_x = -1;
+    unsigned int selected_letter_y = -1;
     {
         SDL_Rect l_rect;
         if (m_selected < 39)
         {
             // A letter is selected
-            l_rect.w = 17;
-            l_rect.h = 16;
-            l_rect.x = KB_X + 4;
             if (m_selected >= 26)
             {
-                l_rect.x = KB_X + 4 + (m_selected - 26) * 20;
-                l_rect.y = KB_Y + 44;
+                selected_letter_x = m_selected - 26;
+                selected_letter_y = 2;
             }
             else if (m_selected >= 13)
             {
-                l_rect.x = KB_X + 4 + (m_selected - 13) * 20;
-                l_rect.y = KB_Y + 24;
+                selected_letter_x = m_selected - 13;
+                selected_letter_y = 1;
             }
             else
             {
-                l_rect.x = KB_X + 4 + m_selected * 20;
-                l_rect.y = KB_Y + 4;
+                selected_letter_x = m_selected;
+                selected_letter_y = 0;
             }
+            l_rect.x = KB_X + 4 + selected_letter_x * 20;
+            l_rect.y = KB_Y + 4 + selected_letter_y * 20;
+            l_rect.w = 17;
+            l_rect.h = 16;
         }
         else
         {
@@ -180,13 +183,16 @@ void CKeyboard::render(const bool p_focus) const
                     l_text = m_keySets[m_keySet].substr(l_i, 1);
                     l_i += 1;
                 }
-                SDL_utils::applyText(KB_X + 20 * l_x + 13, KB_Y + 7 + 20 * l_y, Globals::g_screen, m_font, l_text, Globals::g_colorTextNormal, SDL_utils::T_TEXT_ALIGN_CENTER);
+                SDL_utils::applyText(KB_X + 20 * l_x + 13, KB_Y + 7 + 20 * l_y, Globals::g_screen, m_font, l_text, Globals::g_colorTextNormal,
+                    selected_letter_x == l_x && selected_letter_y == l_y ? SDL_Color{COLOR_CURSOR_1} : SDL_Color{COLOR_BG_1}, SDL_utils::T_TEXT_ALIGN_CENTER);
             }
         }
     }
     // Buttons text
-    SDL_utils::applyText(KB_X + 67, KB_Y + 67, Globals::g_screen, m_font, "Cancel", Globals::g_colorTextNormal, SDL_utils::T_TEXT_ALIGN_CENTER);
-    SDL_utils::applyText(KB_X + 197, KB_Y + 67, Globals::g_screen, m_font, "OK", Globals::g_colorTextNormal, SDL_utils::T_TEXT_ALIGN_CENTER);
+    SDL_utils::applyText(KB_X + 67, KB_Y + 67, Globals::g_screen, m_font, "Cancel", Globals::g_colorTextNormal,
+        m_selected == 39 ? SDL_Color{COLOR_CURSOR_1} : SDL_Color{COLOR_BG_1}, SDL_utils::T_TEXT_ALIGN_CENTER);
+    SDL_utils::applyText(KB_X + 197, KB_Y + 67, Globals::g_screen, m_font, "OK", Globals::g_colorTextNormal,
+        m_selected == 40 ? SDL_Color{COLOR_CURSOR_1} : SDL_Color{COLOR_BG_1}, SDL_utils::T_TEXT_ALIGN_CENTER);
     // Draw footer
     SDL_utils::applySurface(0, 227, m_footer, Globals::g_screen);
 }

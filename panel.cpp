@@ -50,7 +50,7 @@ void CPanel::render(const bool p_active) const
     const SDL_Color *l_color = NULL;
     SDL_Rect l_rect;
     // Current dir
-    l_surfaceTmp = SDL_utils::renderText(m_font, m_currentPath, Globals::g_colorTextTitle);
+    l_surfaceTmp = SDL_utils::renderText(m_font, m_currentPath, Globals::g_colorTextTitle, {COLOR_TITLE_BG});
     if (l_surfaceTmp->w > PANEL_SIZE)
     {
         l_rect.x = l_surfaceTmp->w - PANEL_SIZE;
@@ -93,7 +93,17 @@ void CPanel::render(const bool p_active) const
         }
         SDL_utils::applySurface(m_x, l_y, l_surfaceTmp, Globals::g_screen);
         // Text
-        l_surfaceTmp = SDL_utils::renderText(m_font, m_fileLister[l_i].m_name, *l_color);
+        SDL_Color l_bg;
+        if (l_i == m_highlightedLine) {
+            if (p_active)
+                l_bg = {COLOR_CURSOR_1};
+            else
+                l_bg = {COLOR_CURSOR_2};
+        } else {
+            static const SDL_Color kLineBg[2] = {{COLOR_BG_1}, {COLOR_BG_2}};
+            l_bg = kLineBg[(l_i - m_camera) % 2];
+        }
+        l_surfaceTmp = SDL_utils::renderText(m_font, m_fileLister[l_i].m_name, *l_color, l_bg);
         if (l_surfaceTmp->w > NAME_SIZE)
         {
             l_rect.x = 0;
@@ -119,8 +129,8 @@ void CPanel::render(const bool p_active) const
         l_footer = l_s.str();
         File_utils::formatSize(l_footer);
     }
-    SDL_utils::applyText(m_x + 2, Y_FOOTER, Globals::g_screen, m_font, "Size:", Globals::g_colorTextTitle);
-    SDL_utils::applyText(m_x + PANEL_SIZE - 2, Y_FOOTER, Globals::g_screen, m_font, l_footer, Globals::g_colorTextTitle, SDL_utils::T_TEXT_ALIGN_RIGHT);
+    SDL_utils::applyText(m_x + 2, Y_FOOTER, Globals::g_screen, m_font, "Size:", Globals::g_colorTextTitle, {COLOR_TITLE_BG});
+    SDL_utils::applyText(m_x + PANEL_SIZE - 2, Y_FOOTER, Globals::g_screen, m_font, l_footer, Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_RIGHT);
 }
 
 const bool CPanel::moveCursorUp(unsigned char p_step)

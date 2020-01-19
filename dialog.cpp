@@ -77,15 +77,26 @@ void CDialog::init(void)
     // The width of the window depends on the width of the largest line
     int l_width(0);
     int l_cursorWidth(0);
-    SDL_Surface *l_surfaceTmp(NULL);
+
+    // Title
+    auto l_it = m_lines.begin();
+    if (m_nbTitle) {
+        m_titleImg = SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextTitle, {COLOR_BORDER});
+        l_width = m_titleImg->w;
+        ++l_it;
+    }
+
     // Render every line
-    for (std::vector<std::string>::const_iterator l_it = m_lines.begin(); l_it != m_lines.end(); ++l_it)
-    {
-        // Render line
-        l_surfaceTmp = SDL_utils::renderText(m_font, *l_it, (m_nbTitle && l_it == m_lines.begin()) ? Globals::g_colorTextTitle : Globals::g_colorTextNormal);
-        if (l_surfaceTmp->w > l_width)
-            l_width = l_surfaceTmp->w;
-        m_linesImg.push_back(l_surfaceTmp);
+    const std::size_t num_non_title_lines = m_lines.size() - (m_nbTitle ? 1 : 0);
+    m_linesImg.reserve(num_non_title_lines);
+    m_linesImgCursor1.reserve(num_non_title_lines);
+    m_linesImgCursor2.reserve(num_non_title_lines);
+    for ( ; l_it != m_lines.end(); ++l_it) {
+        m_linesImg.push_back(SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextNormal, {COLOR_BG_1}));
+        m_linesImgCursor1.push_back(SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_1}));
+        m_linesImgCursor2.push_back(SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_2}));
+        if (m_linesImg.back()->w > l_width)
+            l_width = m_linesImg.back()->w;
     }
     // Cursor width
     l_cursorWidth = l_width + 2 * DIALOG_MARGIN;
@@ -99,7 +110,7 @@ void CDialog::init(void)
     if (l_width > SCREEN_WIDTH)
         l_width = SCREEN_WIDTH;
     // Create dialog image
-    const int m_image_h = m_linesImg.size() * LINE_HEIGHT + 2 * DIALOG_BORDER;
+    const int m_image_h = m_lines.size() * LINE_HEIGHT + 2 * DIALOG_BORDER;
     m_image = SDL_utils::createImage(l_width, m_image_h * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
     {
         SDL_Rect l_rect;
@@ -140,11 +151,19 @@ void CDialog::render(const bool p_focus) const
     // Draw cursor
     SDL_utils::applySurface(m_cursorX, m_cursorY + m_highlightedLine * LINE_HEIGHT, p_focus ? m_cursor1 : m_cursor2, Globals::g_screen);
     // Draw lines text
-    Sint16 l_y(m_y + 4);
-    for (std::vector<SDL_Surface *>::const_iterator l_it = m_linesImg.begin(); l_it != m_linesImg.end(); ++l_it)
-    {
-        SDL_utils::applySurface(m_cursorX + DIALOG_MARGIN, (m_nbTitle && l_it == m_linesImg.begin()) ? l_y - 1 : l_y, *l_it, Globals::g_screen, &m_clip);
+    Sint16 l_y = m_y + 4;
+    if (m_nbTitle) {
+        SDL_utils::applySurface(m_cursorX + DIALOG_MARGIN, l_y - 1, m_titleImg, Globals::g_screen, &m_clip);
         l_y += LINE_HEIGHT;
+    }
+    for (int i = 0; i < m_linesImg.size(); ++i, l_y += LINE_HEIGHT) {
+        SDL_Surface *surface;
+        if (i == m_nbLabels + m_highlightedLine) {
+            surface = p_focus ? m_linesImgCursor1[i] : m_linesImgCursor2[i];
+        } else {
+            surface = m_linesImg[i];
+        }
+        SDL_utils::applySurface(m_cursorX + DIALOG_MARGIN, l_y, surface, Globals::g_screen, &m_clip);
     }
 }
 

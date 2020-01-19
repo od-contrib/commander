@@ -24,6 +24,7 @@
 #define DIALOG_BORDER         2
 #define DIALOG_MARGIN         8
 // Colors
+#define COLOR_TITLE_BG        102,85,74
 #define COLOR_KEY             255,0,255
 #define COLOR_TEXT_NORMAL     70,27,10
 #define COLOR_TEXT_TITLE      233,229,227
