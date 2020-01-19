@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Commander
+Comment=File management tool
+Exec=commander.dge
+Icon=commander
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=applications;
+X-OD-Manual=readme.retrofw.txt

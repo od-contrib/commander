@@ -50,6 +50,7 @@ target_link_libraries(${BIN_TARGET} PRIVATE
 foreach(
   def_name
   PPU_Y
+  RES_DIR
 )
   if(DEFINED ${def_name})
     list(APPEND def_list ${def_name}=${${def_name}})
