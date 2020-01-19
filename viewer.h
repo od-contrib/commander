@@ -1,10 +1,12 @@
 #ifndef _VIEWER_H_
 #define _VIEWER_H_
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <SDL.h>
 #include <SDL_ttf.h>
+
 #include "window.h"
 
 #define VIEWER_LINE_HEIGHT   13
@@ -53,7 +55,7 @@ class CViewer : public CWindow
     std::string m_fileName;
 
     // Coordinates
-    unsigned int m_firstLine;
+    std::size_t m_firstLine;
     mutable SDL_Rect m_clip;
 
     // Background image

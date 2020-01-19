@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
-#include <cstddef>
 
 #include "viewer.h"
 #include "resourceManager.h"
@@ -110,20 +109,13 @@ void CViewer::render(const bool p_focus) const
     // Draw background
     SDL_utils::applySurface(0, 0, m_image, Globals::g_screen);
     // Draw lines
-    SDL_Surface *l_surfaceTmp(NULL);
-    unsigned int l_i(0);
-    std::vector<std::string>::const_iterator l_it = m_lines.begin() + m_firstLine;
-    while (l_it != m_lines.end() && l_i < VIEWER_NB_LINES)
-    {
-        if (!l_it->empty())
-        {
-            l_surfaceTmp = SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextNormal, {COLOR_BG_1});
-            SDL_utils::applySurface(VIEWER_MARGIN, VIEWER_Y_LIST + l_i * VIEWER_LINE_HEIGHT, l_surfaceTmp, Globals::g_screen, &m_clip);
-            SDL_FreeSurface(l_surfaceTmp);
-        }
-        // Next line
-        ++l_it;
-        ++l_i;
+    std::size_t i = std::min(m_firstLine + VIEWER_NB_LINES, m_lines.size());
+    while (i-- > m_firstLine) {
+        const std::string &line = m_lines[i];
+        if (line.empty()) continue;
+        SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_font, line, Globals::g_colorTextNormal, {COLOR_BG_1});
+        SDL_utils::applySurface(VIEWER_MARGIN, VIEWER_Y_LIST + (i - m_firstLine) * VIEWER_LINE_HEIGHT, l_surfaceTmp, Globals::g_screen, &m_clip);
+        SDL_FreeSurface(l_surfaceTmp);
     }
 }
 
