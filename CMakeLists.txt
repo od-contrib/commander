@@ -59,7 +59,7 @@ endforeach(def_name)
 target_compile_definitions(${BIN_TARGET} PRIVATE ${def_list})
 
 if(RETROFW)
-  target_compile_definitions(${BIN_TARGET} PRIVATE PLATFORM_DINGOO)
+  target_compile_definitions(${BIN_TARGET} PRIVATE PLATFORM_RETROFW)
   set_target_properties(${BIN_TARGET} PROPERTIES OUTPUT_NAME "commander.dge")
 endif()
 
