@@ -1,9 +1,43 @@
+#include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <cstddef>
+
 #include "viewer.h"
 #include "resourceManager.h"
 #include "def.h"
 #include "sdlutils.h"
+
+namespace {
+
+inline int UTF8CodePointLen(const char* src) {
+  return "\1\1\1\1\1\1\1\1\1\1\1\1\2\2\3\4"[static_cast<unsigned char>(*src)>> 4];
+}
+
+void ReplaceTabs(std::string *line) {
+    constexpr std::size_t kTabWidth = 8;
+    const std::size_t num_tabs = std::count(line->begin(), line->end(), '\t');
+    if (num_tabs == 0) return;
+    std::string result;
+    result.reserve(line->size() + num_tabs * (kTabWidth - 1));
+    std::size_t prev_tab_end = 0;
+    std::size_t column = 0;
+    for (std::size_t i = 0; i < line->size(); i += UTF8CodePointLen(line->data() + i)) {
+        if ((*line)[i] == '\t') {
+            result.append(*line, prev_tab_end, i - prev_tab_end);
+            const std::size_t num_spaces = kTabWidth - (column % kTabWidth);
+            result.append(num_spaces, ' ');
+            prev_tab_end = i + 1;
+            column += num_spaces;
+        } else {
+            ++column;
+        }
+    }
+    result.append(*line, prev_tab_end, std::string::npos);
+    *line = std::move(result);
+}
+
+} // namespace
 
 CViewer::CViewer(const std::string &p_fileName):
     CWindow(),
@@ -47,11 +81,11 @@ CViewer::CViewer(const std::string &p_fileName):
     std::ifstream l_file(m_fileName.c_str());
     if (l_file.is_open())
     {
-        std::string l_line("");
         while (!l_file.eof())
         {
-            std::getline(l_file, l_line);
-            m_lines.push_back(l_line);
+            m_lines.emplace_back();
+            std::getline(l_file, m_lines.back());
+            ReplaceTabs(&m_lines.back());
         }
         l_file.close();
     }
