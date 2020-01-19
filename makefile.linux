@@ -1,16 +1,13 @@
-CHAINPREFIX=
-CC=g++
-STRIP=strip
-CFLAGS=-Wall
-LFLAGS=-Wall -lSDL -lSDL_image -lSDL_ttf
-TARGET=../build/DinguxCommander
-OBJS=main.o sdlutils.o resourceManager.o fileLister.o commander.o panel.o dialog.o window.o fileutils.o viewer.o keyboard.o
+CC = c++
+CFLAGS = $(shell sdl-config --cflags) -Wall
+LFLAGS = $(shell sdl-config --libs) -Wall -lSDL_image -lSDL_ttf
+TARGET = commander
+OBJS = main.o sdlutils.o resourceManager.o fileLister.o commander.o panel.o dialog.o window.o fileutils.o viewer.o keyboard.o
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS)
-	$(STRIP) $(TARGET)
+	$(CC) -o $(TARGET) $(OBJS) $(LFLAGS)
 
 main.o: main.cpp def.h resourceManager.h commander.h sdlutils.h
 	$(CC) $(CFLAGS) -c main.cpp

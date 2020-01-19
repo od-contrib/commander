@@ -12,7 +12,7 @@ OBJS = main.o sdlutils.o resourceManager.o fileLister.o commander.o panel.o dial
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) -o $(TARGET) $(OBJS) $(LFLAGS)
 	$(STRIP) $(TARGET)
 	./package
 

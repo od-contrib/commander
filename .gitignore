@@ -1,5 +1,6 @@
 *.o
 .DS_Store
+commander
 nbproject/**
 **/*.ipk
 bin/**
