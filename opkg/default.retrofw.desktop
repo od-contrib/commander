@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Commander
 Comment=File management tool
-Exec=commander.dge
+Exec=commander
 Icon=commander
 Terminal=false
 Type=Application

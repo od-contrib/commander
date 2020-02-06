@@ -52,7 +52,7 @@ package_opk() {
     ../opkg/commander.png \
     ../res/*.2.png \
     ../res/wy_scorpio.ttf \
-    commander.dge \
+    commander \
     commander.opk \
     -all-root -no-xattrs -noappend -no-exports
   cd -
