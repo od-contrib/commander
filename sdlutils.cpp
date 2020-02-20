@@ -1,6 +1,10 @@
-#include <iostream>
 #include "sdlutils.h"
+
+#include <algorithm>
+#include <iostream>
+
 #include <SDL_image.h>
+#include <SDL_rotozoom.h>
 #include "def.h"
 #include "resourceManager.h"
 
@@ -28,6 +32,34 @@ SDL_Surface *SDL_utils::loadImage(const std::string &p_filename)
     if (l_img2 == NULL)
         std::cerr << "SDL_utils::loadImage: " << SDL_GetError() << std::endl;
     return l_img2;
+}
+
+SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w, int fit_h)
+{
+    // Load image
+    SDL_Surface *l_img = IMG_Load(p_filename.c_str());
+    if (IMG_GetError() != nullptr && *IMG_GetError() != '\0') {
+        if (strcmp(IMG_GetError(), "Unsupported image format") == 0)
+            SDL_ClearError();
+        else
+            std::cerr << "SDL_utils::loadImageToFit: " << IMG_GetError() << std::endl;
+        return nullptr;
+    }
+    const double aspect_ratio = static_cast<double>(l_img->w) / l_img->h;
+    int target_w, target_h;
+    if (fit_w * l_img->h <= fit_h * l_img->w) {
+        target_w = std::min(l_img->w, fit_w);
+        target_h = target_w / aspect_ratio;
+    } else {
+        target_h = std::min(l_img->h, fit_h);
+        target_w = target_h * aspect_ratio;
+    }
+    target_h *= PPU_Y;
+    SDL_Surface *l_img2 = zoomSurface(l_img, static_cast<double>(target_w) / l_img->w, static_cast<double>(target_h) / l_img->h, SMOOTHING_ON);
+    SDL_FreeSurface(l_img);
+    SDL_Surface *l_img3 = SDL_DisplayFormat(l_img2);
+    SDL_FreeSurface(l_img2);
+    return l_img3;
 }
 
 void SDL_utils::applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip)

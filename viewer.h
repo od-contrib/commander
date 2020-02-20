@@ -43,29 +43,38 @@ class CViewer : public CWindow
     virtual void render(const bool p_focus) const;
 
     // Is window full screen?
-    virtual const bool isFullScreen(void) const;
+    virtual bool isFullScreen(void) const;
 
-    // Scroll
-    const bool moveUp(const unsigned int p_step);
-    const bool moveDown(const unsigned int p_step);
-    const bool moveLeft(void);
-    void moveRight(void);
+    // Scroll (text mode only)
+    bool moveUp(const unsigned int p_step);
+    bool moveDown(const unsigned int p_step);
+    bool moveLeft(void);
+    bool moveRight(void);
 
     // The viewed file name
     std::string m_fileName;
 
     // Coordinates
-    std::size_t m_firstLine;
     mutable SDL_Rect m_clip;
 
+    TTF_Font *m_font; // unowned
+
     // Background image
-    SDL_Surface *m_image;
+    SDL_Surface *m_background;
+
+    enum {
+        TEXT = 0,
+        IMAGE = 1,
+    } m_mode;
+
+    // Text mode:
+    std::size_t m_firstLine;
 
     // List of read lines
     std::vector<std::string> m_lines;
 
-    // Pointers to resources
-    TTF_Font *m_font;
+    // Image mode:
+    SDL_Surface *m_image;
 };
 
 #endif

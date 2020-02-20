@@ -119,7 +119,7 @@ const int CWindow::getReturnValue(void) const
     return m_retVal;
 }
 
-const bool CWindow::isFullScreen(void) const
+bool CWindow::isFullScreen(void) const
 {
     // Default behavior
     return false;

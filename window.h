@@ -20,7 +20,7 @@ class CWindow
     virtual void render(const bool p_focus) const = 0;
 
     // Is window full screen?
-    virtual const bool isFullScreen(void) const;
+    virtual bool isFullScreen(void) const;
 
     protected:
 

@@ -351,7 +351,7 @@ void CCommander::openExecuteMenu(void) const
     }
 }
 
-const bool CCommander::isFullScreen(void) const
+bool CCommander::isFullScreen(void) const
 {
     return true;
 }
