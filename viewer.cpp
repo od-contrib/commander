@@ -49,11 +49,7 @@ CViewer::CViewer(const std::string &p_fileName):
     // Create background image
     m_background = SDL_utils::createImage(SCREEN_WIDTH, SCREEN_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BG_1));
     {
-        SDL_Rect l_rect;
-        l_rect.x = 0;
-        l_rect.y = 0;
-        l_rect.w = SCREEN_WIDTH;
-        l_rect.h = Y_LIST * PPU_Y;
+        SDL_Rect l_rect = {0, 0, SCREEN_WIDTH, Y_LIST * PPU_Y};
         SDL_FillRect(m_background, &l_rect, SDL_MapRGB(m_background->format, COLOR_BORDER));
     }
     // Print title
@@ -79,6 +75,20 @@ CViewer::CViewer(const std::string &p_fileName):
     if (m_image != nullptr)
     {
         m_mode = IMAGE;
+
+        // Transparency grid background.
+        constexpr int kTransparentBgRectSize = 10;
+        const Uint32 colors[2] = {
+            SDL_MapRGB(m_background->format, 240, 240, 240),
+            SDL_MapRGB(m_background->format, 155, 155, 155),
+        };
+        int i = 0;
+        for (int y = Y_LIST; y < SCREEN_HEIGHT; y += kTransparentBgRectSize, ++i) {
+            for (int x = 0; x < SCREEN_WIDTH; x += kTransparentBgRectSize, ++i) {
+                SDL_Rect rect = {x, y * PPU_Y, kTransparentBgRectSize, kTransparentBgRectSize * PPU_Y};
+                SDL_FillRect(m_background, &rect, colors[i % 2]);
+            }
+        }
     }
     else
     {

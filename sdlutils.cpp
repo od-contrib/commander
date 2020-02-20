@@ -34,6 +34,22 @@ SDL_Surface *SDL_utils::loadImage(const std::string &p_filename)
     return l_img2;
 }
 
+static void AsciiToLower(std::string *s)
+{
+    for (char &c : *s)
+        if (c >= 'A' && c <= 'Z')
+            c -= ('Z' - 'z');
+}
+
+static std::string GetFileExtension(const std::string &name) {
+    const auto dot_pos = name.rfind('.');
+    if (dot_pos == std::string::npos)
+        return "";
+    std::string ext = name.substr(dot_pos + 1);
+    AsciiToLower(&ext);
+    return ext;
+}
+
 SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w, int fit_h)
 {
     // Load image
@@ -57,7 +73,10 @@ SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w,
     target_h *= PPU_Y;
     SDL_Surface *l_img2 = zoomSurface(l_img, static_cast<double>(target_w) / l_img->w, static_cast<double>(target_h) / l_img->h, SMOOTHING_ON);
     SDL_FreeSurface(l_img);
-    SDL_Surface *l_img3 = SDL_DisplayFormat(l_img2);
+
+    const std::string ext = GetFileExtension(p_filename);
+    const bool supports_alpha = ext != "xcf" && ext != "jpg" && ext != "jpeg";
+    SDL_Surface *l_img3 = supports_alpha ? SDL_DisplayFormatAlpha(l_img2) : SDL_DisplayFormat(l_img2);
     SDL_FreeSurface(l_img2);
     return l_img3;
 }
