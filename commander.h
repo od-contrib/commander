@@ -32,7 +32,7 @@ class CCommander : public CWindow
     virtual void render(const bool p_focus) const;
 
     // Is window full screen?
-    virtual const bool isFullScreen(void) const;
+    virtual bool isFullScreen(void) const;
 
     // Open the file operation menus
     const bool openCopyMenu(void) const;
