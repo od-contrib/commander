@@ -24,6 +24,8 @@ namespace File_utils
 
     const bool fileExists(const std::string &p_path);
 
+    std::string getLowercaseFileExtension(const std::string &name);
+
     const unsigned long int getFileSize(const std::string &p_file);
 
     void formatSize(std::string &p_size);

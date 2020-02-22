@@ -100,11 +100,6 @@ const bool CFileLister::isDirectory(const unsigned int p_i) const
     return p_i < m_listDirs.size();
 }
 
-bool CFileLister::isImageFile(unsigned int p_i) const
-{
-    return !isDirectory(p_i) && SDL_utils::isSupportedImageFilename(m_listFiles[p_i - m_listDirs.size()].m_name);
-}
-
 const unsigned int CFileLister::searchDir(const std::string &p_name) const
 {
     unsigned int l_ret = 0;

@@ -34,9 +34,11 @@ CResourceManager::CResourceManager(void) :
     m_font(NULL)
 {
     // Load images
-    m_surfaces[T_SURFACE_FILE] = LoadIcon(RES_DIR "file-text.png");
-    m_surfaces[T_SURFACE_IMAGE] = LoadIcon(RES_DIR "file-image.png");
     m_surfaces[T_SURFACE_FOLDER] = LoadIcon(RES_DIR "folder.png");
+    m_surfaces[T_SURFACE_FILE] = LoadIcon(RES_DIR "file-text.png");
+    m_surfaces[T_SURFACE_FILE_IMAGE] = LoadIcon(RES_DIR "file-image.png");
+    m_surfaces[T_SURFACE_FILE_INSTALLABLE_PACKAGE] = LoadIcon(RES_DIR "file-ipk.png");
+    m_surfaces[T_SURFACE_FILE_PACKAGE] = LoadIcon(RES_DIR "file-opk.png");
     m_surfaces[T_SURFACE_UP] = LoadIcon(RES_DIR "up.png");
     m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(159 * PPU_X, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
     m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(159 * PPU_X, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));

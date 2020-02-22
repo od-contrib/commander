@@ -6,28 +6,12 @@
 #include <SDL_image.h>
 #include <SDL_rotozoom.h>
 #include "def.h"
+#include "fileutils.h"
 #include "resourceManager.h"
 
 extern SDL_Surface *ScreenSurface;
 
-static void AsciiToLower(std::string *s)
-{
-    for (char &c : *s)
-        if (c >= 'A' && c <= 'Z')
-            c -= ('Z' - 'z');
-}
-
-static std::string GetFileExtension(const std::string &name) {
-    const auto dot_pos = name.rfind('.');
-    if (dot_pos == std::string::npos)
-        return "";
-    std::string ext = name.substr(dot_pos + 1);
-    AsciiToLower(&ext);
-    return ext;
-}
-
-bool SDL_utils::isSupportedImageFilename(const std::string &filename) {
-    std::string ext = GetFileExtension(filename);
+bool SDL_utils::isSupportedImageExt(const std::string &ext) {
     return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "ico" || ext == "bmp" || ext == "xcf";
 }
 
@@ -55,7 +39,7 @@ SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w,
     SDL_Surface *l_img2 = zoomSurface(l_img, static_cast<double>(target_w) / l_img->w, static_cast<double>(target_h) / l_img->h, SMOOTHING_ON);
     SDL_FreeSurface(l_img);
 
-    const std::string ext = GetFileExtension(p_filename);
+    const std::string ext = File_utils::getLowercaseFileExtension(p_filename);
     const bool supports_alpha = ext != "xcf" && ext != "jpg" && ext != "jpeg";
     SDL_Surface *l_img3 = supports_alpha ? SDL_DisplayFormatAlpha(l_img2) : SDL_DisplayFormat(l_img2);
     SDL_FreeSurface(l_img2);

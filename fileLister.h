@@ -3,16 +3,20 @@
 
 #include <vector>
 #include <string>
+#include "fileutils.h"
 
 // Class used to store file info
 struct T_FILE
 {
-    T_FILE(void): m_name(""), m_size(0) {}
-    T_FILE(const std::string &p_name, const unsigned long int &p_size): m_name(p_name), m_size(p_size) {}
-    T_FILE(const T_FILE &p_source): m_name(p_source.m_name), m_size(p_source.m_size) {}
-    ~T_FILE(void) {}
-    const T_FILE &operator =(const T_FILE &p_source) { m_name = p_source.m_name; m_size = p_source.m_size; return *this; }
+    T_FILE(void) : m_size(0) {}
+    T_FILE(const std::string &p_name, const unsigned long int &p_size)
+        : m_name(p_name),
+          m_ext(File_utils::getLowercaseFileExtension(p_name)),
+          m_size(p_size) {}
+    T_FILE(const T_FILE &p_source) = default;
+    T_FILE &operator=(const T_FILE &p_source) = default;
     std::string m_name;
+    std::string m_ext;
     unsigned long int m_size;
 };
 
@@ -40,7 +44,6 @@ class CFileLister
 
     // True => directory, false => file
     const bool isDirectory(const unsigned int p_i) const;
-    bool isImageFile(unsigned int p_i) const;
 
     // Get index of the given dir name, 0 if not found
     const unsigned int searchDir(const std::string &p_name) const;

@@ -4,7 +4,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
-#define NB_SURFACES 6
+#define NB_SURFACES 8
 
 class CResourceManager
 {
@@ -12,9 +12,11 @@ class CResourceManager
 
     typedef enum
     {
-        T_SURFACE_FILE = 0,
-        T_SURFACE_IMAGE,
-        T_SURFACE_FOLDER,
+        T_SURFACE_FOLDER = 0,
+        T_SURFACE_FILE,
+        T_SURFACE_FILE_IMAGE,
+        T_SURFACE_FILE_INSTALLABLE_PACKAGE,
+        T_SURFACE_FILE_PACKAGE,
         T_SURFACE_UP,
         T_SURFACE_CURSOR1,
         T_SURFACE_CURSOR2
