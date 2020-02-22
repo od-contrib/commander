@@ -170,6 +170,22 @@ const bool File_utils::fileExists(const std::string &p_path)
     return stat(p_path.c_str(), &l_stat) == 0;
 }
 
+static void AsciiToLower(std::string *s)
+{
+    for (char &c : *s)
+        if (c >= 'A' && c <= 'Z')
+            c -= ('Z' - 'z');
+}
+
+std::string File_utils::getLowercaseFileExtension(const std::string &name) {
+    const auto dot_pos = name.rfind('.');
+    if (dot_pos == std::string::npos)
+        return "";
+    std::string ext = name.substr(dot_pos + 1);
+    AsciiToLower(&ext);
+    return ext;
+}
+
 const std::string File_utils::getFileName(const std::string &p_path)
 {
     size_t l_pos = p_path.rfind('/');

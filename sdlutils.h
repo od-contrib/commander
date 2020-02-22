@@ -21,7 +21,7 @@ namespace SDL_utils
     // Load an image to fit the given viewport size.
     SDL_Surface *loadImageToFit(const std::string &p_filename, int fit_w, int fit_h);
 
-    bool isSupportedImageFilename(const std::string &filename);
+    bool isSupportedImageExt(const std::string &filename);
 
     // Load a TTF font
     TTF_Font *loadFont(const std::string &p_font, const int p_size);

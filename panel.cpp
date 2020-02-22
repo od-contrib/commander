@@ -15,7 +15,9 @@ CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
     m_highlightedLine(0),
     m_iconDir(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FOLDER)),
     m_iconFile(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE)),
-    m_iconImg(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_IMAGE)),
+    m_iconImg(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_IMAGE)),
+    m_iconIpk(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_INSTALLABLE_PACKAGE)),
+    m_iconOpk(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_PACKAGE)),
     m_iconUp(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_UP)),
     m_cursor1(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR1)),
     m_cursor2(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR2)),
@@ -85,7 +87,15 @@ void CPanel::render(const bool p_active) const
         else
         {
             // Icon
-            l_surfaceTmp = m_fileLister.isImageFile(l_i) ? m_iconImg : m_iconFile;
+            const std::string &ext = m_fileLister[l_i].m_ext;
+            if (SDL_utils::isSupportedImageExt(ext))
+                l_surfaceTmp = m_iconImg;
+            else if (ext == "ipk")
+                l_surfaceTmp = m_iconIpk;
+            else if (ext == "opk")
+                l_surfaceTmp = m_iconOpk;
+            else
+                l_surfaceTmp = m_iconFile;
             // Color
             if (m_selectList.find(l_i) != m_selectList.end())
                 l_color = &Globals::g_colorTextSelected;
