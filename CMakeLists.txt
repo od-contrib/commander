@@ -55,6 +55,7 @@ target_link_libraries(${BIN_TARGET} PRIVATE
 
 foreach(
   def_name
+  PPU_X
   PPU_Y
   RES_DIR
 )

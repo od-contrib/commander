@@ -50,7 +50,7 @@ package_opk() {
     ../opkg/default.retrofw.desktop \
     ../opkg/readme.retrofw.txt \
     ../opkg/commander.png \
-    ../res/*.2.png \
+    ../res/*.png \
     ../res/wy_scorpio.ttf \
     commander \
     commander.opk \

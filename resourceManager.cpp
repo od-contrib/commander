@@ -1,7 +1,28 @@
 #include <iostream>
+
+#include <SDL_image.h>
+#include <SDL_rotozoom.h>
 #include "resourceManager.h"
 #include "def.h"
 #include "sdlutils.h"
+
+namespace {
+
+SDL_Surface *LoadIcon(const char *path) {
+    SDL_Surface *img = IMG_Load(path);
+    if(img == nullptr)
+    {
+        std::cerr << "LoadIcon(\"" << path << "\"): " << IMG_GetError() << std::endl;
+        return nullptr;
+    }
+    SDL_Surface *scaled = shrinkSurface(img, 2 / PPU_X, 2 / PPU_Y);
+    SDL_FreeSurface(img);
+    SDL_Surface *display = SDL_DisplayFormatAlpha(scaled);
+    SDL_FreeSurface(scaled);
+    return display;
+}
+
+} // namespace
 
 CResourceManager& CResourceManager::instance(void)
 {
@@ -13,14 +34,12 @@ CResourceManager::CResourceManager(void) :
     m_font(NULL)
 {
     // Load images
-    std::string img_ext = ".";
-    img_ext += '0' + PPU_Y;
-    img_ext.append(".png");
-    m_surfaces[T_SURFACE_FILE] = SDL_utils::loadImage(RES_DIR "file" + img_ext);
-    m_surfaces[T_SURFACE_FOLDER] = SDL_utils::loadImage(RES_DIR "folder" + img_ext);
-    m_surfaces[T_SURFACE_UP] = SDL_utils::loadImage(RES_DIR "up" + img_ext);
-    m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(159, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
-    m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(159, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
+    m_surfaces[T_SURFACE_FILE] = LoadIcon(RES_DIR "file-text.png");
+    m_surfaces[T_SURFACE_IMAGE] = LoadIcon(RES_DIR "file-image.png");
+    m_surfaces[T_SURFACE_FOLDER] = LoadIcon(RES_DIR "folder.png");
+    m_surfaces[T_SURFACE_UP] = LoadIcon(RES_DIR "up.png");
+    m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(159 * PPU_X, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
+    m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(159 * PPU_X, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
     // Load font
     m_font = SDL_utils::loadFont(RES_DIR "wy_scorpio.ttf", 8);
 }

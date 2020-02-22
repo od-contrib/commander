@@ -10,30 +10,6 @@
 
 extern SDL_Surface *ScreenSurface;
 
-// Load an image using SDL_image
-SDL_Surface *SDL_utils::loadImage(const std::string &p_filename)
-{
-    INHIBIT(std::cout << "SDL_utils::loadImage(" << p_filename << ")" << std::endl;)
-    // Load image
-    SDL_Surface* l_img = IMG_Load(p_filename.c_str());
-    SDL_Surface* l_img2 = NULL;
-
-    if(l_img != NULL)
-    {
-        // Optimize the image
-        l_img2 = SDL_DisplayFormat(l_img);
-        // Free the first image
-        SDL_FreeSurface(l_img);
-        // Set color key
-        if (l_img2 != NULL)
-            SDL_SetColorKey(l_img2, SDL_SRCCOLORKEY, SDL_MapRGB(l_img2->format, COLOR_KEY));
-    }
-    // Check errors
-    if (l_img2 == NULL)
-        std::cerr << "SDL_utils::loadImage: " << SDL_GetError() << std::endl;
-    return l_img2;
-}
-
 static void AsciiToLower(std::string *s)
 {
     for (char &c : *s)
@@ -48,6 +24,11 @@ static std::string GetFileExtension(const std::string &name) {
     std::string ext = name.substr(dot_pos + 1);
     AsciiToLower(&ext);
     return ext;
+}
+
+bool SDL_utils::isSupportedImageFilename(const std::string &filename) {
+    std::string ext = GetFileExtension(filename);
+    return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "ico" || ext == "bmp" || ext == "xcf";
 }
 
 SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w, int fit_h)

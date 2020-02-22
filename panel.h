@@ -92,6 +92,7 @@ class CPanel
     // Pointers to resources
     SDL_Surface *m_iconDir;
     SDL_Surface *m_iconFile;
+    SDL_Surface *m_iconImg;
     SDL_Surface *m_iconUp;
     SDL_Surface *m_cursor1;
     SDL_Surface *m_cursor2;

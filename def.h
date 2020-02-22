@@ -5,7 +5,10 @@
 #define INHIBIT(X) /* X */
 
 #ifndef PPU_Y
-#define PPU_Y 2
+#define PPU_Y 1
+#endif
+#ifndef PPU_X
+#define PPU_X 1
 #endif
 
 #ifndef RES_DIR
