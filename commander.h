@@ -47,7 +47,6 @@ class CCommander : public CWindow
     CPanel* m_panelSource;
     CPanel* m_panelTarget;
 
-    // Pointers to resources
     SDL_Surface *m_background;
 };
 

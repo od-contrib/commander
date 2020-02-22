@@ -36,6 +36,9 @@ namespace SDL_utils
     // Render a text and apply on a given surface
     void applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align = T_TEXT_ALIGN_LEFT);
 
+    // Create a surface in the same format as the screen
+    SDL_Surface *createSurface(int width, int height);
+
     // Create an image filled with the given color
     SDL_Surface *createImage(const int p_width, const int p_height, const Uint32 p_color);
 
