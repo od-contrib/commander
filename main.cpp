@@ -4,6 +4,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <SDL.h>
+#include <SDL_image.h>
 #include <SDL_ttf.h>
 #include "def.h"
 #include "sdlutils.h"
@@ -29,6 +30,8 @@ int main(int argc, char** argv)
 
     // Init SDL
     SDL_Init(SDL_INIT_VIDEO);
+    if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF | IMG_INIT_WEBP) == 0)
+        std::cerr << "IMG_Init failed" << std::endl;
 
     // Screen
     ScreenSurface = SDL_SetVideoMode(SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y, SCREEN_BPP, SURFACE_FLAGS);

@@ -129,6 +129,7 @@ void SDL_utils::hastalavista(void)
     CResourceManager::instance().sdlCleanup();
     // Quit SDL
     TTF_Quit();
+    IMG_Quit();
     SDL_Quit();
 }
 
