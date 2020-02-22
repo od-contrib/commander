@@ -46,7 +46,7 @@ void CPanel::render(const bool p_active) const
     // Draw cursor
     SDL_utils::applySurface(m_x - 1, Y_LIST + (m_highlightedLine - m_camera) * LINE_HEIGHT, p_active ? m_cursor1 : m_cursor2, Globals::g_screen);
     // Draw panel
-    const Sint16 l_x = m_x + m_iconDir->w + 2;
+    const Sint16 l_x = m_x + m_iconDir->w / PPU_X + 2;
     const unsigned int l_nbTotal = m_fileLister.getNbTotal();
     Sint16 l_y = Y_LIST;
     SDL_Surface *l_surfaceTmp = NULL;
@@ -54,11 +54,11 @@ void CPanel::render(const bool p_active) const
     SDL_Rect l_rect;
     // Current dir
     l_surfaceTmp = SDL_utils::renderText(m_font, m_currentPath, Globals::g_colorTextTitle, {COLOR_TITLE_BG});
-    if (l_surfaceTmp->w > PANEL_SIZE)
+    if (l_surfaceTmp->w > PANEL_SIZE * PPU_X)
     {
-        l_rect.x = l_surfaceTmp->w - PANEL_SIZE;
+        l_rect.x = l_surfaceTmp->w - PANEL_SIZE * PPU_X;
         l_rect.y = 0;
-        l_rect.w = PANEL_SIZE;
+        l_rect.w = PANEL_SIZE * PPU_X;
         l_rect.h = l_surfaceTmp->h;
         SDL_utils::applySurface(m_x, Y_HEADER, l_surfaceTmp, Globals::g_screen, &l_rect);
     }
@@ -115,11 +115,11 @@ void CPanel::render(const bool p_active) const
             l_bg = kLineBg[(l_i - m_camera) % 2];
         }
         l_surfaceTmp = SDL_utils::renderText(m_font, m_fileLister[l_i].m_name, *l_color, l_bg);
-        if (l_surfaceTmp->w > NAME_SIZE)
+        if (l_surfaceTmp->w > NAME_SIZE * PPU_X)
         {
             l_rect.x = 0;
             l_rect.y = 0;
-            l_rect.w = NAME_SIZE;
+            l_rect.w = NAME_SIZE * PPU_X;
             l_rect.h = l_surfaceTmp->h;
             SDL_utils::applySurface(l_x, l_y + 2, l_surfaceTmp, Globals::g_screen, &l_rect);
         }

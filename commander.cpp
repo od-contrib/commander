@@ -17,11 +17,11 @@
 namespace {
 
 SDL_Surface *DrawBackground() {
-    SDL_Surface *bg = SDL_utils::createSurface(SCREEN_WIDTH, SCREEN_HEIGHT * PPU_Y);
+    SDL_Surface *bg = SDL_utils::createSurface(SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y);
 
     // Stripes
     const int stripes_h = SCREEN_HEIGHT - Y_LIST - H_FOOTER;
-    SDL_Rect rect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT * PPU_Y};
+    SDL_Rect rect = {0, 0, SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y};
     const Uint32 bg_colors[2] = {SDL_MapRGB(bg->format, COLOR_BG_1), SDL_MapRGB(bg->format, COLOR_BG_2)};
     const std::size_t num_lines = (stripes_h - 1) / LINE_HEIGHT + 1;
     for (std::size_t i = 0; i < num_lines; ++i) {
@@ -38,7 +38,7 @@ SDL_Surface *DrawBackground() {
 
     // Line in the middle
     const int line_w = 1;
-    rect = {SCREEN_WIDTH / 2 - line_w, 0, line_w, Y_LIST * PPU_Y};
+    rect = {(SCREEN_WIDTH / 2 - line_w) * PPU_X, 0, line_w * PPU_X, Y_LIST * PPU_Y};
     SDL_FillRect(bg, &rect, bg_colors[0]);
     rect.y = rect.h;
     rect.h = stripes_h * PPU_Y;

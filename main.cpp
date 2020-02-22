@@ -31,7 +31,7 @@ int main(int argc, char** argv)
     SDL_Init(SDL_INIT_VIDEO);
 
     // Screen
-    ScreenSurface = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT * PPU_Y, SCREEN_BPP, SURFACE_FLAGS);
+    ScreenSurface = SDL_SetVideoMode(SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y, SCREEN_BPP, SURFACE_FLAGS);
     Globals::g_screen = ScreenSurface;
     if (Globals::g_screen == NULL)
     {
