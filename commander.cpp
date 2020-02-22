@@ -11,8 +11,9 @@
 
 #include <stdio.h>
 
-#define X_LEFT                1
-#define X_RIGHT               162
+#define SPLITTER_LINE_W 1
+#define X_LEFT 1
+#define X_RIGHT SCREEN_WIDTH / 2 + SPLITTER_LINE_W + 1
 
 namespace {
 
@@ -37,8 +38,7 @@ SDL_Surface *DrawBackground() {
     SDL_FillRect(bg, &rect, bar_color);
 
     // Line in the middle
-    const int line_w = 1;
-    rect = {(SCREEN_WIDTH / 2 - line_w) * PPU_X, 0, line_w * PPU_X, Y_LIST * PPU_Y};
+    rect = {SCREEN_WIDTH / 2 * PPU_X, 0, SPLITTER_LINE_W * PPU_X, Y_LIST * PPU_Y};
     SDL_FillRect(bg, &rect, bg_colors[0]);
     rect.y = rect.h;
     rect.h = stripes_h * PPU_Y;
