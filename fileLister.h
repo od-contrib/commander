@@ -40,6 +40,7 @@ class CFileLister
 
     // True => directory, false => file
     const bool isDirectory(const unsigned int p_i) const;
+    bool isImageFile(unsigned int p_i) const;
 
     // Get index of the given dir name, 0 if not found
     const unsigned int searchDir(const std::string &p_name) const;

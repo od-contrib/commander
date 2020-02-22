@@ -15,6 +15,7 @@ CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
     m_highlightedLine(0),
     m_iconDir(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FOLDER)),
     m_iconFile(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE)),
+    m_iconImg(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_IMAGE)),
     m_iconUp(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_UP)),
     m_cursor1(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR1)),
     m_cursor2(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR2)),
@@ -84,7 +85,7 @@ void CPanel::render(const bool p_active) const
         else
         {
             // Icon
-            l_surfaceTmp = m_iconFile;
+            l_surfaceTmp = m_fileLister.isImageFile(l_i) ? m_iconImg : m_iconFile;
             // Color
             if (m_selectList.find(l_i) != m_selectList.end())
                 l_color = &Globals::g_colorTextSelected;

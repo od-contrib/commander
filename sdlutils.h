@@ -18,11 +18,10 @@ namespace SDL_utils
     }
     T_TEXT_ALIGN;
 
-    // Load an image using SDL_image
-    SDL_Surface *loadImage(const std::string &p_filename);
-
     // Load an image to fit the given viewport size.
     SDL_Surface *loadImageToFit(const std::string &p_filename, int fit_w, int fit_h);
+
+    bool isSupportedImageFilename(const std::string &filename);
 
     // Load a TTF font
     TTF_Font *loadFont(const std::string &p_font, const int p_size);
