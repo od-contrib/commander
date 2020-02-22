@@ -14,13 +14,51 @@
 #define X_LEFT                1
 #define X_RIGHT               162
 
+namespace {
+
+SDL_Surface *DrawBackground() {
+    SDL_Surface *bg = SDL_utils::createSurface(SCREEN_WIDTH, SCREEN_HEIGHT * PPU_Y);
+
+    // Stripes
+    const int stripes_h = SCREEN_HEIGHT - Y_LIST - H_FOOTER;
+    SDL_Rect rect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT * PPU_Y};
+    const Uint32 bg_colors[2] = {SDL_MapRGB(bg->format, COLOR_BG_1), SDL_MapRGB(bg->format, COLOR_BG_2)};
+    const std::size_t num_lines = (stripes_h - 1) / LINE_HEIGHT + 1;
+    for (std::size_t i = 0; i < num_lines; ++i) {
+        rect.y = (Y_LIST + i * LINE_HEIGHT) * PPU_Y;
+        SDL_FillRect(bg, &rect, bg_colors[i % 2]);
+    }
+
+    // Top and bottom bars
+    const auto bar_color = SDL_MapRGB(bg->format, COLOR_TITLE_BG);
+    rect = {0, 0, static_cast<decltype(SDL_Rect().w)>(bg->w), Y_LIST * PPU_Y};
+    SDL_FillRect(bg, &rect, bar_color);
+    rect.y = bg->h - H_FOOTER * PPU_Y;
+    SDL_FillRect(bg, &rect, bar_color);
+
+    // Line in the middle
+    const int line_w = 1;
+    rect = {SCREEN_WIDTH / 2 - line_w, 0, line_w, Y_LIST * PPU_Y};
+    SDL_FillRect(bg, &rect, bg_colors[0]);
+    rect.y = rect.h;
+    rect.h = stripes_h * PPU_Y;
+    SDL_FillRect(bg, &rect, bar_color);
+    rect.y += rect.h;
+    rect.h = H_FOOTER * PPU_Y;
+    SDL_FillRect(bg, &rect, bg_colors[0]);
+
+    return bg;
+}
+
+} // namespace
+
 CCommander::CCommander(const std::string &p_pathL, const std::string &p_pathR):
     CWindow::CWindow(),
     m_panelLeft(p_pathL, X_LEFT),
     m_panelRight(p_pathR, X_RIGHT),
     m_panelSource(NULL),
     m_panelTarget(NULL),
-    m_background(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_BG))
+    m_background(DrawBackground())
 {
     m_panelSource = &m_panelLeft;
     m_panelTarget = &m_panelRight;
@@ -28,6 +66,7 @@ CCommander::CCommander(const std::string &p_pathL, const std::string &p_pathR):
 
 CCommander::~CCommander(void)
 {
+    SDL_FreeSurface(m_background);
 }
 
 void CCommander::render(const bool p_focus) const

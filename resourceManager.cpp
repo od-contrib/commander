@@ -16,7 +16,6 @@ CResourceManager::CResourceManager(void) :
     std::string img_ext = ".";
     img_ext += '0' + PPU_Y;
     img_ext.append(".png");
-    m_surfaces[T_SURFACE_BG] = SDL_utils::loadImage(RES_DIR "background" + img_ext);
     m_surfaces[T_SURFACE_FILE] = SDL_utils::loadImage(RES_DIR "file" + img_ext);
     m_surfaces[T_SURFACE_FOLDER] = SDL_utils::loadImage(RES_DIR "folder" + img_ext);
     m_surfaces[T_SURFACE_UP] = SDL_utils::loadImage(RES_DIR "up" + img_ext);

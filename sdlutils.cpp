@@ -126,10 +126,14 @@ void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, TT
     SDL_FreeSurface(l_text);
 }
 
+SDL_Surface *SDL_utils::createSurface(int width, int height)
+{
+    return SDL_CreateRGBSurface(SURFACE_FLAGS, width, height, Globals::g_screen->format->BitsPerPixel, Globals::g_screen->format->Rmask, Globals::g_screen->format->Gmask, Globals::g_screen->format->Bmask, Globals::g_screen->format->Amask);
+}
+
 SDL_Surface *SDL_utils::createImage(const int p_width, const int p_height, const Uint32 p_color)
 {
-    // Create image in the same format as the screen
-    SDL_Surface *l_ret = SDL_CreateRGBSurface(SURFACE_FLAGS, p_width, p_height, Globals::g_screen->format->BitsPerPixel, Globals::g_screen->format->Rmask, Globals::g_screen->format->Gmask, Globals::g_screen->format->Bmask, Globals::g_screen->format->Amask);
+    SDL_Surface *l_ret = createSurface(p_width, p_height);
     if (l_ret == NULL)
         std::cerr << "SDL_utils::createImage: " << SDL_GetError() << std::endl;
     // Fill image with the given color
