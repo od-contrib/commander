@@ -1,4 +1,4 @@
-Commander file management tool
+Commander file manager for RG-350
 
 Controls:
 

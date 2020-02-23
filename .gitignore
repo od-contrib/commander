@@ -2,5 +2,5 @@
 .DS_Store
 commander
 /build/
-/build-retrofw/
+/build-*/
 nbproject/**
