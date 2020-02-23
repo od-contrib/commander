@@ -136,8 +136,8 @@ void CDialog::init(void)
         m_y = m_y - (m_image_h >> 1) + (LINE_HEIGHT >> 1);
         if (m_y < Y_LIST)
             m_y = Y_LIST;
-        if (m_y + m_image_h > Y_FOOTER + 1)
-            m_y = Y_FOOTER + 1 - m_image_h;
+        if (m_y + m_image_h > FOOTER_Y + 1)
+            m_y = FOOTER_Y + 1 - m_image_h;
     }
     // Cursor coordinates
     m_cursorX = m_x + DIALOG_BORDER;
