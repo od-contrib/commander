@@ -19,7 +19,13 @@ DinguxCommander allows to:
 To build for RetroFW, run:
 
 ```bash
-BUILDROOT=<path to buildroot> ./build-retrofw.sh
+BUILDROOT=<path to buildroot> ./build.sh retrofw
+```
+
+To build for RG350/GKD350h, run:
+
+```bash
+BUILDROOT=<path to buildroot> ./build.sh rg350
 ```
 
 The package will be built at `build-retrofw/commander.ipk`.

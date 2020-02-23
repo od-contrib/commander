@@ -1,10 +1,10 @@
 [Desktop Entry]
 Name=Commander
-Comment=File manager for RetroFW
+Comment=File manager for RG-350
 Exec=commander
 Icon=commander
 Terminal=false
 Type=Application
 StartupNotify=true
 Categories=applications;
-X-OD-Manual=readme.retrofw.txt
+X-OD-Manual=readme.gcw0.txt

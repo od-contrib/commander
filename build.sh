@@ -2,6 +2,25 @@
 
 set -euo pipefail
 
+usage() {
+	echo "Usage: build.sh [target]"
+	echo "	target: target platform: rg350 or retrofw"
+}
+
+if [[ $# -ne 1 ]]; then
+	echo "Error: target is missing"
+	usage
+	exit 1
+fi
+
+if [[ $1 != rg350 ]] && [[ $1 != retrofw ]]; then
+	echo "Error: invalid target"
+	usage
+	exit 1
+fi
+
+declare -r TARGET="${1}"
+
 check_buildroot() {
   if ! [[ -d $BUILDROOT ]]; then
     echo "Please set the BUILDROOT environment variable"
@@ -32,8 +51,8 @@ make_buildroot() {
 }
 
 build() {
-  mkdir -p build-retrofw
-  cd build-retrofw
+  mkdir -p "build-$TARGET"
+  cd "build-$TARGET"
   cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DRETROFW=1 \
@@ -45,15 +64,19 @@ build() {
 }
 
 package_opk() {
-  cd build-retrofw
+  cd "build-$TARGET"
+  local ext=gcw0
+	if [[ $TARGET == retrofw ]]; then
+	  ext=retrofw
+	fi
   mksquashfs \
-    ../opkg/default.retrofw.desktop \
-    ../opkg/readme.retrofw.txt \
+    "../opkg/default.$ext.desktop" \
+    "../opkg/readme.$ext.txt" \
     ../opkg/commander.png \
     ../res/*.png \
     ../res/wy_scorpio.ttf \
     commander \
-    commander.opk \
+    "commander-${TARGET}.opk" \
     -all-root -no-xattrs -noappend -no-exports
   cd -
 }
