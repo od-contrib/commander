@@ -15,7 +15,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Release")
   if(ipo_supported)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
   else()
-    message(WARNING "LTO is not supported: ${ipo_check_output}")
+    message(WARNING "LTO is not supported: ${ipo_check_output}\n")
   endif()
 
   set(ASAN OFF)
@@ -71,21 +71,39 @@ target_link_libraries(${BIN_TARGET} PRIVATE
   m
 )
 
+if(TARGET_PLATFORM STREQUAL "retrofw")
+  include(CMake/retrofw_defs.cmake)
+elseif(TARGET_PLATFORM STREQUAL "rg350")
+  include(CMake/rg350_defs.cmake)
+endif()
+
 foreach(
   def_name
   PPU_X
   PPU_Y
   RES_DIR
+  PATH_DEFAULT
+  PATH_DEFAULT_RIGHT
+  PATH_DEFAULT_RIGHT_FALLBACK
+  FILE_SYSTEM
+  MYKEY_UP
+  MYKEY_RIGHT
+  MYKEY_DOWN
+  MYKEY_LEFT
+  MYKEY_SYSTEM
+  MYKEY_PAGEUP
+  MYKEY_PAGEDOWN
+  MYKEY_OPEN
+  MYKEY_PARENT
+  MYKEY_OPERATION
+  MYKEY_SELECT
+  MYKEY_TRANSFER
 )
   if(DEFINED ${def_name})
     list(APPEND def_list ${def_name}=${${def_name}})
   endif()
 endforeach(def_name)
 target_compile_definitions(${BIN_TARGET} PRIVATE ${def_list})
-
-if(RETROFW)
-  target_compile_definitions(${BIN_TARGET} PRIVATE PLATFORM_RETROFW)
-endif()
 
 if(ASAN)
 target_compile_options(${BIN_TARGET} PUBLIC -fsanitize=address -fsanitize-recover=address)

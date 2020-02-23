@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Commander
-Comment=File manager for RetroFW
+Comment=Two-pane file manager
 Exec=commander
 Icon=commander
 Terminal=false

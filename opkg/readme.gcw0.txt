@@ -1,4 +1,4 @@
-Commander file manager for RG-350
+Commander: Two-pane file manager for RG-350
 
 Controls:
 
