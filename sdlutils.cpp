@@ -136,11 +136,11 @@ void SDL_utils::hastalavista(void)
 void SDL_utils::pleaseWait(void)
 {
     SDL_Surface *l_surfaceTmp = renderText(CResourceManager::instance().getFont(), "Please wait...", Globals::g_colorTextNormal, {COLOR_BG_1});
-    SDL_Rect l_rect;
-    l_rect.x = (SCREEN_WIDTH * PPU_X - (l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * PPU_X)) >> 1;
-    l_rect.y = ((SCREEN_HEIGHT * PPU_Y - (l_surfaceTmp->h + 9)) >> 1);
-    l_rect.w = l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * PPU_X;
-    l_rect.h = (l_surfaceTmp->h + 4 * PPU_Y);
+    SDL_Rect l_rect = Rect(
+        (SCREEN_WIDTH * PPU_X - (l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * PPU_X)) / 2,
+        (SCREEN_HEIGHT * PPU_Y - (l_surfaceTmp->h + 9)) / 2,
+        l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * PPU_X,
+        l_surfaceTmp->h + 4 * PPU_Y);
     SDL_FillRect(Globals::g_screen, &l_rect, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
     l_rect.x += DIALOG_BORDER * PPU_X;
     l_rect.y += DIALOG_BORDER * PPU_Y;

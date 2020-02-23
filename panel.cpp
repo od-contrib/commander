@@ -68,7 +68,7 @@ void CPanel::render(const bool p_active) const
         SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, Globals::g_screen);
     }
     SDL_FreeSurface(l_surfaceTmp);
-    SDL_Rect clip_contents_rect = { 0, Y_LIST * PPU_Y, SCREEN_WIDTH * PPU_X, CONTENTS_H * PPU_Y };
+    SDL_Rect clip_contents_rect = SDL_utils::Rect(0, Y_LIST * PPU_Y, SCREEN_WIDTH * PPU_X, CONTENTS_H * PPU_Y);
     // Content
     SDL_SetClipRect(Globals::g_screen, &clip_contents_rect);
     // Draw cursor
