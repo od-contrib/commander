@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Commander
-Comment=File manager for RG-350
+Comment=Two-pane file manager
 Exec=commander
 Icon=commander
 Terminal=false

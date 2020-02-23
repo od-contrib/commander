@@ -1,4 +1,4 @@
-Commander file management tool
+Commander: Two-pane file manager for RetroFW
 
 Controls:
 

@@ -1,6 +1,4 @@
-#ifndef PLATFORM_RETROFW
 #include <cstdlib>
-#endif
 #include <iostream>
 #include <unistd.h>
 #include <SDL.h>
@@ -54,16 +52,16 @@ int main(int argc, char** argv)
 
     // Create instances
     CResourceManager::instance();
-    #ifdef PLATFORM_RETROFW
-    CCommander l_commander(PATH_DEFAULT, PATH_DEFAULT_RIGHT);
-    #else
-    std::string l_path = getenv("HOME");
-    static const char kDefaultPath[] = "/Dev/DinguxCommander/test";
-    l_path += kDefaultPath;
-    if (access(l_path.c_str(), F_OK) != 0)
-        l_path.resize(l_path.length() - (sizeof(kDefaultPath) - 1));
-    CCommander l_commander(l_path, l_path);
-    #endif
+
+    std::string l_path = PATH_DEFAULT;
+    std::string r_path = PATH_DEFAULT_RIGHT;
+    if (access(l_path.c_str(), F_OK) != 0) l_path = "/";
+#ifdef PATH_DEFAULT_RIGHT_FALLBACK
+    if (l_path == r_path || access(r_path.c_str(), F_OK) != 0) r_path = PATH_DEFAULT_RIGHT_FALLBACK;
+#endif
+    if (access(r_path.c_str(), F_OK) != 0) r_path = "/";
+
+    CCommander l_commander(l_path, r_path);
 
     // Main loop
     l_commander.execute();
