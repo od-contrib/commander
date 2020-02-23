@@ -18,6 +18,11 @@ namespace SDL_utils
     }
     T_TEXT_ALIGN;
 
+    inline SDL_Rect Rect(Sint16 x, Sint16 y, Uint16 w, Uint16 h)
+    {
+        return SDL_Rect{x, y, w, h};
+    }
+
     // Load an image to fit the given viewport size.
     SDL_Surface *loadImageToFit(const std::string &p_filename, int fit_w, int fit_h);
 

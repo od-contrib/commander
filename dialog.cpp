@@ -126,10 +126,10 @@ void CDialog::init(void)
     m_cursor2 = SDL_utils::createImage(l_cursorWidth * PPU_X, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
     // Adjust dialog coordinates
     if (!m_x)
-        m_x = (SCREEN_WIDTH - m_image->w / PPU_X) >> 1;
+        m_x = (SCREEN_WIDTH - m_image->w / PPU_X) / 2;
     if (!m_y)
     {
-        m_y = (SCREEN_HEIGHT - m_image_h) >> 1;
+        m_y = (SCREEN_HEIGHT - m_image_h) / 2;
     }
     else
     {

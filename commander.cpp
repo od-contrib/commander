@@ -22,7 +22,7 @@ SDL_Surface *DrawBackground() {
 
     // Stripes
     const int stripes_h = SCREEN_HEIGHT - HEADER_H - FOOTER_H;
-    SDL_Rect rect = {0, 0, SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y};
+    SDL_Rect rect = SDL_utils::Rect(0, 0, SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y);
     const Uint32 bg_colors[2] = {SDL_MapRGB(bg->format, COLOR_BG_1), SDL_MapRGB(bg->format, COLOR_BG_2)};
     const std::size_t num_lines = (stripes_h - 1) / LINE_HEIGHT + 1;
     for (std::size_t i = 0; i < num_lines; ++i) {
@@ -32,13 +32,13 @@ SDL_Surface *DrawBackground() {
 
     // Top and bottom bars
     const auto bar_color = SDL_MapRGB(bg->format, COLOR_TITLE_BG);
-    rect = {0, 0, static_cast<decltype(SDL_Rect().w)>(bg->w), Y_LIST * PPU_Y};
+    rect = SDL_utils::Rect(0, 0, static_cast<decltype(SDL_Rect().w)>(bg->w), Y_LIST * PPU_Y);
     SDL_FillRect(bg, &rect, bar_color);
     rect.y = bg->h - FOOTER_H * PPU_Y;
     SDL_FillRect(bg, &rect, bar_color);
 
     // Line in the middle
-    rect = {SCREEN_WIDTH / 2 * PPU_X, 0, SPLITTER_LINE_W * PPU_X, Y_LIST * PPU_Y};
+    rect = SDL_utils::Rect(SCREEN_WIDTH / 2 * PPU_X, 0, SPLITTER_LINE_W * PPU_X, Y_LIST * PPU_Y);
     SDL_FillRect(bg, &rect, bg_colors[0]);
     rect.y = rect.h;
     rect.h = stripes_h * PPU_Y;

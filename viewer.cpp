@@ -49,7 +49,7 @@ CViewer::CViewer(const std::string &p_fileName):
     // Create background image
     m_background = SDL_utils::createImage(SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BG_1));
     {
-        SDL_Rect l_rect = {0, 0, SCREEN_WIDTH * PPU_X, HEADER_H * PPU_Y};
+        SDL_Rect l_rect = SDL_utils::Rect(0, 0, SCREEN_WIDTH * PPU_X, HEADER_H * PPU_Y);
         SDL_FillRect(m_background, &l_rect, SDL_MapRGB(m_background->format, COLOR_BORDER));
     }
     // Print title

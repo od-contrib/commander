@@ -15,7 +15,12 @@ SDL_Surface *LoadIcon(const char *path) {
         std::cerr << "LoadIcon(\"" << path << "\"): " << IMG_GetError() << std::endl;
         return nullptr;
     }
-    SDL_Surface *scaled = shrinkSurface(img, 2 / PPU_X, 2 / PPU_Y);
+    SDL_Surface *scaled = nullptr;
+    if ((PPU_X == 1 || PPU_X == 2) && (PPU_Y == 1 || PPU_Y == 2)) {
+        scaled = shrinkSurface(img, 2 / PPU_X, 2 / PPU_Y);
+    } else {
+        scaled = zoomSurface(img, PPU_X / 2, PPU_Y / 2, SMOOTHING_ON);
+    }
     SDL_FreeSurface(img);
     SDL_Surface *display = SDL_DisplayFormatAlpha(scaled);
     SDL_FreeSurface(scaled);
