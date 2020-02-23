@@ -8,7 +8,16 @@ option(ASAN "Enable address sanitizer" ON)
 option(UBSAN "Enable undefined behaviour sanitizer" ON)
 
 if(CMAKE_BUILD_TYPE MATCHES "Release")
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+
+  # Enable link-time optimization if supported.
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT ipo_supported OUTPUT ipo_check_output)
+  if(ipo_supported)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  else()
+    message(WARNING "LTO is not supported: ${ipo_check_output}")
+  endif()
+
   set(ASAN OFF)
   set(UBSAN OFF)
 endif()
@@ -43,6 +52,10 @@ target_link_libraries(SDL_ttf ${SDL_LIBRARY} ${FREETYPE_LIBRARIES})
 
 set(BIN_TARGET commander)
 add_executable(${BIN_TARGET} ${DinguxCommander_SRCS})
+set_target_properties(${BIN_TARGET} PROPERTIES
+    CXX_STANDARD 11
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO)
 
 target_include_directories(${BIN_TARGET} PUBLIC
   third_party/SDL_ttf/
