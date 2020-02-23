@@ -1,5 +1,6 @@
 #include <iostream>
 #include "keyboard.h"
+#include "screen.h"
 #include "sdlutils.h"
 #include "resourceManager.h"
 #include "def.h"
@@ -29,55 +30,55 @@ CKeyboard::CKeyboard(const std::string &p_inputText):
     {
         SDL_Rect l_rect;
         // Create keyboard image
-        m_imageKeyboard = SDL_utils::createImage(265 * PPU_X, 84 * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
-        l_rect.x = 2 * PPU_X;
-        l_rect.y = 2 * PPU_Y;
-        l_rect.w = 261 * PPU_X;
-        l_rect.h = 80 * PPU_Y;
+        m_imageKeyboard = SDL_utils::createImage(265 * screen.ppu_x, 84 * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+        l_rect.x = 2 * screen.ppu_x;
+        l_rect.y = 2 * screen.ppu_y;
+        l_rect.w = 261 * screen.ppu_x;
+        l_rect.h = 80 * screen.ppu_y;
         SDL_FillRect(m_imageKeyboard, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BG_2));
         // Keys
         for (unsigned int l_y = 0; l_y < 3; ++l_y)
         {
             for (unsigned int l_x = 0; l_x < 13; ++l_x)
             {
-                l_rect.x = (3 + 20 * l_x) * PPU_X;
-                l_rect.y = (3 + 20 * l_y) * PPU_Y;
-                l_rect.w = 19 * PPU_X;
-                l_rect.h = 18 * PPU_Y;
+                l_rect.x = (3 + 20 * l_x) * screen.ppu_x;
+                l_rect.y = (3 + 20 * l_y) * screen.ppu_y;
+                l_rect.w = 19 * screen.ppu_x;
+                l_rect.h = 18 * screen.ppu_y;
                 SDL_FillRect(m_imageKeyboard, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BORDER));
-                l_rect.x += 1 * PPU_X;
-                l_rect.y += 1 * PPU_Y;
-                l_rect.w -= 2 * PPU_X;
-                l_rect.h -= 2 * PPU_Y;
+                l_rect.x += 1 * screen.ppu_x;
+                l_rect.y += 1 * screen.ppu_y;
+                l_rect.w -= 2 * screen.ppu_x;
+                l_rect.h -= 2 * screen.ppu_y;
                 SDL_FillRect(m_imageKeyboard, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BG_1));
             }
         }
         // Buttons Cancel and OK
-        l_rect.x = 3 * PPU_X;
-        l_rect.y = 63 * PPU_Y;
-        l_rect.w = 129 * PPU_X;
-        l_rect.h = 18 * PPU_Y;
+        l_rect.x = 3 * screen.ppu_x;
+        l_rect.y = 63 * screen.ppu_y;
+        l_rect.w = 129 * screen.ppu_x;
+        l_rect.h = 18 * screen.ppu_y;
         SDL_FillRect(m_imageKeyboard, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BORDER));
-        l_rect.x = 133 * PPU_X;
+        l_rect.x = 133 * screen.ppu_x;
         SDL_FillRect(m_imageKeyboard, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BORDER));
-        l_rect.w -= 2 * PPU_X;
-        l_rect.h -= 2 * PPU_Y;
-        l_rect.y += 1 * PPU_Y;
-        l_rect.x = 4 * PPU_X;
+        l_rect.w -= 2 * screen.ppu_x;
+        l_rect.h -= 2 * screen.ppu_y;
+        l_rect.y += 1 * screen.ppu_y;
+        l_rect.x = 4 * screen.ppu_x;
         SDL_FillRect(m_imageKeyboard, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BG_1));
-        l_rect.x = 134 * PPU_X;
+        l_rect.x = 134 * screen.ppu_x;
         SDL_FillRect(m_imageKeyboard, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BG_1));
         // Create text field image
-        m_textField = SDL_utils::createImage(265 * PPU_X, 19 * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
-        l_rect.x = 2 * PPU_X;
-        l_rect.y = 2 * PPU_Y;
-        l_rect.w = 261 * PPU_X;
-        l_rect.h = 15 * PPU_Y;
+        m_textField = SDL_utils::createImage(265 * screen.ppu_x, 19 * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+        l_rect.x = 2 * screen.ppu_x;
+        l_rect.y = 2 * screen.ppu_y;
+        l_rect.w = 261 * screen.ppu_x;
+        l_rect.h = 15 * screen.ppu_y;
         SDL_FillRect(m_textField, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BG_1));
     }
     // Create footer
-    m_footer = SDL_utils::createImage(SCREEN_WIDTH * PPU_X, FOOTER_H * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
-    SDL_utils::applyText(SCREEN_WIDTH >> 1, 1, m_footer, m_font, "A-Input   B-Cancel   START-OK   L/R-Change   Y-Backspace   X-Space", Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_CENTER);
+    m_footer = SDL_utils::createImage(screen.w * screen.ppu_x, FOOTER_H * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+    SDL_utils::applyText(screen.w >> 1, 1, m_footer, m_font, "A-Input   B-Cancel   START-OK   L/R-Change   Y-Backspace   X-Space", Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_CENTER);
 }
 
 CKeyboard::~CKeyboard(void)
@@ -159,10 +160,10 @@ void CKeyboard::render(const bool p_focus) const
             l_rect.x = KB_X + 4 + (m_selected == 40) * 130;
             l_rect.y = KB_Y + 64;
         }
-        l_rect.x *= PPU_X;
-        l_rect.y *= PPU_Y;
-        l_rect.w *= PPU_X;
-        l_rect.h *= PPU_Y;
+        l_rect.x *= screen.ppu_x;
+        l_rect.y *= screen.ppu_y;
+        l_rect.w *= screen.ppu_x;
+        l_rect.h *= screen.ppu_y;
         SDL_FillRect(Globals::g_screen, &l_rect, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
     }
     // Draw keys text

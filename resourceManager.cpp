@@ -4,6 +4,7 @@
 #include <SDL_rotozoom.h>
 #include "resourceManager.h"
 #include "def.h"
+#include "screen.h"
 #include "sdlutils.h"
 
 namespace {
@@ -16,10 +17,10 @@ SDL_Surface *LoadIcon(const char *path) {
         return nullptr;
     }
     SDL_Surface *scaled = nullptr;
-    if ((PPU_X == 1 || PPU_X == 2) && (PPU_Y == 1 || PPU_Y == 2)) {
-        scaled = shrinkSurface(img, 2 / PPU_X, 2 / PPU_Y);
+    if ((screen.ppu_x == 1 || screen.ppu_x == 2) && (screen.ppu_y == 1 || screen.ppu_y == 2)) {
+        scaled = shrinkSurface(img, 2 / screen.ppu_x, 2 / screen.ppu_y);
     } else {
-        scaled = zoomSurface(img, PPU_X / 2, PPU_Y / 2, SMOOTHING_ON);
+        scaled = zoomSurface(img, screen.ppu_x / 2, screen.ppu_y / 2, SMOOTHING_ON);
     }
     SDL_FreeSurface(img);
     SDL_Surface *display = SDL_DisplayFormatAlpha(scaled);
@@ -45,8 +46,8 @@ CResourceManager::CResourceManager(void) :
     m_surfaces[T_SURFACE_FILE_INSTALLABLE_PACKAGE] = LoadIcon(RES_DIR "file-ipk.png");
     m_surfaces[T_SURFACE_FILE_PACKAGE] = LoadIcon(RES_DIR "file-opk.png");
     m_surfaces[T_SURFACE_UP] = LoadIcon(RES_DIR "up.png");
-    m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(SCREEN_WIDTH / 2 * PPU_X, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
-    m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(SCREEN_WIDTH / 2 * PPU_X, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
+    m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
+    m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
     // Load font
     m_font = SDL_utils::loadFont(RES_DIR "wy_scorpio.ttf", 8);
 }

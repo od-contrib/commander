@@ -1,5 +1,6 @@
 #include <iostream>
 #include "dialog.h"
+#include "screen.h"
 #include "sdlutils.h"
 #include "resourceManager.h"
 #include "def.h"
@@ -98,38 +99,38 @@ void CDialog::init(void)
         if (m_linesImg.back()->w > l_width)
             l_width = m_linesImg.back()->w;
     }
-    l_width /= PPU_X;
+    l_width /= screen.ppu_x;
     // Cursor width
     l_cursorWidth = l_width + 2 * DIALOG_MARGIN;
-    if (l_cursorWidth > SCREEN_WIDTH - 2 * DIALOG_BORDER)
-        l_cursorWidth = SCREEN_WIDTH - 2 * DIALOG_BORDER;
+    if (l_cursorWidth > screen.w - 2 * DIALOG_BORDER)
+        l_cursorWidth = screen.w - 2 * DIALOG_BORDER;
     // Line clip
     m_clip.h = m_linesImg.front()->h;
-    m_clip.w = (l_cursorWidth - DIALOG_MARGIN - 1) * PPU_X;
+    m_clip.w = (l_cursorWidth - DIALOG_MARGIN - 1) * screen.ppu_x;
     // Adjust image width
     l_width = l_width + 2 * DIALOG_MARGIN + 2 * DIALOG_BORDER;
-    if (l_width > SCREEN_WIDTH)
-        l_width = SCREEN_WIDTH;
+    if (l_width > screen.w)
+        l_width = screen.w;
     // Create dialog image
     const int m_image_h = m_lines.size() * LINE_HEIGHT + 2 * DIALOG_BORDER;
-    m_image = SDL_utils::createImage(l_width * PPU_X, m_image_h * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+    m_image = SDL_utils::createImage(l_width * screen.ppu_x, m_image_h * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
     {
         SDL_Rect l_rect;
-        l_rect.x = DIALOG_BORDER * PPU_X;
-        l_rect.y = (DIALOG_BORDER + m_nbTitle * LINE_HEIGHT) * PPU_Y;
-        l_rect.w = m_image->w - 2 * DIALOG_BORDER * PPU_X;
-        l_rect.h = (m_image_h - 2 * DIALOG_BORDER - m_nbTitle * LINE_HEIGHT) * PPU_Y;
+        l_rect.x = DIALOG_BORDER * screen.ppu_x;
+        l_rect.y = (DIALOG_BORDER + m_nbTitle * LINE_HEIGHT) * screen.ppu_y;
+        l_rect.w = m_image->w - 2 * DIALOG_BORDER * screen.ppu_x;
+        l_rect.h = (m_image_h - 2 * DIALOG_BORDER - m_nbTitle * LINE_HEIGHT) * screen.ppu_y;
         SDL_FillRect(m_image, &l_rect, SDL_MapRGB(m_image->format, COLOR_BG_1));
     }
     // Create cursor image
-    m_cursor1 = SDL_utils::createImage(l_cursorWidth * PPU_X, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
-    m_cursor2 = SDL_utils::createImage(l_cursorWidth * PPU_X, LINE_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
+    m_cursor1 = SDL_utils::createImage(l_cursorWidth * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
+    m_cursor2 = SDL_utils::createImage(l_cursorWidth * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
     // Adjust dialog coordinates
     if (!m_x)
-        m_x = (SCREEN_WIDTH - m_image->w / PPU_X) / 2;
+        m_x = (screen.w - m_image->w / screen.ppu_x) / 2;
     if (!m_y)
     {
-        m_y = (SCREEN_HEIGHT - m_image_h) / 2;
+        m_y = (screen.h - m_image_h) / 2;
     }
     else
     {
