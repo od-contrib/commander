@@ -14,7 +14,6 @@ if(CMAKE_BUILD_TYPE MATCHES "Release")
 endif()
 
 set(DinguxCommander_SRCS
-  third_party/SDL_ttf/SDL_ttf.c
   commander.cpp
   dialog.cpp
   fileLister.cpp
@@ -28,27 +27,33 @@ set(DinguxCommander_SRCS
   window.cpp
 )
 
+find_package(SDL REQUIRED)
+find_package(SDL_image REQUIRED)
+
+# SDL_gfx: rotozoom only.
 add_library(SDL_gfx STATIC third_party/SDL_gfx-2.0.25/SDL_rotozoom.c)
 target_include_directories(SDL_gfx PRIVATE ${SDL_INCLUDE_DIR})
 target_link_libraries(SDL_gfx ${SDL_LIBRARY})
 
+# SDL_ttf: version from HEAD for independent X/Y DPI scaling.
+add_library(SDL_ttf STATIC third_party/SDL_ttf/SDL_ttf.c)
+find_package(Freetype REQUIRED)
+target_include_directories(SDL_ttf PRIVATE ${SDL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS})
+target_link_libraries(SDL_ttf ${SDL_LIBRARY} ${FREETYPE_LIBRARIES})
+
 set(BIN_TARGET commander)
 add_executable(${BIN_TARGET} ${DinguxCommander_SRCS})
 
-find_package(SDL REQUIRED)
-find_package(SDL_image REQUIRED)
-find_package(Freetype REQUIRED)
 target_include_directories(${BIN_TARGET} PUBLIC
   third_party/SDL_ttf/
   third_party/SDL_gfx-2.0.25/
   ${SDL_INCLUDE_DIR}
   ${SDL_IMAGE_INCLUDE_DIRS}
-  ${FREETYPE_INCLUDE_DIRS}
 )
 target_link_libraries(${BIN_TARGET} PRIVATE
   ${SDL_LIBRARY}
   ${SDL_IMAGE_LIBRARIES}
-  ${FREETYPE_LIBRARIES}
+  SDL_ttf
   SDL_gfx
   m
 )
