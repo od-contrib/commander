@@ -2,13 +2,14 @@
 #include <sstream>
 #include "panel.h"
 #include "resourceManager.h"
+#include "screen.h"
 #include "sdlutils.h"
 #include "fileutils.h"
 
 namespace {
-constexpr int PANEL_SIZE = SCREEN_WIDTH / 2 - 2;
-constexpr int NAME_SIZE = PANEL_SIZE - 18;
-constexpr int CONTENTS_H = SCREEN_HEIGHT - HEADER_H - FOOTER_H;
+#define PANEL_SIZE (screen.w / 2 - 2)
+#define NAME_SIZE (PANEL_SIZE - 18)
+#define CONTENTS_H (screen.h - HEADER_H - FOOTER_H)
 } // namespace
 
 CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
@@ -47,7 +48,7 @@ CPanel::~CPanel(void)
 void CPanel::render(const bool p_active) const
 {
     // Draw panel
-    const Sint16 l_x = m_x + m_iconDir->w / PPU_X + 2;
+    const Sint16 l_x = m_x + m_iconDir->w / screen.ppu_x + 2;
     const unsigned int l_nbTotal = m_fileLister.getNbTotal();
     Sint16 l_y = Y_LIST;
     SDL_Surface *l_surfaceTmp = NULL;
@@ -55,11 +56,11 @@ void CPanel::render(const bool p_active) const
     SDL_Rect l_rect;
     // Current dir
     l_surfaceTmp = SDL_utils::renderText(m_font, m_currentPath, Globals::g_colorTextTitle, {COLOR_TITLE_BG});
-    if (l_surfaceTmp->w > PANEL_SIZE * PPU_X)
+    if (l_surfaceTmp->w > PANEL_SIZE * screen.ppu_x)
     {
-        l_rect.x = l_surfaceTmp->w - PANEL_SIZE * PPU_X;
+        l_rect.x = l_surfaceTmp->w - PANEL_SIZE * screen.ppu_x;
         l_rect.y = 0;
-        l_rect.w = PANEL_SIZE * PPU_X;
+        l_rect.w = PANEL_SIZE * screen.ppu_x;
         l_rect.h = l_surfaceTmp->h;
         SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, Globals::g_screen, &l_rect);
     }
@@ -68,7 +69,7 @@ void CPanel::render(const bool p_active) const
         SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, Globals::g_screen);
     }
     SDL_FreeSurface(l_surfaceTmp);
-    SDL_Rect clip_contents_rect = SDL_utils::Rect(0, Y_LIST * PPU_Y, SCREEN_WIDTH * PPU_X, CONTENTS_H * PPU_Y);
+    SDL_Rect clip_contents_rect = SDL_utils::Rect(0, Y_LIST * screen.ppu_y, screen.w * screen.ppu_x, CONTENTS_H * screen.ppu_y);
     // Content
     SDL_SetClipRect(Globals::g_screen, &clip_contents_rect);
     // Draw cursor
@@ -120,11 +121,11 @@ void CPanel::render(const bool p_active) const
             l_bg = kLineBg[(l_i - m_camera) % 2];
         }
         l_surfaceTmp = SDL_utils::renderText(m_font, m_fileLister[l_i].m_name, *l_color, l_bg);
-        if (l_surfaceTmp->w > NAME_SIZE * PPU_X)
+        if (l_surfaceTmp->w > NAME_SIZE * screen.ppu_x)
         {
             l_rect.x = 0;
             l_rect.y = 0;
-            l_rect.w = NAME_SIZE * PPU_X;
+            l_rect.w = NAME_SIZE * screen.ppu_x;
             l_rect.h = l_surfaceTmp->h;
             SDL_utils::applySurface(l_x, l_y + 2, l_surfaceTmp, Globals::g_screen, &l_rect);
         }

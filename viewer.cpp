@@ -47,9 +47,9 @@ CViewer::CViewer(const std::string &p_fileName):
     m_image(nullptr)
 {
     // Create background image
-    m_background = SDL_utils::createImage(SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BG_1));
+    m_background = SDL_utils::createImage(screen.w * screen.ppu_x, screen.h * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BG_1));
     {
-        SDL_Rect l_rect = SDL_utils::Rect(0, 0, SCREEN_WIDTH * PPU_X, HEADER_H * PPU_Y);
+        SDL_Rect l_rect = SDL_utils::Rect(0, 0, screen.w * screen.ppu_x, HEADER_H * screen.ppu_y);
         SDL_FillRect(m_background, &l_rect, SDL_MapRGB(m_background->format, COLOR_BORDER));
     }
     // Print title
@@ -71,7 +71,7 @@ CViewer::CViewer(const std::string &p_fileName):
     SDL_FreeSurface(l_surfaceTmp);
 
     // Read file
-    m_image = SDL_utils::loadImageToFit(m_fileName, SCREEN_WIDTH, SCREEN_HEIGHT - Y_LIST);
+    m_image = SDL_utils::loadImageToFit(m_fileName, screen.w, screen.h - Y_LIST);
     if (m_image != nullptr)
     {
         m_mode = IMAGE;
@@ -83,13 +83,13 @@ CViewer::CViewer(const std::string &p_fileName):
             SDL_MapRGB(m_background->format, 155, 155, 155),
         };
         int i = 0;
-        for (int y = Y_LIST; y < SCREEN_HEIGHT; y += kTransparentBgRectSize, ++i) {
-            for (int x = 0; x < SCREEN_WIDTH; x += kTransparentBgRectSize, ++i) {
+        for (int y = Y_LIST; y < screen.h; y += kTransparentBgRectSize, ++i) {
+            for (int x = 0; x < screen.w; x += kTransparentBgRectSize, ++i) {
                 SDL_Rect rect = {
-                    static_cast<decltype(SDL_Rect().x)>(x * PPU_X),
-                    static_cast<decltype(SDL_Rect().y)>(y * PPU_Y),
-                    static_cast<decltype(SDL_Rect().w)>(kTransparentBgRectSize * PPU_X),
-                    static_cast<decltype(SDL_Rect().h)>(kTransparentBgRectSize * PPU_Y)};
+                    static_cast<decltype(SDL_Rect().x)>(x * screen.ppu_x),
+                    static_cast<decltype(SDL_Rect().y)>(y * screen.ppu_y),
+                    static_cast<decltype(SDL_Rect().w)>(kTransparentBgRectSize * screen.ppu_x),
+                    static_cast<decltype(SDL_Rect().h)>(kTransparentBgRectSize * screen.ppu_y)};
                 SDL_FillRect(m_background, &rect, colors[i % 2]);
             }
         }
@@ -101,7 +101,7 @@ CViewer::CViewer(const std::string &p_fileName):
         // Init clip rect
         m_clip.x = 0;
         m_clip.y = 0;
-        m_clip.w = (SCREEN_WIDTH - 2 * VIEWER_MARGIN) * PPU_X;
+        m_clip.w = (screen.w - 2 * VIEWER_MARGIN) * screen.ppu_x;
 
         std::ifstream l_file(m_fileName.c_str());
 
@@ -137,7 +137,7 @@ void CViewer::render(const bool p_focus) const
     SDL_utils::applySurface(0, 0, m_background, Globals::g_screen);
     if (m_mode == IMAGE)
     {
-        SDL_utils::applySurface((SCREEN_WIDTH - m_image->w / PPU_X) / 2, Y_LIST + (SCREEN_HEIGHT - Y_LIST - m_image->h / PPU_Y) / 2, m_image, Globals::g_screen);
+        SDL_utils::applySurface((screen.w - m_image->w / screen.ppu_x) / 2, Y_LIST + (screen.h - Y_LIST - m_image->h / screen.ppu_y) / 2, m_image, Globals::g_screen);
     }
     else if (m_mode == TEXT)
     {
@@ -266,8 +266,8 @@ bool CViewer::moveLeft(void)
     bool l_ret(false);
     if (m_clip.x > 0)
     {
-        if (m_clip.x > VIEWER_X_STEP * PPU_X)
-            m_clip.x -= VIEWER_X_STEP * PPU_X;
+        if (m_clip.x > VIEWER_X_STEP * screen.ppu_x)
+            m_clip.x -= VIEWER_X_STEP * screen.ppu_x;
         else
             m_clip.x = 0;
         l_ret = true;
@@ -277,6 +277,6 @@ bool CViewer::moveLeft(void)
 
 bool CViewer::moveRight(void)
 {
-    m_clip.x += VIEWER_X_STEP * PPU_X;
+    m_clip.x += VIEWER_X_STEP * screen.ppu_x;
     return true;
 }

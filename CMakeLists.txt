@@ -31,6 +31,7 @@ set(DinguxCommander_SRCS
   main.cpp
   panel.cpp
   resourceManager.cpp
+  screen.cpp
   sdlutils.cpp
   viewer.cpp
   window.cpp
@@ -72,13 +73,17 @@ target_link_libraries(${BIN_TARGET} PRIVATE
 )
 
 if(TARGET_PLATFORM STREQUAL "retrofw")
+  target_compile_definitions(${BIN_TARGET} PRIVATE TARGET_PLATFORM_RETROFW)
   include(CMake/retrofw_defs.cmake)
 elseif(TARGET_PLATFORM STREQUAL "rg350")
+  target_compile_definitions(${BIN_TARGET} PRIVATE TARGET_PLATFORM_RG350)
   include(CMake/rg350_defs.cmake)
 endif()
 
 foreach(
   def_name
+  SCREEN_WIDTH
+  SCREEN_HEIGHT
   PPU_X
   PPU_Y
   RES_DIR

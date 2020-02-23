@@ -8,6 +8,7 @@
 #include "def.h"
 #include "fileutils.h"
 #include "resourceManager.h"
+#include "screen.h"
 
 extern SDL_Surface *ScreenSurface;
 
@@ -35,8 +36,8 @@ SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w,
         target_h = std::min(l_img->h, fit_h);
         target_w = target_h * aspect_ratio;
     }
-    target_w *= PPU_X;
-    target_h *= PPU_Y;
+    target_w *= screen.ppu_x;
+    target_h *= screen.ppu_y;
     SDL_Surface *l_img2 = zoomSurface(l_img, static_cast<double>(target_w) / l_img->w, static_cast<double>(target_h) / l_img->h, SMOOTHING_ON);
     SDL_FreeSurface(l_img);
 
@@ -52,8 +53,8 @@ void SDL_utils::applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_
     // Rectangle to hold the offsets
     SDL_Rect l_offset;
     // Set offsets
-    l_offset.x = p_x * PPU_X;
-    l_offset.y = p_y * PPU_Y;
+    l_offset.x = p_x * screen.ppu_x;
+    l_offset.y = p_y * screen.ppu_y;
     //Blit the surface
     SDL_BlitSurface(p_source, p_clip, p_destination, &l_offset);
 }
@@ -61,7 +62,7 @@ void SDL_utils::applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_
 TTF_Font *SDL_utils::loadFont(const std::string &p_font, const int p_size)
 {
     INHIBIT(std::cout << "SDL_utils::loadFont(" << p_font << ", " << p_size << ")" << std::endl;)
-    TTF_Font *l_font = TTF_OpenFontDPI(p_font.c_str(), p_size, 72 * PPU_X, 72 * PPU_Y);
+    TTF_Font *l_font = TTF_OpenFontDPI(p_font.c_str(), p_size, 72 * screen.ppu_x, 72 * screen.ppu_y);
     if (l_font == NULL)
         std::cerr << "SDL_utils::loadFont: " << SDL_GetError() << std::endl;
     return l_font;
@@ -81,10 +82,10 @@ void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, TT
             applySurface(p_x, p_y, l_text, p_destination);
             break;
         case T_TEXT_ALIGN_RIGHT:
-            applySurface(p_x - l_text->w / PPU_X, p_y, l_text, p_destination);
+            applySurface(p_x - l_text->w / screen.ppu_x, p_y, l_text, p_destination);
             break;
         case T_TEXT_ALIGN_CENTER:
-            applySurface(p_x - l_text->w / 2 / PPU_X, p_y, l_text, p_destination);
+            applySurface(p_x - l_text->w / 2 / screen.ppu_x, p_y, l_text, p_destination);
             break;
         default:
             break;
@@ -137,17 +138,17 @@ void SDL_utils::pleaseWait(void)
 {
     SDL_Surface *l_surfaceTmp = renderText(CResourceManager::instance().getFont(), "Please wait...", Globals::g_colorTextNormal, {COLOR_BG_1});
     SDL_Rect l_rect = Rect(
-        (SCREEN_WIDTH * PPU_X - (l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * PPU_X)) / 2,
-        (SCREEN_HEIGHT * PPU_Y - (l_surfaceTmp->h + 9)) / 2,
-        l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * PPU_X,
-        l_surfaceTmp->h + 4 * PPU_Y);
+        (screen.w * screen.ppu_x - (l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * screen.ppu_x)) / 2,
+        (screen.h * screen.ppu_y - (l_surfaceTmp->h + 9)) / 2,
+        l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * screen.ppu_x,
+        l_surfaceTmp->h + 4 * screen.ppu_y);
     SDL_FillRect(Globals::g_screen, &l_rect, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
-    l_rect.x += DIALOG_BORDER * PPU_X;
-    l_rect.y += DIALOG_BORDER * PPU_Y;
-    l_rect.w -= 2 * DIALOG_BORDER * PPU_X;
-    l_rect.h -= 2 * DIALOG_BORDER * PPU_Y;
+    l_rect.x += DIALOG_BORDER * screen.ppu_x;
+    l_rect.y += DIALOG_BORDER * screen.ppu_y;
+    l_rect.w -= 2 * DIALOG_BORDER * screen.ppu_x;
+    l_rect.h -= 2 * DIALOG_BORDER * screen.ppu_y;
     SDL_FillRect(Globals::g_screen, &l_rect, SDL_MapRGB(Globals::g_screen->format, COLOR_BG_1));
-    applySurface((SCREEN_WIDTH - l_surfaceTmp->w / PPU_X) / 2, (SCREEN_HEIGHT - l_surfaceTmp->h / PPU_Y) / 2, l_surfaceTmp, Globals::g_screen);
+    applySurface((screen.w - l_surfaceTmp->w / screen.ppu_x) / 2, (screen.h - l_surfaceTmp->h / screen.ppu_y) / 2, l_surfaceTmp, Globals::g_screen);
     SDL_FreeSurface(l_surfaceTmp);
     //SDL_Flip(Globals::g_screen);
     //SDL_Flip(Globals::g_screen);
