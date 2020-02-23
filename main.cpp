@@ -31,6 +31,9 @@ int main(int argc, char** argv)
     if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF | IMG_INIT_WEBP) == 0)
         std::cerr << "IMG_Init failed" << std::endl;
 
+    // Hide cursor before creating the output surface.
+    SDL_ShowCursor(SDL_DISABLE);
+
     // Screen
     ScreenSurface = SDL_SetVideoMode(SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y, SCREEN_BPP, SURFACE_FLAGS);
     Globals::g_screen = ScreenSurface;
@@ -39,9 +42,6 @@ int main(int argc, char** argv)
         std::cerr << "SDL_SetVideoMode failed: " << SDL_GetError() << std::endl;
         return 1;
     }
-
-    // Hide cursor
-    SDL_ShowCursor(SDL_DISABLE);
 
     // Init font
     if (TTF_Init() == -1)
