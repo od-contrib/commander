@@ -43,12 +43,19 @@
 #endif
 
 // Panel
+#define HEADER_H 17
+#define HEADER_PADDING_TOP 3
+
+#define FOOTER_H 13
+#define FOOTER_PADDING_TOP 1
+#define FOOTER_Y (SCREEN_HEIGHT - FOOTER_H)
+
+#define Y_LIST HEADER_H
+
 #define LINE_HEIGHT 15
-#define NB_VISIBLE_LINES 14
-#define Y_LIST 17
-#define Y_HEADER 3
-#define Y_FOOTER 228
-#define H_FOOTER 13
+#define NB_VISIBLE_LINES ((SCREEN_HEIGHT - FOOTER_H - HEADER_H - 1) / LINE_HEIGHT + 1)
+#define NB_FULLY_VISIBLE_LINES ((SCREEN_HEIGHT - FOOTER_H - HEADER_H) / LINE_HEIGHT)
+
 // Dialogs
 #define DIALOG_BORDER 2
 #define DIALOG_MARGIN 8

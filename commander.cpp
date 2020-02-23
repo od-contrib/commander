@@ -21,7 +21,7 @@ SDL_Surface *DrawBackground() {
     SDL_Surface *bg = SDL_utils::createSurface(SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y);
 
     // Stripes
-    const int stripes_h = SCREEN_HEIGHT - Y_LIST - H_FOOTER;
+    const int stripes_h = SCREEN_HEIGHT - HEADER_H - FOOTER_H;
     SDL_Rect rect = {0, 0, SCREEN_WIDTH * PPU_X, SCREEN_HEIGHT * PPU_Y};
     const Uint32 bg_colors[2] = {SDL_MapRGB(bg->format, COLOR_BG_1), SDL_MapRGB(bg->format, COLOR_BG_2)};
     const std::size_t num_lines = (stripes_h - 1) / LINE_HEIGHT + 1;
@@ -34,7 +34,7 @@ SDL_Surface *DrawBackground() {
     const auto bar_color = SDL_MapRGB(bg->format, COLOR_TITLE_BG);
     rect = {0, 0, static_cast<decltype(SDL_Rect().w)>(bg->w), Y_LIST * PPU_Y};
     SDL_FillRect(bg, &rect, bar_color);
-    rect.y = bg->h - H_FOOTER * PPU_Y;
+    rect.y = bg->h - FOOTER_H * PPU_Y;
     SDL_FillRect(bg, &rect, bar_color);
 
     // Line in the middle
@@ -44,7 +44,7 @@ SDL_Surface *DrawBackground() {
     rect.h = stripes_h * PPU_Y;
     SDL_FillRect(bg, &rect, bar_color);
     rect.y += rect.h;
-    rect.h = H_FOOTER * PPU_Y;
+    rect.h = FOOTER_H * PPU_Y;
     SDL_FillRect(bg, &rect, bg_colors[0]);
 
     return bg;

@@ -76,7 +76,7 @@ CKeyboard::CKeyboard(const std::string &p_inputText):
         SDL_FillRect(m_textField, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BG_1));
     }
     // Create footer
-    m_footer = SDL_utils::createImage(SCREEN_WIDTH * PPU_X, H_FOOTER * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+    m_footer = SDL_utils::createImage(SCREEN_WIDTH * PPU_X, FOOTER_H * PPU_Y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
     SDL_utils::applyText(SCREEN_WIDTH >> 1, 1, m_footer, m_font, "A-Input   B-Cancel   START-OK   L/R-Change   Y-Backspace   X-Space", Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_CENTER);
 }
 

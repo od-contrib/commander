@@ -5,8 +5,11 @@
 #include "sdlutils.h"
 #include "fileutils.h"
 
-#define PANEL_SIZE         158
-#define NAME_SIZE          140
+namespace {
+constexpr int PANEL_SIZE = SCREEN_WIDTH / 2 - 2;
+constexpr int NAME_SIZE = PANEL_SIZE - 18;
+constexpr int CONTENTS_H = SCREEN_HEIGHT - HEADER_H - FOOTER_H;
+} // namespace
 
 CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
     m_currentPath(""),
@@ -43,8 +46,6 @@ CPanel::~CPanel(void)
 
 void CPanel::render(const bool p_active) const
 {
-    // Draw cursor
-    SDL_utils::applySurface(m_x - 1, Y_LIST + (m_highlightedLine - m_camera) * LINE_HEIGHT, p_active ? m_cursor1 : m_cursor2, Globals::g_screen);
     // Draw panel
     const Sint16 l_x = m_x + m_iconDir->w / PPU_X + 2;
     const unsigned int l_nbTotal = m_fileLister.getNbTotal();
@@ -60,14 +61,18 @@ void CPanel::render(const bool p_active) const
         l_rect.y = 0;
         l_rect.w = PANEL_SIZE * PPU_X;
         l_rect.h = l_surfaceTmp->h;
-        SDL_utils::applySurface(m_x, Y_HEADER, l_surfaceTmp, Globals::g_screen, &l_rect);
+        SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, Globals::g_screen, &l_rect);
     }
     else
     {
-        SDL_utils::applySurface(m_x, Y_HEADER, l_surfaceTmp, Globals::g_screen);
+        SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, Globals::g_screen);
     }
     SDL_FreeSurface(l_surfaceTmp);
+    SDL_Rect clip_contents_rect = { 0, Y_LIST * PPU_Y, SCREEN_WIDTH * PPU_X, CONTENTS_H * PPU_Y };
     // Content
+    SDL_SetClipRect(Globals::g_screen, &clip_contents_rect);
+    // Draw cursor
+    SDL_utils::applySurface(m_x - 1, Y_LIST + (m_highlightedLine - m_camera) * LINE_HEIGHT, p_active ? m_cursor1 : m_cursor2, Globals::g_screen);
     for (unsigned int l_i = m_camera; l_i < m_camera + NB_VISIBLE_LINES && l_i < l_nbTotal; ++l_i)
     {
         // Icon and color
@@ -131,6 +136,8 @@ void CPanel::render(const bool p_active) const
         // Next line
         l_y += LINE_HEIGHT;
     }
+    SDL_SetClipRect(Globals::g_screen, nullptr);
+
     // Footer
     std::string l_footer("-");
     if (!m_fileLister.isDirectory(m_highlightedLine))
@@ -140,8 +147,8 @@ void CPanel::render(const bool p_active) const
         l_footer = l_s.str();
         File_utils::formatSize(l_footer);
     }
-    SDL_utils::applyText(m_x + 2, Y_FOOTER, Globals::g_screen, m_font, "Size:", Globals::g_colorTextTitle, {COLOR_TITLE_BG});
-    SDL_utils::applyText(m_x + PANEL_SIZE - 2, Y_FOOTER, Globals::g_screen, m_font, l_footer, Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_RIGHT);
+    SDL_utils::applyText(m_x + 2, FOOTER_Y + FOOTER_PADDING_TOP, Globals::g_screen, m_font, "Size:", Globals::g_colorTextTitle, {COLOR_TITLE_BG});
+    SDL_utils::applyText(m_x + PANEL_SIZE - 2, FOOTER_Y + FOOTER_PADDING_TOP, Globals::g_screen, m_font, l_footer, Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_RIGHT);
 }
 
 const bool CPanel::moveCursorUp(unsigned char p_step)
@@ -251,8 +258,8 @@ void CPanel::adjustCamera(void)
         m_camera = 0;
     else if (m_highlightedLine < m_camera)
         m_camera = m_highlightedLine;
-    else if (m_highlightedLine > m_camera + NB_VISIBLE_LINES - 1)
-        m_camera = m_highlightedLine - NB_VISIBLE_LINES + 1;
+    else if (m_highlightedLine > m_camera + NB_FULLY_VISIBLE_LINES - 1)
+        m_camera = m_highlightedLine - NB_FULLY_VISIBLE_LINES + 1;
 }
 
 const std::string &CPanel::getHighlightedItem(void) const
