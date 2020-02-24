@@ -73,10 +73,8 @@ target_link_libraries(${BIN_TARGET} PRIVATE
 )
 
 if(TARGET_PLATFORM STREQUAL "retrofw")
-  target_compile_definitions(${BIN_TARGET} PRIVATE TARGET_PLATFORM_RETROFW)
   include(CMake/retrofw_defs.cmake)
 elseif(TARGET_PLATFORM STREQUAL "rg350")
-  target_compile_definitions(${BIN_TARGET} PRIVATE TARGET_PLATFORM_RG350)
   include(CMake/rg350_defs.cmake)
 endif()
 
@@ -86,6 +84,7 @@ foreach(
   SCREEN_HEIGHT
   PPU_X
   PPU_Y
+  AUTOSCALE
   RES_DIR
   PATH_DEFAULT
   PATH_DEFAULT_RIGHT

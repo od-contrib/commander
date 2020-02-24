@@ -1,4 +1,5 @@
 set(PPU_Y 2)
+set(AUTOSCALE 1)
 set(FILE_SYSTEM \"/dev/mmcblk1p1\")
 set(PATH_DEFAULT getenv\(\"HOME\"\))
 set(PATH_DEFAULT_RIGHT \"/media/mmcblk1p1\")
