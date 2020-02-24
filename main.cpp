@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 	    best.current_w, best.current_h, best.vfmt->BitsPerPixel, best.hw_available);
 
     // Detect non 320x240/480 screens.
-#if defined(TARGET_PLATFORM_RETROFW) || defined(TARGET_PLATFORM_RG350)
+#if AUTOSCALE == 1
     if (best.current_w >= SCREEN_WIDTH * 2)
     {
         // E.g. 640x480. Upscale to the smaller of the two.
