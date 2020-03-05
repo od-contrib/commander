@@ -33,7 +33,7 @@ make_buildroot() {
   # Check dependencies manually as it's much faster than `make`.
   local -a deps=()
   if ! [[ -f output/staging/usr/include/SDL/SDL.h ]]; then
-    deps+=(SDL)
+    deps+=(sdl)
   fi
   if ! [[ -f output/staging/usr/include/SDL/SDL_image.h ]]; then
     deps+=(sdl_image)
