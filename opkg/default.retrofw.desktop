@@ -8,3 +8,4 @@ Type=Application
 StartupNotify=true
 Categories=applications;
 X-OD-Manual=readme.retrofw.txt
+x-OD-Scaling=2
