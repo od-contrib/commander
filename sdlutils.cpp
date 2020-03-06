@@ -21,10 +21,9 @@ SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w,
     // Load image
     SDL_Surface *l_img = IMG_Load(p_filename.c_str());
     if (IMG_GetError() != nullptr && *IMG_GetError() != '\0') {
-        if (strcmp(IMG_GetError(), "Unsupported image format") == 0)
-            SDL_ClearError();
-        else
+        if (!strcmp(IMG_GetError(), "Unsupported image format") == 0)
             std::cerr << "SDL_utils::loadImageToFit: " << IMG_GetError() << std::endl;
+        SDL_ClearError();
         return nullptr;
     }
     const double aspect_ratio = static_cast<double>(l_img->w) / l_img->h;
