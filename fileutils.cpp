@@ -63,6 +63,7 @@ void File_utils::copyFile(const std::vector<std::string> &p_src, const std::stri
             l_command = "\\cp -r " + specialChars(*l_it) + " " + specialChars(p_dest);
             INHIBIT(std::cout << "Command: " << l_command << std::endl;)
             system(l_command.c_str());
+            system("sync");
         }
     }
 }
@@ -119,6 +120,7 @@ void File_utils::moveFile(const std::vector<std::string> &p_src, const std::stri
             l_command = "\\mv " + specialChars(*l_it) + " " + specialChars(p_dest);
             INHIBIT(std::cout << "Command: " << l_command << std::endl;)
             system(l_command.c_str());
+            system("sync");
         }
     }
 }
@@ -143,6 +145,7 @@ void File_utils::renameFile(const std::string &p_file1, const std::string &p_fil
         std::string l_command = "\\mv " + specialChars(p_file1) + " " + specialChars(p_file2);
         INHIBIT(std::cout << "Command: " << l_command << std::endl;)
         system(l_command.c_str());
+        system("sync");
     }
 }
 
@@ -154,6 +157,7 @@ void File_utils::removeFile(const std::vector<std::string> &p_files)
         l_command = "\\rm -rf " + specialChars(*l_it);
         INHIBIT(std::cout << "Command: " << l_command << std::endl;)
         system(l_command.c_str());
+        system("sync");
     }
 }
 
@@ -162,6 +166,7 @@ void File_utils::makeDirectory(const std::string &p_file)
     std::string l_command = "\\mkdir -p " + specialChars(p_file);
     INHIBIT(std::cout << "Command: " << l_command << std::endl;)
     system(l_command.c_str());
+    system("sync");
 }
 
 const bool File_utils::fileExists(const std::string &p_path)
