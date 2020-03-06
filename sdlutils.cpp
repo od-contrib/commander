@@ -69,7 +69,12 @@ TTF_Font *SDL_utils::loadFont(const std::string &p_font, const int p_size)
 
 SDL_Surface *SDL_utils::renderText(TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg)
 {
-    return TTF_RenderUTF8_Shaded(p_font, p_text.c_str(), p_fg, p_bg);
+    SDL_Surface *result = TTF_RenderUTF8_Shaded(p_font, p_text.c_str(), p_fg, p_bg);
+    if (result == nullptr) {
+        std::cerr << "TTF_RenderUTF8_Shaded: " << SDL_GetError() << std::endl;
+        SDL_ClearError();
+    }
+    return result;
 }
 
 void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)

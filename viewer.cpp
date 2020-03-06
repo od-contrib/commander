@@ -149,8 +149,10 @@ void CViewer::render(const bool p_focus) const
             if (line.empty())
                 continue;
             SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_font, line, Globals::g_colorTextNormal, {COLOR_BG_1});
-            SDL_utils::applySurface(VIEWER_MARGIN, VIEWER_Y_LIST + (i - m_firstLine) * VIEWER_LINE_HEIGHT, l_surfaceTmp, Globals::g_screen, &m_clip);
-            SDL_FreeSurface(l_surfaceTmp);
+            if (l_surfaceTmp != nullptr) {
+                SDL_utils::applySurface(VIEWER_MARGIN, VIEWER_Y_LIST + (i - m_firstLine) * VIEWER_LINE_HEIGHT, l_surfaceTmp, Globals::g_screen, &m_clip);
+                SDL_FreeSurface(l_surfaceTmp);
+            }
         }
     }
 }
