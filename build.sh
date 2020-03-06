@@ -56,28 +56,13 @@ build() {
   cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DTARGET_PLATFORM="$TARGET" \
-    -DRES_DIR='' \
     -DCMAKE_TOOLCHAIN_FILE="$BUILDROOT/output/host/usr/share/buildroot/toolchainfile.cmake"
   cmake --build . -j $(getconf _NPROCESSORS_ONLN)
   cd -
 }
 
 package_opk() {
-  cd "build-$TARGET"
-  local ext=gcw0
-	if [[ $TARGET == retrofw ]]; then
-	  ext=retrofw
-	fi
-  mksquashfs \
-    "../opkg/default.$ext.desktop" \
-    "../opkg/readme.$ext.txt" \
-    ../opkg/commander.png \
-    ../res/*.png \
-    ../res/wy_scorpio.ttf \
-    commander \
-    "commander-${TARGET}.opk" \
-    -all-root -no-xattrs -noappend -no-exports
-  cd -
+  ./package-opk.sh "$TARGET"
 }
 
 main() {

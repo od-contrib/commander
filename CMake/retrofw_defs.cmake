@@ -4,7 +4,7 @@ set(FILE_SYSTEM \"/dev/mmcblk1p1\")
 set(PATH_DEFAULT getenv\(\"HOME\"\))
 set(PATH_DEFAULT_RIGHT \"/media/mmcblk1p1\")
 set(PATH_DEFAULT_RIGHT_FALLBACK \"/home/retrofw\")
-
+set(RES_DIR "")
 set(MYKEY_UP SDLK_UP) # Up
 set(MYKEY_RIGHT SDLK_RIGHT) # Right
 set(MYKEY_DOWN SDLK_DOWN) # Down
