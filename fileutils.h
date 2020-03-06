@@ -40,8 +40,6 @@ namespace File_utils
 
     void stringReplace(std::string &p_string, const std::string &p_search, const std::string &p_replace);
 
-    const std::string specialChars(const std::string &p_string);
-
     // Dialogs
 
     void diskInfo(void);

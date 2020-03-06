@@ -1,4 +1,14 @@
+#include <unistd.h>
+
+#ifdef _POSIX_SPAWN
+#include <spawn.h>
+#else
+#include <signal.h>
+#endif
+
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
@@ -9,24 +19,100 @@
 #include "dialog.h"
 #include "sdlutils.h"
 
-#define SPECIAL_CHARS "\\`$();|{}&'\"*?<>[]!^~-#\n\r "
+namespace {
+
+int WaitPid(pid_t id)
+{
+    int status;
+    while (waitpid(id, &status, WNOHANG) == 0)
+        usleep(50 * 1000);
+    if (1 != WIFEXITED(status) || 0 != WEXITSTATUS(status))
+    {
+        perror("Child process error");
+        return -1;
+    }
+    return 0;
+}
+
+// If child_pid is NULL, waits for the child process to finish.
+// Otherwise, doesn't wait and stores child process pid into child_pid.
+int SpawnAndWait(const char *argv[])
+{
+    pid_t child_pid;
+#ifdef _POSIX_SPAWN
+    // This const cast is OK, see https://stackoverflow.com/a/190208.
+    if (::posix_spawnp(&child_pid, argv[0], nullptr, nullptr, (char **)argv, nullptr) != 0)
+    {
+        perror(argv[0]);
+        return -1;
+    }
+    return WaitPid(child_pid);
+#else
+    struct sigaction sa, save_quit, save_int;
+    sigset_t save_mask;
+    int wait_val;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = SIG_IGN;
+    /* __sigemptyset(&sa.sa_mask); - done by memset() */
+    /* sa.sa_flags = 0; - done by memset() */
+
+    sigaction(SIGQUIT, &sa, &save_quit);
+    sigaction(SIGINT, &sa, &save_int);
+    sigaddset(&sa.sa_mask, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &sa.sa_mask, &save_mask);
+    if ((child_pid = vfork()) < 0)
+    {
+        wait_val = -1;
+        goto out;
+    }
+    if (child_pid == 0)
+    {
+        sigaction(SIGQUIT, &save_quit, NULL);
+        sigaction(SIGINT, &save_int, NULL);
+        sigprocmask(SIG_SETMASK, &save_mask, NULL);
+
+        // This const cast is OK, see https://stackoverflow.com/a/190208.
+        if (execvp(argv[0], (char **)argv) == -1)
+            perror(argv[0]);
+        exit(127);
+    }
+    wait_val = WaitPid(child_pid);
+out:
+    sigaction(SIGQUIT, &save_quit, NULL);
+    sigaction(SIGINT, &save_int, NULL);
+    sigprocmask(SIG_SETMASK, &save_mask, NULL);
+    return wait_val;
+#endif
+}
+
+const char *AsConstCStr(const char *s) { return s; }
+const char *AsConstCStr(const std::string &s) { return s.c_str(); }
+
+template <typename... Args>
+bool Run(Args... args)
+{
+    const char *execve_args[] = {AsConstCStr(args)..., nullptr};
+    return SpawnAndWait(execve_args) == 0;
+}
+
+} // namespace
 
 void File_utils::copyFile(const std::vector<std::string> &p_src, const std::string &p_dest)
 {
-    std::string l_command("");
-    std::string l_destFile("");
-    std::string l_fileName("");
+    std::string l_destFile;
+    std::string l_fileName;
     bool l_loop(true);
     bool l_confirm(true);
     bool l_execute(true);
     for (std::vector<std::string>::const_iterator l_it = p_src.begin(); l_loop && (l_it != p_src.end()); ++l_it)
     {
         l_execute = true;
+        l_fileName = getFileName(*l_it);
+        l_destFile = p_dest + (p_dest.at(p_dest.size() - 1) == '/' ? "" : "/") + l_fileName;
+
         // Check if destination files already exists
         if (l_confirm)
         {
-            l_fileName = getFileName(*l_it);
-            l_destFile = p_dest + (p_dest.at(p_dest.size() - 1) == '/' ? "" : "/") + l_fileName;
             if (fileExists(l_destFile))
             {
                 INHIBIT(std::cout << "File " << l_destFile << " already exists => ask for confirmation" << std::endl;)
@@ -60,19 +146,16 @@ void File_utils::copyFile(const std::vector<std::string> &p_src, const std::stri
         }
         if (l_execute)
         {
-            l_command = "\\cp -r " + specialChars(*l_it) + " " + specialChars(p_dest);
-            INHIBIT(std::cout << "Command: " << l_command << std::endl;)
-            system(l_command.c_str());
-            system("sync");
+            Run("cp", "-r", *l_it, p_dest);
+            Run("sync", l_destFile);
         }
     }
 }
 
 void File_utils::moveFile(const std::vector<std::string> &p_src, const std::string &p_dest)
 {
-    std::string l_command("");
-    std::string l_destFile("");
-    std::string l_fileName("");
+    std::string l_destFile;
+    std::string l_fileName;
     bool l_loop(true);
     bool l_confirm(true);
     bool l_execute(true);
@@ -117,10 +200,8 @@ void File_utils::moveFile(const std::vector<std::string> &p_src, const std::stri
         }
         if (l_execute)
         {
-            l_command = "\\mv " + specialChars(*l_it) + " " + specialChars(p_dest);
-            INHIBIT(std::cout << "Command: " << l_command << std::endl;)
-            system(l_command.c_str());
-            system("sync");
+            Run("mv", *l_it, p_dest);
+            Run("sync", p_dest);
         }
     }
 }
@@ -142,31 +223,23 @@ void File_utils::renameFile(const std::string &p_file1, const std::string &p_fil
     }
     if (l_execute)
     {
-        std::string l_command = "\\mv " + specialChars(p_file1) + " " + specialChars(p_file2);
-        INHIBIT(std::cout << "Command: " << l_command << std::endl;)
-        system(l_command.c_str());
-        system("sync");
+        Run("mv", p_file1, p_file2);
+        Run("sync", p_file2);
     }
 }
 
 void File_utils::removeFile(const std::vector<std::string> &p_files)
 {
-    std::string l_command("");
     for (std::vector<std::string>::const_iterator l_it = p_files.begin(); l_it != p_files.end(); ++l_it)
     {
-        l_command = "\\rm -rf " + specialChars(*l_it);
-        INHIBIT(std::cout << "Command: " << l_command << std::endl;)
-        system(l_command.c_str());
-        system("sync");
+        Run("rm", "-rf", *l_it);
     }
 }
 
 void File_utils::makeDirectory(const std::string &p_file)
 {
-    std::string l_command = "\\mkdir -p " + specialChars(p_file);
-    INHIBIT(std::cout << "Command: " << l_command << std::endl;)
-    system(l_command.c_str());
-    system("sync");
+    Run("mkdir", "-p", p_file);
+    Run("sync", p_file);
 }
 
 const bool File_utils::fileExists(const std::string &p_path)
@@ -206,21 +279,20 @@ const std::string File_utils::getPath(const std::string &p_path)
 void File_utils::executeFile(const std::string &p_file)
 {
     // Command
-    std::string l_command = "./" + specialChars(getFileName(p_file));
-    INHIBIT(std::cout << "File_utils::executeFile: " << l_command << " in " << getPath(p_file) << std::endl;)
+    INHIBIT(std::cout << "File_utils::executeFile: " << p_file << " in " << getPath(p_file) << std::endl;)
     // CD to the file's location
     chdir(getPath(p_file).c_str());
     // Quit
     SDL_utils::hastalavista();
     // Execute file
-    execlp("/bin/sh", "/bin/sh", "-c", l_command.c_str(), NULL);
+    execl(p_file.c_str(), p_file.c_str(), nullptr);
     // If we're here, there was an error with the execution
     std::cerr << "Error executing file " << p_file << std::endl;
     // Relaunch DinguxCommander
-    l_command = "./" + specialChars(getSelfExecutionName());
-    INHIBIT(std::cout << "File_utils::executeFile: " << l_command << " in " << getSelfExecutionPath() << std::endl;)
+    const std::string self_name = getSelfExecutionName();
+    INHIBIT(std::cout << "File_utils::executeFile: " << self_name << " in " << getSelfExecutionPath() << std::endl;)
     chdir(getSelfExecutionPath().c_str());
-    execlp(l_command.c_str(), l_command.c_str(), NULL);
+    execl(self_name.c_str(), self_name.c_str(), NULL);
 }
 
 const std::string File_utils::getSelfExecutionPath(void)
@@ -258,21 +330,6 @@ void File_utils::stringReplace(std::string &p_string, const std::string &p_searc
         p_string.replace(l_pos, p_search.length(), p_replace);
         l_pos = p_string.find(p_search, l_pos + p_replace.length());
     }
-}
-
-const std::string File_utils::specialChars(const std::string &p_string)
-{
-    // Insert a '\' before special characters
-    std::string l_ret(p_string);
-    const std::string l_specialChars(SPECIAL_CHARS);
-    const size_t l_length = l_specialChars.size();
-    std::string l_char("");
-    for (unsigned int l_i = 0; l_i < l_length; ++l_i)
-    {
-        l_char = l_specialChars.substr(l_i, 1);
-        stringReplace(l_ret, l_char, "\\" + l_char);
-    }
-    return l_ret;
 }
 
 const unsigned long int File_utils::getFileSize(const std::string &p_file)
