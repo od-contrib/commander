@@ -285,8 +285,13 @@ void File_utils::executeFile(const std::string &p_file)
     // Quit
     SDL_utils::hastalavista();
     // Execute file
-    execl(p_file.c_str(), p_file.c_str(), nullptr);
+    if (getLowercaseFileExtension(p_file) == "opk") {
+        execlp("opkrun", "opkrun", p_file.c_str(), nullptr);
+    } else {
+        execl(p_file.c_str(), p_file.c_str(), nullptr);
+    }
     // If we're here, there was an error with the execution
+    perror("Child process error");
     std::cerr << "Error executing file " << p_file << std::endl;
     // Relaunch DinguxCommander
     const std::string self_name = getSelfExecutionName();
