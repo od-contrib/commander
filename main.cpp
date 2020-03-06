@@ -45,8 +45,12 @@ int main(int argc, char** argv)
 
     // Init SDL
     SDL_Init(SDL_INIT_VIDEO);
-    if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF | IMG_INIT_WEBP) == 0)
+    if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF | IMG_INIT_WEBP) == 0) {
         std::cerr << "IMG_Init failed" << std::endl;
+    } else {
+        // Clear the errors for image libraries that did not initialize.
+        SDL_ClearError();
+    }
 
     // Hide cursor before creating the output surface.
     SDL_ShowCursor(SDL_DISABLE);
