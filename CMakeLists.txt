@@ -74,6 +74,8 @@ target_link_libraries(${BIN_TARGET} PRIVATE
 
 if(TARGET_PLATFORM STREQUAL "retrofw")
   include(CMake/retrofw_defs.cmake)
+elseif(TARGET_PLATFORM STREQUAL "gcw0")
+  include(CMake/rg350_defs.cmake)
 elseif(TARGET_PLATFORM STREQUAL "rg350")
   include(CMake/rg350_defs.cmake)
 elseif(TARGET_PLATFORM STREQUAL "rs90")

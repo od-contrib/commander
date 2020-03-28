@@ -3,7 +3,6 @@ Commander: Two-pane file manager for RS-90
 Controls:
 
 D-pad  Move
-L/R    Page up/page down
 A      For a directory: open
          For a file: view or execute
 B      Go to parent directory / cancel
