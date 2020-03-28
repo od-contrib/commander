@@ -1,22 +1,16 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+source ./targets.sh
 
 usage() {
-	echo "Usage: build.sh [target]"
-	echo "	target: target platform: rg350 or retrofw"
+  echo "Usage: build.sh [target]"
+  usage_target
 }
 
-if [[ $# -ne 1 ]]; then
-	echo "Error: target is missing"
-	usage
-	exit 1
-fi
-
-if [[ $1 != rg350 ]] && [[ $1 != retrofw ]]; then
-	echo "Error: invalid target"
-	usage
-	exit 1
+if ! check_target "$@"; then
+  usage
+  exit 64
 fi
 
 declare -r TARGET="${1}"

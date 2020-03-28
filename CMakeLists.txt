@@ -76,6 +76,8 @@ if(TARGET_PLATFORM STREQUAL "retrofw")
   include(CMake/retrofw_defs.cmake)
 elseif(TARGET_PLATFORM STREQUAL "rg350")
   include(CMake/rg350_defs.cmake)
+elseif(TARGET_PLATFORM STREQUAL "rs90")
+  include(CMake/rs90_defs.cmake)
 endif()
 
 foreach(
