@@ -22,15 +22,22 @@ main() {
   if [[ $TARGET == rg350 ]]; then
     ext=gcw0
   fi
+  local -a files=(
+    "opkg/default.$ext.desktop"
+    "opkg/readme.$ext.txt"
+    opkg/commander.png
+    res/*.png
+    "$BUILD_DIR/commander"
+    "$OUT"
+  )
+
+  # RS90 package uses a system font.
+  if [[ $TARGET != rs90 ]]; then
+    files+=(res/wy_scorpio.ttf)
+  fi
+
   set -x
-  mksquashfs \
-    "opkg/default.$ext.desktop" \
-    "opkg/readme.$ext.txt" \
-    opkg/commander.png \
-    res/*.png \
-    res/wy_scorpio.ttf \
-    "$BUILD_DIR/commander" \
-    "$OUT" \
+  mksquashfs "${files[@]}" \
     -all-root -no-xattrs -noappend -no-exports
 }
 
