@@ -1,22 +1,16 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+source ./targets.sh
 
 usage() {
-	echo "Usage: package-opk.sh <target> [build dir] [output OPK path]"
-	echo "	target: target platform: rg350 or retrofw"
+  echo "Usage: package-opk.sh <target> [build dir] [output OPK path]"
+  usage_target
 }
 
-if [[ $# -eq 0 ]]; then
-	echo "Error: target is missing"
-	usage
-	exit 1
-fi
-
-if [[ $1 != rg350 ]] && [[ $1 != retrofw ]]; then
-	echo "Error: invalid target"
-	usage
-	exit 1
+if ! check_target "$@"; then
+  usage
+  exit 64
 fi
 
 declare -r TARGET="${1}"
@@ -24,9 +18,9 @@ declare -r BUILD_DIR="${2:-"build-${TARGET}"}"
 declare -r OUT="${3:-"$BUILD_DIR/commander-${TARGET}.opk"}"
 
 main() {
-  local ext=gcw0
-  if [[ $TARGET == retrofw ]]; then
-    ext=retrofw
+  local ext="$TARGET"
+  if [[ $TARGET == rg350 ]]; then
+    ext=gcw0
   fi
   set -x
   mksquashfs \

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Commander
+Comment=Two-pane file manager
+Exec=commander
+Icon=commander
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=applications;
+X-OD-Manual=readme.rs90.txt
