@@ -1,6 +1,7 @@
 declare -ra VALID_TARGETS=(
-  rg350
+  gcw0
   retrofw
+  rg350
   rs90
 )
 
