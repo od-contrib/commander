@@ -32,6 +32,7 @@ set(DinguxCommander_SRCS
   panel.cpp
   resourceManager.cpp
   screen.cpp
+  sdl_ttf_multifont.cpp
   sdlutils.cpp
   viewer.cpp
   window.cpp
@@ -101,8 +102,8 @@ target_link_libraries(${BIN_TARGET} PRIVATE
   m
 )
 
-set(TARGET_PLATFORM retrofw CACHE STRING "Target platform" FORCE)
-set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS retrofw gcw0 rg350 rs90)
+set(TARGET_PLATFORM host CACHE STRING "Target platform" FORCE)
+set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS host retrofw gcw0 rg350 rs90)
 
 if(TARGET_PLATFORM STREQUAL "retrofw")
   include(CMake/retrofw_defs.cmake)
@@ -122,11 +123,11 @@ foreach(
   PPU_Y
   AUTOSCALE
   RES_DIR
+  FONTS
   PATH_DEFAULT
   PATH_DEFAULT_RIGHT
   PATH_DEFAULT_RIGHT_FALLBACK
   FILE_SYSTEM
-  FONT_PATH
   MYKEY_UP
   MYKEY_RIGHT
   MYKEY_DOWN

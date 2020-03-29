@@ -27,14 +27,10 @@ main() {
     "opkg/readme.$ext.txt"
     opkg/commander.png
     res/*.png
+    res/*.ttf
     "$BUILD_DIR/commander"
     "$OUT"
   )
-
-  # RS90 package uses a system font.
-  if [[ $TARGET != rs90 ]]; then
-    files+=(res/wy_scorpio.ttf)
-  fi
 
   set -x
   mksquashfs "${files[@]}" \

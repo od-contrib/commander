@@ -25,7 +25,7 @@ CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
     m_iconUp(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_UP)),
     m_cursor1(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR1)),
     m_cursor2(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR2)),
-    m_font(CResourceManager::instance().getFont())
+    m_fonts(CResourceManager::instance().getFonts())
 {
     // List the given path
     if (m_fileLister.list(p_path))
@@ -55,7 +55,7 @@ void CPanel::render(const bool p_active) const
     const SDL_Color *l_color = NULL;
     SDL_Rect l_rect;
     // Current dir
-    l_surfaceTmp = SDL_utils::renderText(m_font, m_currentPath, Globals::g_colorTextTitle, {COLOR_TITLE_BG});
+    l_surfaceTmp = SDL_utils::renderText(m_fonts, m_currentPath, Globals::g_colorTextTitle, {COLOR_TITLE_BG});
     if (l_surfaceTmp->w > PANEL_SIZE * screen.ppu_x)
     {
         l_rect.x = l_surfaceTmp->w - PANEL_SIZE * screen.ppu_x;
@@ -120,7 +120,7 @@ void CPanel::render(const bool p_active) const
             static const SDL_Color kLineBg[2] = {{COLOR_BG_1}, {COLOR_BG_2}};
             l_bg = kLineBg[(l_i - m_camera) % 2];
         }
-        l_surfaceTmp = SDL_utils::renderText(m_font, m_fileLister[l_i].m_name, *l_color, l_bg);
+        l_surfaceTmp = SDL_utils::renderText(m_fonts, m_fileLister[l_i].m_name, *l_color, l_bg);
         if (l_surfaceTmp->w > NAME_SIZE * screen.ppu_x)
         {
             l_rect.x = 0;
@@ -148,8 +148,8 @@ void CPanel::render(const bool p_active) const
         l_footer = l_s.str();
         File_utils::formatSize(l_footer);
     }
-    SDL_utils::applyText(m_x + 2, FOOTER_Y + FOOTER_PADDING_TOP, Globals::g_screen, m_font, "Size:", Globals::g_colorTextTitle, {COLOR_TITLE_BG});
-    SDL_utils::applyText(m_x + PANEL_SIZE - 2, FOOTER_Y + FOOTER_PADDING_TOP, Globals::g_screen, m_font, l_footer, Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_RIGHT);
+    SDL_utils::applyText(m_x + 2, FOOTER_Y + FOOTER_PADDING_TOP, Globals::g_screen, m_fonts, "Size:", Globals::g_colorTextTitle, {COLOR_TITLE_BG});
+    SDL_utils::applyText(m_x + PANEL_SIZE - 2, FOOTER_Y + FOOTER_PADDING_TOP, Globals::g_screen, m_fonts, l_footer, Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_RIGHT);
 }
 
 const bool CPanel::moveCursorUp(unsigned char p_step)

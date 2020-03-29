@@ -98,7 +98,7 @@ class CPanel
     SDL_Surface *m_iconUp;
     SDL_Surface *m_cursor1;
     SDL_Surface *m_cursor2;
-    TTF_Font *m_font;
+    const std::vector<TTF_Font *> &m_fonts;
 };
 
 #endif

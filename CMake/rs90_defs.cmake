@@ -2,7 +2,6 @@ set(AUTOSCALE 1)
 set(FILE_SYSTEM \"/dev/mmcblk1p1\")
 set(PATH_DEFAULT \"/media/sdcard\")
 set(RES_DIR "")
-set(FONT_PATH \"/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf\")
 
 set(MYKEY_UP SDLK_UP) # Up
 set(MYKEY_RIGHT SDLK_RIGHT) # Right

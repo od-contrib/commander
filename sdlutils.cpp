@@ -9,6 +9,7 @@
 #include "fileutils.h"
 #include "resourceManager.h"
 #include "screen.h"
+#include "sdl_ttf_multifont.h"
 
 extern SDL_Surface *ScreenSurface;
 
@@ -66,24 +67,26 @@ TTF_Font *SDL_utils::loadFont(const std::string &p_font, const int p_size)
 #else
     TTF_Font *l_font = TTF_OpenFont(p_font.c_str(), p_size);
 #endif
-    if (l_font == NULL)
+    if (l_font == NULL) {
         std::cerr << "SDL_utils::loadFont: " << SDL_GetError() << std::endl;
+        SDL_ClearError();
+    }
     return l_font;
 }
 
-SDL_Surface *SDL_utils::renderText(TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg)
+SDL_Surface *SDL_utils::renderText(const std::vector<TTF_Font *> &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg)
 {
-    SDL_Surface *result = TTF_RenderUTF8_Shaded(p_font, p_text.c_str(), p_fg, p_bg);
+    SDL_Surface *result = TTFMultiFont_RenderUTF8_Shaded(p_fonts, p_text, p_fg, p_bg);
     if (result == nullptr) {
-        std::cerr << "TTF_RenderUTF8_Shaded: " << SDL_GetError() << std::endl;
+        std::cerr << "TTFMultiFont_RenderUTF8_Shaded: " << SDL_GetError() << std::endl;
         SDL_ClearError();
     }
     return result;
 }
 
-void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, TTF_Font *p_font, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
+void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const std::vector<TTF_Font *> &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
 {
-    SDL_Surface *l_text = renderText(p_font, p_text, p_fg, p_bg);
+    SDL_Surface *l_text = renderText(p_fonts, p_text, p_fg, p_bg);
     switch (p_align)
     {
         case T_TEXT_ALIGN_LEFT:
@@ -144,7 +147,7 @@ void SDL_utils::hastalavista(void)
 
 void SDL_utils::pleaseWait(void)
 {
-    SDL_Surface *l_surfaceTmp = renderText(CResourceManager::instance().getFont(), "Please wait...", Globals::g_colorTextNormal, {COLOR_BG_1});
+    SDL_Surface *l_surfaceTmp = renderText(CResourceManager::instance().getFonts(), "Please wait...", Globals::g_colorTextNormal, {COLOR_BG_1});
     SDL_Rect l_rect = Rect(
         (screen.w * screen.ppu_x - (l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * screen.ppu_x)) / 2,
         (screen.h * screen.ppu_y - (l_surfaceTmp->h + 9)) / 2,
