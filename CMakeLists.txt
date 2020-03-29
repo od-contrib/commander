@@ -65,6 +65,10 @@ if (WITH_SYSTEM_SDL_TTF)
 	if (NOT SDL_ttf)
 		message(SEND_ERROR "Could not find SDL2_ttf library.")
 	endif (NOT SDL_ttf)
+
+	list(APPEND CMAKE_REQUIRED_INCLUDES ${SDL_INCLUDE_DIR})
+	include(CheckSymbolExists)
+	check_symbol_exists(TTF_OpenFontDPI "SDL_ttf.h" HAS_TTF_OPENFONT_DPI)
 else (WITH_SYSTEM_SDL_TTF)
 	# SDL_ttf: version from HEAD for independent X/Y DPI scaling.
 	add_library(SDL_ttf STATIC third_party/SDL_ttf/SDL_ttf.c)
@@ -73,7 +77,12 @@ else (WITH_SYSTEM_SDL_TTF)
 	target_link_libraries(SDL_ttf ${SDL_LIBRARY} ${FREETYPE_LIBRARIES})
 
 	target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL_ttf/)
+	set(HAS_TTF_OPENFONT_DPI ON)
 endif (WITH_SYSTEM_SDL_TTF)
+
+if (HAS_TTF_OPENFONT_DPI)
+	target_compile_definitions(${BIN_TARGET} PRIVATE USE_TTF_OPENFONT_DPI)
+endif (HAS_TTF_OPENFONT_DPI)
 
 set_target_properties(${BIN_TARGET} PROPERTIES
     CXX_STANDARD 11

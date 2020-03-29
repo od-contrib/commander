@@ -61,7 +61,11 @@ void SDL_utils::applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_
 TTF_Font *SDL_utils::loadFont(const std::string &p_font, const int p_size)
 {
     INHIBIT(std::cout << "SDL_utils::loadFont(" << p_font << ", " << p_size << ")" << std::endl;)
+#ifdef USE_TTF_OPENFONT_DPI
     TTF_Font *l_font = TTF_OpenFontDPI(p_font.c_str(), p_size, 72 * screen.ppu_x, 72 * screen.ppu_y);
+#else
+    TTF_Font *l_font = TTF_OpenFont(p_font.c_str(), p_size);
+#endif
     if (l_font == NULL)
         std::cerr << "SDL_utils::loadFont: " << SDL_GetError() << std::endl;
     return l_font;
