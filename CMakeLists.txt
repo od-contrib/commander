@@ -101,6 +101,9 @@ target_link_libraries(${BIN_TARGET} PRIVATE
   m
 )
 
+set(TARGET_PLATFORM retrofw CACHE STRING "Target platform" FORCE)
+set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS retrofw gcw0 rg350 rs90)
+
 if(TARGET_PLATFORM STREQUAL "retrofw")
   include(CMake/retrofw_defs.cmake)
 elseif(TARGET_PLATFORM STREQUAL "gcw0")
