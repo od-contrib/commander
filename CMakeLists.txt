@@ -44,6 +44,7 @@ find_package(SDL REQUIRED)
 find_package(SDL_image REQUIRED)
 
 option(WITH_SYSTEM_SDL_GFX "Use system SDL_gfx library" OFF)
+option(WITH_SYSTEM_SDL_TTF "Use system SDL_ttf library" OFF)
 
 if (WITH_SYSTEM_SDL_GFX)
 	find_library(SDL_gfx SDL_gfx)
@@ -59,11 +60,20 @@ else ()
 	target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL_gfx-2.0.25/)
 endif ()
 
-# SDL_ttf: version from HEAD for independent X/Y DPI scaling.
-add_library(SDL_ttf STATIC third_party/SDL_ttf/SDL_ttf.c)
-find_package(Freetype REQUIRED)
-target_include_directories(SDL_ttf PRIVATE ${SDL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS})
-target_link_libraries(SDL_ttf ${SDL_LIBRARY} ${FREETYPE_LIBRARIES})
+if (WITH_SYSTEM_SDL_TTF)
+	find_library(SDL_ttf SDL_ttf)
+	if (NOT SDL_ttf)
+		message(SEND_ERROR "Could not find SDL2_ttf library.")
+	endif (NOT SDL_ttf)
+else (WITH_SYSTEM_SDL_TTF)
+	# SDL_ttf: version from HEAD for independent X/Y DPI scaling.
+	add_library(SDL_ttf STATIC third_party/SDL_ttf/SDL_ttf.c)
+	find_package(Freetype REQUIRED)
+	target_include_directories(SDL_ttf PRIVATE ${SDL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS})
+	target_link_libraries(SDL_ttf ${SDL_LIBRARY} ${FREETYPE_LIBRARIES})
+
+	target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL_ttf/)
+endif (WITH_SYSTEM_SDL_TTF)
 
 set_target_properties(${BIN_TARGET} PROPERTIES
     CXX_STANDARD 11
@@ -71,7 +81,6 @@ set_target_properties(${BIN_TARGET} PROPERTIES
     CXX_EXTENSIONS NO)
 
 target_include_directories(${BIN_TARGET} PUBLIC
-  third_party/SDL_ttf/
   ${SDL_INCLUDE_DIR}
   ${SDL_IMAGE_INCLUDE_DIRS}
 )
