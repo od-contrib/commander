@@ -58,7 +58,7 @@ class CViewer : public CWindow
     // Coordinates
     mutable SDL_Rect m_clip;
 
-    TTF_Font *m_font; // unowned
+    const std::vector<TTF_Font *> &m_fonts;
 
     // Background image
     SDL_Surface *m_background;

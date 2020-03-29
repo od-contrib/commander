@@ -2,6 +2,8 @@
 #define _KEYBOARD_H_
 
 #include <string>
+#include <vector>
+
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include "window.h"
@@ -72,7 +74,7 @@ class CKeyboard : public CWindow
     unsigned char m_keySet;
 
     // Pointers to resources
-    TTF_Font *m_font;
+    const std::vector<TTF_Font *> &m_fonts;
 };
 
 #endif

@@ -7,10 +7,6 @@
 #include "screen.h"
 #include "sdlutils.h"
 
-#ifndef FONT_PATH
-#define FONT_PATH RES_DIR "wy_scorpio.ttf"
-#endif
-
 namespace {
 
 SDL_Surface *LoadIcon(const char *path) {
@@ -40,8 +36,7 @@ CResourceManager& CResourceManager::instance(void)
     return l_singleton;
 }
 
-CResourceManager::CResourceManager(void) :
-    m_font(NULL)
+CResourceManager::CResourceManager(void)
 {
     // Load images
     m_surfaces[T_SURFACE_FOLDER] = LoadIcon(RES_DIR "folder.png");
@@ -52,8 +47,23 @@ CResourceManager::CResourceManager(void) :
     m_surfaces[T_SURFACE_UP] = LoadIcon(RES_DIR "up.png");
     m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
     m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
-    // Load font
-    m_font = SDL_utils::loadFont(FONT_PATH, 8);
+    
+    // Load fonts
+    struct FontSpec {
+        const char *const path;
+        int size;
+    };
+    constexpr FontSpec kFonts[] = {FONTS};
+    constexpr std::size_t kFontsLen = sizeof(kFonts) / sizeof(kFonts[0]);
+    m_fonts.reserve(kFontsLen);
+    for (std::size_t i = 0; i < kFontsLen; ++i) {
+        auto *font = SDL_utils::loadFont(kFonts[i].path, kFonts[i].size);
+        if (font != nullptr) m_fonts.push_back(font);
+    }
+    if (m_fonts.empty()) {
+        std::cerr << "No fonts found!" << std::endl;
+        exit(1);
+    }
 }
 
 void CResourceManager::sdlCleanup(void)
@@ -70,11 +80,9 @@ void CResourceManager::sdlCleanup(void)
         }
     }
     // Free font
-    if (m_font != NULL)
-    {
-        TTF_CloseFont(m_font);
-        m_font = NULL;
-    }
+    for (auto *font : m_fonts)
+        TTF_CloseFont(font);
+    m_fonts.clear();
 }
 
 SDL_Surface *CResourceManager::getSurface(const T_SURFACE p_surface) const
@@ -82,7 +90,7 @@ SDL_Surface *CResourceManager::getSurface(const T_SURFACE p_surface) const
     return m_surfaces[p_surface];
 }
 
-TTF_Font *CResourceManager::getFont(void) const
+const std::vector<TTF_Font *> &CResourceManager::getFonts(void) const
 {
-    return m_font;
+    return m_fonts;
 }

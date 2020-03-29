@@ -41,7 +41,7 @@ void ReplaceTabs(std::string *line) {
 CViewer::CViewer(const std::string &p_fileName):
     CWindow(),
     m_fileName(p_fileName),
-    m_font(CResourceManager::instance().getFont()),
+    m_fonts(CResourceManager::instance().getFonts()),
     m_background(nullptr),
     m_firstLine(0),
     m_image(nullptr)
@@ -53,7 +53,7 @@ CViewer::CViewer(const std::string &p_fileName):
         SDL_FillRect(m_background, &l_rect, SDL_MapRGB(m_background->format, COLOR_BORDER));
     }
     // Print title
-    SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_font, m_fileName, Globals::g_colorTextTitle, {COLOR_TITLE_BG});
+    SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_fonts, m_fileName, Globals::g_colorTextTitle, {COLOR_TITLE_BG});
     if (l_surfaceTmp->w > m_background->w - 2 * VIEWER_MARGIN)
     {
         SDL_Rect l_rect;
@@ -148,7 +148,7 @@ void CViewer::render(const bool p_focus) const
             const std::string &line = m_lines[i];
             if (line.empty())
                 continue;
-            SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_font, line, Globals::g_colorTextNormal, {COLOR_BG_1});
+            SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_fonts, line, Globals::g_colorTextNormal, {COLOR_BG_1});
             if (l_surfaceTmp != nullptr) {
                 SDL_utils::applySurface(VIEWER_MARGIN, VIEWER_Y_LIST + (i - m_firstLine) * VIEWER_LINE_HEIGHT, l_surfaceTmp, Globals::g_screen, &m_clip);
                 SDL_FreeSurface(l_surfaceTmp);

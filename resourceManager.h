@@ -1,6 +1,8 @@
 #ifndef _RESOURCEMANAGER_H_
 #define _RESOURCEMANAGER_H_
 
+#include <vector>
+
 #include <SDL.h>
 #include <SDL_ttf.h>
 
@@ -32,8 +34,8 @@ class CResourceManager
     // Get a loaded surface
     SDL_Surface *getSurface(const T_SURFACE p_surface) const;
 
-    // Get the loaded font
-    TTF_Font *getFont(void) const;
+    // Get the loaded fonts
+    const std::vector<TTF_Font *> &getFonts(void) const;
 
     private:
 
@@ -46,7 +48,7 @@ class CResourceManager
     SDL_Surface *m_surfaces[NB_SURFACES];
 
     // Font
-    TTF_Font *m_font;
+    std::vector<TTF_Font *> m_fonts;
 };
 
 #endif

@@ -18,7 +18,7 @@ CKeyboard::CKeyboard(const std::string &p_inputText):
     m_selected(0),
     m_footer(NULL),
     m_keySet(0),
-    m_font(CResourceManager::instance().getFont())
+    m_fonts(CResourceManager::instance().getFonts())
 {
     // Key sets
     m_keySets[0] = "abcdefghijklmnopqrstuvwxyz0123456789., ";
@@ -78,7 +78,7 @@ CKeyboard::CKeyboard(const std::string &p_inputText):
     }
     // Create footer
     m_footer = SDL_utils::createImage(screen.w * screen.ppu_x, FOOTER_H * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
-    SDL_utils::applyText(screen.w >> 1, 1, m_footer, m_font, "A-Input   B-Cancel   START-OK   L/R-Change   Y-Backspace   X-Space", Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_CENTER);
+    SDL_utils::applyText(screen.w >> 1, 1, m_footer, m_fonts, "A-Input   B-Cancel   START-OK   L/R-Change   Y-Backspace   X-Space", Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_CENTER);
 }
 
 CKeyboard::~CKeyboard(void)
@@ -109,7 +109,7 @@ void CKeyboard::render(const bool p_focus) const
     // Input text
     if (!m_inputText.empty())
     {
-        SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_font, m_inputText, Globals::g_colorTextNormal, {COLOR_BG_1});
+        SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_fonts, m_inputText, Globals::g_colorTextNormal, {COLOR_BG_1});
         if (l_surfaceTmp->w > FIELD_W)
         {
             // Text is too big => clip it
@@ -186,15 +186,15 @@ void CKeyboard::render(const bool p_focus) const
                     l_text = m_keySets[m_keySet].substr(l_i, 1);
                     l_i += 1;
                 }
-                SDL_utils::applyText(KB_X + 20 * l_x + 13, KB_Y + 7 + 20 * l_y, Globals::g_screen, m_font, l_text, Globals::g_colorTextNormal,
+                SDL_utils::applyText(KB_X + 20 * l_x + 13, KB_Y + 7 + 20 * l_y, Globals::g_screen, m_fonts, l_text, Globals::g_colorTextNormal,
                     selected_letter_x == l_x && selected_letter_y == l_y ? SDL_Color{COLOR_CURSOR_1} : SDL_Color{COLOR_BG_1}, SDL_utils::T_TEXT_ALIGN_CENTER);
             }
         }
     }
     // Buttons text
-    SDL_utils::applyText(KB_X + 67, KB_Y + 67, Globals::g_screen, m_font, "Cancel", Globals::g_colorTextNormal,
+    SDL_utils::applyText(KB_X + 67, KB_Y + 67, Globals::g_screen, m_fonts, "Cancel", Globals::g_colorTextNormal,
         m_selected == 39 ? SDL_Color{COLOR_CURSOR_1} : SDL_Color{COLOR_BG_1}, SDL_utils::T_TEXT_ALIGN_CENTER);
-    SDL_utils::applyText(KB_X + 197, KB_Y + 67, Globals::g_screen, m_font, "OK", Globals::g_colorTextNormal,
+    SDL_utils::applyText(KB_X + 197, KB_Y + 67, Globals::g_screen, m_fonts, "OK", Globals::g_colorTextNormal,
         m_selected == 40 ? SDL_Color{COLOR_CURSOR_1} : SDL_Color{COLOR_BG_1}, SDL_utils::T_TEXT_ALIGN_CENTER);
     // Draw footer
     SDL_utils::applySurface(0, 227, m_footer, Globals::g_screen);

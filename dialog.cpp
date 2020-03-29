@@ -18,7 +18,7 @@ CDialog::CDialog(const std::string &p_title, const Sint16 p_x, const Sint16 p_y)
     m_y(p_y),
     m_cursorX(0),
     m_cursorY(0),
-    m_font(CResourceManager::instance().getFont())
+    m_fonts(CResourceManager::instance().getFonts())
 {
     // Title
     if (!p_title.empty())
@@ -82,7 +82,7 @@ void CDialog::init(void)
     // Title
     auto l_it = m_lines.begin();
     if (m_nbTitle) {
-        m_titleImg = SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextTitle, {COLOR_BORDER});
+        m_titleImg = SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextTitle, {COLOR_BORDER});
         l_width = m_titleImg->w;
         ++l_it;
     }
@@ -93,9 +93,9 @@ void CDialog::init(void)
     m_linesImgCursor1.reserve(num_non_title_lines);
     m_linesImgCursor2.reserve(num_non_title_lines);
     for ( ; l_it != m_lines.end(); ++l_it) {
-        m_linesImg.push_back(SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextNormal, {COLOR_BG_1}));
-        m_linesImgCursor1.push_back(SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_1}));
-        m_linesImgCursor2.push_back(SDL_utils::renderText(m_font, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_2}));
+        m_linesImg.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, {COLOR_BG_1}));
+        m_linesImgCursor1.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_1}));
+        m_linesImgCursor2.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_2}));
         if (m_linesImg.back()->w > l_width)
             l_width = m_linesImg.back()->w;
     }

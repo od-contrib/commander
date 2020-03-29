@@ -15,6 +15,10 @@
 #define RES_DIR "res/"
 #endif
 
+#ifndef FONTS
+#define FONTS {RES_DIR"Fiery_Turk.ttf",8},{RES_DIR"FreeSans.ttf",10},{RES_DIR"DroidSansFallbackFull.ttf",9}
+#endif
+
 #ifndef SCREEN_WIDTH
 #define SCREEN_WIDTH 320
 #endif

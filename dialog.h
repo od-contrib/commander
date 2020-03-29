@@ -85,7 +85,7 @@ class CDialog : public CWindow
     mutable SDL_Rect m_clip;
 
     // Pointers to resources
-    TTF_Font *m_font;
+    const std::vector<TTF_Font *> &m_fonts;
 };
 
 #endif
