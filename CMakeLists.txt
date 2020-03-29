@@ -37,13 +37,27 @@ set(DinguxCommander_SRCS
   window.cpp
 )
 
+set(BIN_TARGET commander)
+add_executable(${BIN_TARGET} ${DinguxCommander_SRCS})
+
 find_package(SDL REQUIRED)
 find_package(SDL_image REQUIRED)
 
-# SDL_gfx: rotozoom only.
-add_library(SDL_gfx STATIC third_party/SDL_gfx-2.0.25/SDL_rotozoom.c)
-target_include_directories(SDL_gfx PRIVATE ${SDL_INCLUDE_DIR})
-target_link_libraries(SDL_gfx ${SDL_LIBRARY})
+option(WITH_SYSTEM_SDL_GFX "Use system SDL_gfx library" OFF)
+
+if (WITH_SYSTEM_SDL_GFX)
+	find_library(SDL_gfx SDL_gfx)
+	if (NOT SDL_gfx)
+		message(SEND_ERROR "Could not find SDL_gfx library.")
+	endif ()
+else ()
+	# SDL_gfx: rotozoom only.
+	add_library(SDL_gfx STATIC third_party/SDL_gfx-2.0.25/SDL_rotozoom.c)
+	target_link_libraries(SDL_gfx PUBLIC ${SDL_LIBRARY})
+	target_include_directories(SDL_gfx PRIVATE ${SDL_INCLUDE_DIR})
+
+	target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL_gfx-2.0.25/)
+endif ()
 
 # SDL_ttf: version from HEAD for independent X/Y DPI scaling.
 add_library(SDL_ttf STATIC third_party/SDL_ttf/SDL_ttf.c)
@@ -51,8 +65,6 @@ find_package(Freetype REQUIRED)
 target_include_directories(SDL_ttf PRIVATE ${SDL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS})
 target_link_libraries(SDL_ttf ${SDL_LIBRARY} ${FREETYPE_LIBRARIES})
 
-set(BIN_TARGET commander)
-add_executable(${BIN_TARGET} ${DinguxCommander_SRCS})
 set_target_properties(${BIN_TARGET} PROPERTIES
     CXX_STANDARD 11
     CXX_STANDARD_REQUIRED YES
@@ -60,7 +72,6 @@ set_target_properties(${BIN_TARGET} PROPERTIES
 
 target_include_directories(${BIN_TARGET} PUBLIC
   third_party/SDL_ttf/
-  third_party/SDL_gfx-2.0.25/
   ${SDL_INCLUDE_DIR}
   ${SDL_IMAGE_INCLUDE_DIRS}
 )
