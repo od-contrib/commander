@@ -64,7 +64,7 @@ endif ()
 if (WITH_SYSTEM_SDL_TTF)
 	find_library(SDL_ttf SDL_ttf)
 	if (NOT SDL_ttf)
-		message(SEND_ERROR "Could not find SDL2_ttf library.")
+		message(SEND_ERROR "Could not find SDL_ttf library.")
 	endif (NOT SDL_ttf)
 
 	list(APPEND CMAKE_REQUIRED_INCLUDES ${SDL_INCLUDE_DIR})
@@ -102,7 +102,7 @@ target_link_libraries(${BIN_TARGET} PRIVATE
   m
 )
 
-set(TARGET_PLATFORM host CACHE STRING "Target platform" FORCE)
+set(TARGET_PLATFORM host CACHE STRING "Target platform")
 set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS host retrofw gcw0 rg350 rs90)
 
 if(TARGET_PLATFORM STREQUAL "retrofw")
