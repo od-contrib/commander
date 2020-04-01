@@ -5,6 +5,7 @@
 #include <vector>
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include "sdl_ttf_multifont.h"
 #include "window.h"
 
 class CDialog : public CWindow
@@ -85,7 +86,7 @@ class CDialog : public CWindow
     mutable SDL_Rect m_clip;
 
     // Pointers to resources
-    const std::vector<TTF_Font *> &m_fonts;
+    const Fonts &m_fonts;
 };
 
 #endif

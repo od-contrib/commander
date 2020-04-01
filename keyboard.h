@@ -6,6 +6,7 @@
 
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include "sdl_ttf_multifont.h"
 #include "window.h"
 
 #define NB_KEY_SETS 5
@@ -74,7 +75,7 @@ class CKeyboard : public CWindow
     unsigned char m_keySet;
 
     // Pointers to resources
-    const std::vector<TTF_Font *> &m_fonts;
+    const Fonts &m_fonts;
 };
 
 #endif

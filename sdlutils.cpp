@@ -74,7 +74,7 @@ TTF_Font *SDL_utils::loadFont(const std::string &p_font, const int p_size)
     return l_font;
 }
 
-SDL_Surface *SDL_utils::renderText(const std::vector<TTF_Font *> &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg)
+SDL_Surface *SDL_utils::renderText(const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg)
 {
     SDL_Surface *result = TTFMultiFont_RenderUTF8_Shaded(p_fonts, p_text, p_fg, p_bg);
     if (result == nullptr) {
@@ -84,7 +84,7 @@ SDL_Surface *SDL_utils::renderText(const std::vector<TTF_Font *> &p_fonts, const
     return result;
 }
 
-void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const std::vector<TTF_Font *> &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
+void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
 {
     SDL_Surface *l_text = renderText(p_fonts, p_text, p_fg, p_bg);
     switch (p_align)

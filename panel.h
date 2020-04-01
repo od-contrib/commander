@@ -7,6 +7,7 @@
 #include <SDL_ttf.h>
 #include "fileLister.h"
 #include "def.h"
+#include "sdl_ttf_multifont.h"
 
 class CPanel
 {
@@ -98,7 +99,7 @@ class CPanel
     SDL_Surface *m_iconUp;
     SDL_Surface *m_cursor1;
     SDL_Surface *m_cursor2;
-    const std::vector<TTF_Font *> &m_fonts;
+    const Fonts &m_fonts;
 };
 
 #endif

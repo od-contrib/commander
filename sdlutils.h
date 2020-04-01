@@ -5,6 +5,7 @@
 #include <vector>
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include "sdl_ttf_multifont.h"
 #include "window.h"
 
 namespace SDL_utils
@@ -35,10 +36,10 @@ namespace SDL_utils
     void applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip = NULL);
 
     // Render a text
-    SDL_Surface *renderText(const std::vector<TTF_Font *> &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg);
+    SDL_Surface *renderText(const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg);
 
     // Render a text and apply on a given surface
-    void applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const std::vector<TTF_Font *> &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align = T_TEXT_ALIGN_LEFT);
+    void applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align = T_TEXT_ALIGN_LEFT);
 
     // Create a surface in the same format as the screen
     SDL_Surface *createSurface(int width, int height);
