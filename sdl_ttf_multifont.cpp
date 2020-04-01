@@ -41,18 +41,12 @@ struct Slice {
 
 std::vector<Slice> SplitIntoSlices(
     std::vector<std::uint16_t> &code_points,
-    const std::vector<TTF_Font *> &fonts) {
+    const Fonts &fonts) {
   TTF_Font *prev_font = nullptr;
   std::vector<Slice> slices;
   for (auto &cp : code_points) {
     if (cp == 0) break;
-    TTF_Font *cur_font = fonts[0];
-    for (auto *font : fonts) {
-      if (TTF_GlyphIsProvided(font, cp)) {
-        cur_font = font;
-        break;
-      }
-    }
+    TTF_Font *cur_font = fonts.GetFontForCodePoint(cp);
     if (cur_font == prev_font) {
       ++slices.back().text_size;
     } else {
@@ -65,11 +59,31 @@ std::vector<Slice> SplitIntoSlices(
 
 }  // namespace
 
+Fonts::Fonts(std::vector<TTF_Font *> fonts)
+  : fonts_(std::move(fonts)),
+    glyph_index_cache_({0}) {}
+
+TTF_Font *Fonts::GetFontForCodePoint(std::uint16_t cp) const {
+  auto &result = glyph_index_cache_[cp];
+  if (result == 0) {
+    std::size_t i = 1;
+    result = fonts_[0];
+    for (TTF_Font *font : fonts_) {
+      if (TTF_GlyphIsProvided(font, cp)) {
+        result = font;
+        break;
+      }
+    }
+  }
+  return result;
+}
+
 SDL_Surface *TTFMultiFont_RenderUTF8_Shaded(
-    const std::vector<TTF_Font *> &fonts, const std::string &text, SDL_Color fg,
+    const Fonts &fonts, const std::string &text, SDL_Color fg,
     SDL_Color bg) {
-  if (fonts.size() == 1)
-    return TTF_RenderUTF8_Shaded(fonts[0], text.c_str(), fg, bg);
+  if (fonts.IsSingle()) {
+    return TTF_RenderUTF8_Shaded(fonts.GetFirstFont(), text.c_str(), fg, bg);
+  }
 
   auto code_points = DecodeUtf8(text);
   const std::vector<Slice> slices = SplitIntoSlices(code_points, fonts);

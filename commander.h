@@ -3,6 +3,7 @@
 
 #include <SDL.h>
 #include "panel.h"
+#include "sdl_ttf_multifont.h"
 #include "window.h"
 
 class CCommander : public CWindow

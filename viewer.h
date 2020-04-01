@@ -8,6 +8,7 @@
 #include <SDL_ttf.h>
 
 #include "screen.h"
+#include "sdl_ttf_multifont.h"
 #include "window.h"
 
 #define VIEWER_LINE_HEIGHT   13
@@ -58,7 +59,7 @@ class CViewer : public CWindow
     // Coordinates
     mutable SDL_Rect m_clip;
 
-    const std::vector<TTF_Font *> &m_fonts;
+    const Fonts &m_fonts;
 
     // Background image
     SDL_Surface *m_background;

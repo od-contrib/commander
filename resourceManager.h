@@ -5,6 +5,7 @@
 
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include "sdl_ttf_multifont.h"
 
 #define NB_SURFACES 8
 
@@ -35,20 +36,20 @@ class CResourceManager
     SDL_Surface *getSurface(const T_SURFACE p_surface) const;
 
     // Get the loaded fonts
-    const std::vector<TTF_Font *> &getFonts(void) const;
+    const Fonts &getFonts(void) const;
 
     private:
 
     // Forbidden
-    CResourceManager(void);
-    CResourceManager(const CResourceManager &p_source);
-    const CResourceManager &operator =(const CResourceManager &p_source);
+    CResourceManager();
+    CResourceManager(const CResourceManager &p_source) = delete;
+    const CResourceManager &operator =(const CResourceManager &p_source) = delete;
 
     // Images
     SDL_Surface *m_surfaces[NB_SURFACES];
 
-    // Font
-    std::vector<TTF_Font *> m_fonts;
+    // Fonts
+    Fonts m_fonts;
 };
 
 #endif

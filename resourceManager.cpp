@@ -28,16 +28,35 @@ SDL_Surface *LoadIcon(const char *path) {
     return display;
 }
 
+Fonts LoadFonts() {
+    struct FontSpec {
+        const char *const path;
+        int size;
+    };
+    constexpr FontSpec kFonts[] = {FONTS};
+    constexpr std::size_t kFontsLen = sizeof(kFonts) / sizeof(kFonts[0]);
+    std::vector<TTF_Font *> fonts;
+    fonts.reserve(kFontsLen);
+    for (std::size_t i = 0; i < kFontsLen; ++i) {
+        auto *font = SDL_utils::loadFont(kFonts[i].path, kFonts[i].size);
+        if (font != nullptr) fonts.push_back(font);
+    }
+    if (fonts.empty()) {
+        std::cerr << "No fonts found!" << std::endl;
+        exit(1);
+    }
+    return Fonts(std::move(fonts));
+}
+
 } // namespace
 
-CResourceManager& CResourceManager::instance(void)
+CResourceManager& CResourceManager::instance()
 {
     static CResourceManager l_singleton;
     return l_singleton;
 }
 
-CResourceManager::CResourceManager(void)
-{
+CResourceManager::CResourceManager() : m_fonts(LoadFonts()) {
     // Load images
     m_surfaces[T_SURFACE_FOLDER] = LoadIcon(RES_DIR "folder.png");
     m_surfaces[T_SURFACE_FILE] = LoadIcon(RES_DIR "file-text.png");
@@ -47,31 +66,11 @@ CResourceManager::CResourceManager(void)
     m_surfaces[T_SURFACE_UP] = LoadIcon(RES_DIR "up.png");
     m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
     m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
-    
-    // Load fonts
-    struct FontSpec {
-        const char *const path;
-        int size;
-    };
-    constexpr FontSpec kFonts[] = {FONTS};
-    constexpr std::size_t kFontsLen = sizeof(kFonts) / sizeof(kFonts[0]);
-    m_fonts.reserve(kFontsLen);
-    for (std::size_t i = 0; i < kFontsLen; ++i) {
-        auto *font = SDL_utils::loadFont(kFonts[i].path, kFonts[i].size);
-        if (font != nullptr) m_fonts.push_back(font);
-    }
-    if (m_fonts.empty()) {
-        std::cerr << "No fonts found!" << std::endl;
-        exit(1);
-    }
 }
 
-void CResourceManager::sdlCleanup(void)
-{
-    INHIBIT(std::cout << "CResourceManager::sdlCleanup" << std::endl;)
-    int l_i(0);
+void CResourceManager::sdlCleanup() {
     // Free surfaces
-    for (l_i = 0; l_i < NB_SURFACES; ++l_i)
+    for (std::size_t l_i = 0; l_i < NB_SURFACES; ++l_i)
     {
         if (m_surfaces[l_i] != NULL)
         {
@@ -79,10 +78,12 @@ void CResourceManager::sdlCleanup(void)
             m_surfaces[l_i] = NULL;
         }
     }
-    // Free font
-    for (auto *font : m_fonts)
-        TTF_CloseFont(font);
-    m_fonts.clear();
+    for (auto &font : m_fonts.fonts()) {
+        if (font != nullptr) {
+            TTF_CloseFont(font);
+            font = nullptr;
+        }
+    }
 }
 
 SDL_Surface *CResourceManager::getSurface(const T_SURFACE p_surface) const
@@ -90,7 +91,7 @@ SDL_Surface *CResourceManager::getSurface(const T_SURFACE p_surface) const
     return m_surfaces[p_surface];
 }
 
-const std::vector<TTF_Font *> &CResourceManager::getFonts(void) const
+const Fonts &CResourceManager::getFonts() const
 {
     return m_fonts;
 }
