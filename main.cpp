@@ -38,10 +38,8 @@ SDL_Surface *SetVideoMode(int width, int height, int bpp, std::uint32_t flags) {
 int main(int argc, char** argv)
 {
     // Avoid crash due to the absence of mouse
-    {
-        char l_s[]="SDL_NOMOUSE=1";
-        putenv(l_s);
-    }
+    char l_s[]="SDL_NOMOUSE=1";
+    putenv(l_s);
 
     // Init SDL
     SDL_Init(SDL_INIT_VIDEO);
