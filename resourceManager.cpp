@@ -63,6 +63,7 @@ CResourceManager::CResourceManager() : m_fonts(LoadFonts()) {
     m_surfaces[T_SURFACE_FILE_IMAGE] = LoadIcon(RES_DIR "file-image.png");
     m_surfaces[T_SURFACE_FILE_INSTALLABLE_PACKAGE] = LoadIcon(RES_DIR "file-ipk.png");
     m_surfaces[T_SURFACE_FILE_PACKAGE] = LoadIcon(RES_DIR "file-opk.png");
+    m_surfaces[T_SURFACE_FILE_IS_SYMLINK] = LoadIcon(RES_DIR "file-is-symlink.png");
     m_surfaces[T_SURFACE_UP] = LoadIcon(RES_DIR "up.png");
     m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
     m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_2));
