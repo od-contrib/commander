@@ -16,7 +16,7 @@
 #endif
 
 #ifndef FONTS
-#define FONTS {RES_DIR"Fiery_Turk.ttf",8},{RES_DIR"FreeSans.ttf",10},{RES_DIR"DroidSansFallbackFull.ttf",9}
+#define FONTS {RES_DIR"Fiery_Turk.ttf",8},{RES_DIR"FreeSans.ttf",10},{RES_DIR"DroidSansFallback.ttf",9}
 #endif
 
 #ifndef SCREEN_WIDTH
