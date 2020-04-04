@@ -206,6 +206,61 @@ void File_utils::moveFile(const std::vector<std::string> &p_src, const std::stri
     }
 }
 
+void File_utils::symlinkFile(const std::vector<std::string> &p_src, const std::string &p_dest)
+{
+    std::string l_destFile;
+    std::string l_fileName;
+    bool l_loop(true);
+    bool l_confirm(true);
+    bool l_execute(true);
+    for (std::vector<std::string>::const_iterator l_it = p_src.begin(); l_loop && (l_it != p_src.end()); ++l_it)
+    {
+        l_execute = true;
+        l_fileName = getFileName(*l_it);
+        l_destFile = p_dest + (p_dest.at(p_dest.size() - 1) == '/' ? "" : "/") + l_fileName;
+
+        // Check if destination files already exists
+        if (l_confirm)
+        {
+            if (fileExists(l_destFile))
+            {
+                INHIBIT(std::cout << "File " << l_destFile << " already exists => ask for confirmation" << std::endl;)
+                CDialog l_dialog("Question:", 0, 0);
+                l_dialog.addLabel("Overwrite " + l_fileName + "?");
+                l_dialog.addOption("Yes");
+                l_dialog.addOption("Yes to all");
+                l_dialog.addOption("No");
+                l_dialog.addOption("Cancel");
+                l_dialog.init();
+                switch (l_dialog.execute())
+                {
+                    case 1:
+                        // Yes
+                        break;
+                    case 2:
+                        // Yes to all
+                        l_confirm = false;
+                        break;
+                    case 3:
+                        // No
+                        l_execute = false;
+                        break;
+                    default:
+                        // Cancel
+                        l_execute = false;
+                        l_loop = false;
+                        break;
+                }
+            }
+        }
+        if (l_execute)
+        {
+            Run("ln", "-sf", *l_it, p_dest);
+            Run("sync", l_destFile);
+        }
+    }
+}
+
 void File_utils::renameFile(const std::string &p_file1, const std::string &p_file2)
 {
     bool l_execute(true);

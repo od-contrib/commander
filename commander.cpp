@@ -1,3 +1,4 @@
+#include <functional>
 #include <iostream>
 #include <sstream>
 #include "commander.h"
@@ -203,32 +204,70 @@ const bool CCommander::keyHold(void)
 
 const bool CCommander::openCopyMenu(void) const
 {
-    bool l_ret(false);
+    std::vector<std::function<bool()>> handlers;
     int l_dialogRetVal(0);
-    bool l_rename(false);
     // List of selected files
     std::vector<std::string> l_list;
     m_panelSource->getSelectList(l_list);
-    // The rename option appears only if one item is selected
-    l_rename = (l_list.size() == 1);
     {
         bool l_loop(false);
         std::ostringstream l_stream;
         l_stream << l_list.size() << " selected:";
         // File operation dialog
         CDialog l_dialog(l_stream.str(), 0, Y_LIST + m_panelSource->getHighlightedIndexRelative() * LINE_HEIGHT);
+
         l_dialog.addOption(m_panelSource == &m_panelLeft ? "Copy >" : "< Copy");
+        handlers.push_back([&]() {
+            File_utils::copyFile(l_list, m_panelTarget->getCurrentPath());
+            return true;
+        });
+
         l_dialog.addOption(m_panelSource == &m_panelLeft ? "Move >" : "< Move");
-        if (l_rename)
+        handlers.push_back([&]() {
+            File_utils::moveFile(l_list, m_panelTarget->getCurrentPath());
+            return true;
+        });
+
+        
+        l_dialog.addOption(m_panelSource == &m_panelLeft ? "Symlink >" : "< Symlink");
+        handlers.push_back([&]() {
+            File_utils::symlinkFile(l_list, m_panelTarget->getCurrentPath());
+            return true;
+        });
+
+        if (l_list.size() == 1) {
+            // The rename option appears only if one item is selected
             l_dialog.addOption("Rename");
+            handlers.push_back([&]() {
+                CKeyboard l_keyboard(m_panelSource->getHighlightedItem());
+                if (l_keyboard.execute() == 1 && !l_keyboard.getInputText().empty() && l_keyboard.getInputText() != m_panelSource->getHighlightedItem())
+                {
+                    File_utils::renameFile(m_panelSource->getHighlightedItemFull(), m_panelSource->getCurrentPath() + (m_panelSource->getCurrentPath() == "/" ? "" : "/") + l_keyboard.getInputText());
+                    return true;
+                }
+                return false;
+            });
+        }
+
         l_dialog.addOption("Delete");
+        handlers.push_back([&]() {
+            File_utils::removeFile(l_list);
+            return true;
+        });
+        const int delete_option = handlers.size(); 
+
         l_dialog.addOption("Disk used");
+        handlers.push_back([&]() {
+            File_utils::diskUsed(l_list);
+            return false;
+        });
+
         l_dialog.init();
         do
         {
             l_loop = false;
             l_dialogRetVal = l_dialog.execute();
-            if (l_dialogRetVal == 3 + l_rename)
+            if (l_dialogRetVal == delete_option)
             {
                 CDialog l_dialog2("", l_dialog.getX() + l_dialog.getImage()->w / screen.ppu_x - DIALOG_BORDER, l_dialog.getY() / screen.ppu_y + DIALOG_BORDER + (l_dialog.getHighlightedIndex() + 1) * LINE_HEIGHT);
                 l_dialog2.addOption("Yes");
@@ -241,59 +280,10 @@ const bool CCommander::openCopyMenu(void) const
         while (l_loop);
     }
     // Perform operation
-    switch (l_dialogRetVal)
-    {
-        case 1:
-            // Copy
-            File_utils::copyFile(l_list, m_panelTarget->getCurrentPath());
-            l_ret = true;
-            break;
-        case 2:
-            // Move
-            File_utils::moveFile(l_list, m_panelTarget->getCurrentPath());
-            l_ret = true;
-            break;
-        case 3:
-            if (l_rename)
-            {
-                // Rename
-                CKeyboard l_keyboard(m_panelSource->getHighlightedItem());
-                if (l_keyboard.execute() == 1 && !l_keyboard.getInputText().empty() && l_keyboard.getInputText() != m_panelSource->getHighlightedItem())
-                {
-                    File_utils::renameFile(m_panelSource->getHighlightedItemFull(), m_panelSource->getCurrentPath() + (m_panelSource->getCurrentPath() == "/" ? "" : "/") + l_keyboard.getInputText());
-                    l_ret = true;
-                }
-            }
-            else
-            {
-                // Delete
-printf("About to remove file");
-printf("%s", l_list.at(0).c_str());
-                File_utils::removeFile(l_list);
-printf("Done removing file.");
-                l_ret = true;
-            }
-            break;
-        case 4:
-            if (l_rename)
-            {
-                // Delete
-                File_utils::removeFile(l_list);
-                l_ret = true;
-            }
-            else
-                // Disk used
-                File_utils::diskUsed(l_list);
-            break;
-        case 5:
-            if (l_rename)
-                // Disk used
-                File_utils::diskUsed(l_list);
-            break;
-        default:
-            break;
+    if (l_dialogRetVal > 0 && l_dialogRetVal <= handlers.size()) {
+        return handlers[l_dialogRetVal - 1]();
     }
-    return l_ret;
+    return false;
 }
 
 const bool CCommander::openSystemMenu(void)
