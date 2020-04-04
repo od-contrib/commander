@@ -230,7 +230,7 @@ const bool CCommander::openCopyMenu(void) const
             l_dialogRetVal = l_dialog.execute();
             if (l_dialogRetVal == 3 + l_rename)
             {
-                CDialog l_dialog2("", l_dialog.getX() + l_dialog.getImage()->w - DIALOG_BORDER, l_dialog.getY() + DIALOG_BORDER + (l_dialog.getHighlightedIndex() + 1) * LINE_HEIGHT);
+                CDialog l_dialog2("", l_dialog.getX() + l_dialog.getImage()->w / screen.ppu_x - DIALOG_BORDER, l_dialog.getY() / screen.ppu_y + DIALOG_BORDER + (l_dialog.getHighlightedIndex() + 1) * LINE_HEIGHT);
                 l_dialog2.addOption("Yes");
                 l_dialog2.addOption("No");
                 l_dialog2.init();
