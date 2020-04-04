@@ -22,6 +22,7 @@ CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
     m_iconImg(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_IMAGE)),
     m_iconIpk(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_INSTALLABLE_PACKAGE)),
     m_iconOpk(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_PACKAGE)),
+    m_iconIsSymlink(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_IS_SYMLINK)),
     m_iconUp(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_UP)),
     m_cursor1(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR1)),
     m_cursor2(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR2)),
@@ -109,6 +110,8 @@ void CPanel::render(const bool p_active) const
                 l_color = &Globals::g_colorTextNormal;
         }
         SDL_utils::applySurface(m_x, l_y, l_surfaceTmp, Globals::g_screen);
+        if (m_fileLister[l_i].is_symlink)
+            SDL_utils::applySurface(m_x, l_y, m_iconIsSymlink, Globals::g_screen);
         // Text
         SDL_Color l_bg;
         if (l_i == m_highlightedLine) {

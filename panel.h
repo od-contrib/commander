@@ -96,6 +96,7 @@ class CPanel
     SDL_Surface *m_iconImg;
     SDL_Surface *m_iconIpk;
     SDL_Surface *m_iconOpk;
+    SDL_Surface *m_iconIsSymlink;
     SDL_Surface *m_iconUp;
     SDL_Surface *m_cursor1;
     SDL_Surface *m_cursor2;

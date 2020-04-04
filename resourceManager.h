@@ -7,7 +7,7 @@
 #include <SDL_ttf.h>
 #include "sdl_ttf_multifont.h"
 
-#define NB_SURFACES 8
+#define NB_SURFACES 9
 
 class CResourceManager
 {
@@ -20,6 +20,7 @@ class CResourceManager
         T_SURFACE_FILE_IMAGE,
         T_SURFACE_FILE_INSTALLABLE_PACKAGE,
         T_SURFACE_FILE_PACKAGE,
+        T_SURFACE_FILE_IS_SYMLINK,
         T_SURFACE_UP,
         T_SURFACE_CURSOR1,
         T_SURFACE_CURSOR2

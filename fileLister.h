@@ -9,14 +9,16 @@
 struct T_FILE
 {
     T_FILE(void) : m_size(0) {}
-    T_FILE(const std::string &p_name, const unsigned long int &p_size)
-        : m_name(p_name),
+    T_FILE(std::string p_name, bool is_symlink, unsigned long int p_size = 0)
+        : m_name(std::move(p_name)),
+          is_symlink(is_symlink),
           m_ext(File_utils::getLowercaseFileExtension(p_name)),
           m_size(p_size) {}
     T_FILE(const T_FILE &p_source) = default;
     T_FILE &operator=(const T_FILE &p_source) = default;
     std::string m_name;
     std::string m_ext;
+    bool is_symlink;
     unsigned long int m_size;
 };
 

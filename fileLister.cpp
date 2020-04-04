@@ -34,7 +34,7 @@ const bool CFileLister::list(const std::string &p_path)
     // Read dir
     std::string l_file("");
     std::string l_fileFull("");
-    struct stat l_stat;
+    struct stat st;
     struct dirent *l_dirent = readdir(l_dir);
     while (l_dirent != NULL)
     {
@@ -44,19 +44,29 @@ const bool CFileLister::list(const std::string &p_path)
         {
             // Stat the file
             l_fileFull = p_path + "/" + l_file;
-            if (stat(l_fileFull.c_str(), &l_stat) == -1)
+            if (lstat(l_fileFull.c_str(), &st) == -1)
             {
-                std::cerr << "CFileLister::list: Error stat " << l_fileFull << std::endl;
+                std::cerr << "CFileLister::list: Error lstat " << l_fileFull << std::endl;
             }
             else
             {
+                const bool is_symlink = S_ISLNK(st.st_mode);
+                auto tfile = T_FILE(l_file, is_symlink);
+                if (tfile.is_symlink) {
+                    // Follow the link.
+                    if (stat(l_fileFull.c_str(), &st) == -1) {
+                        st.st_size = 0;  // Invalid symlink.
+                    }
+                }
+                tfile.m_size = st.st_size;
+
                 // Check type
-                if (S_ISDIR(l_stat.st_mode))
+                if (S_ISDIR(st.st_mode))
                     // It's a directory
-                    m_listDirs.push_back(T_FILE(l_file, l_stat.st_size));
+                    m_listDirs.push_back(std::move(tfile));
                 else
                     // It's a file
-                    m_listFiles.push_back(T_FILE(l_file, l_stat.st_size));
+                    m_listFiles.push_back(std::move(tfile));
             }
         }
         // Next
@@ -68,7 +78,7 @@ const bool CFileLister::list(const std::string &p_path)
     sort(m_listFiles.begin(), m_listFiles.end(), compareNoCase);
     sort(m_listDirs.begin(), m_listDirs.end(), compareNoCase);
     // Add "..", always at the first place
-    m_listDirs.insert(m_listDirs.begin(), T_FILE("..", 0));
+    m_listDirs.insert(m_listDirs.begin(), T_FILE("..", /*is_symlink=*/false, 0));
     return true;
 }
 
