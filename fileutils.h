@@ -12,6 +12,8 @@ namespace File_utils
 
     void moveFile(const std::vector<std::string> &p_src, const std::string &p_dest);
 
+    void symlinkFile(const std::vector<std::string> &p_src, const std::string &p_dest);
+
     void removeFile(const std::vector<std::string> &p_files);
 
     void executeFile(const std::string &p_file);
