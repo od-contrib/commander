@@ -1,3 +1,6 @@
+set(WITH_SYSTEM_SDL_TTF ON)
+set(WITH_SYSTEM_SDL_GFX ON)
+
 set(AUTOSCALE 1)
 set(FILE_SYSTEM \"/dev/mmcblk1p1\")
 set(PATH_DEFAULT \"/media/sdcard\")
