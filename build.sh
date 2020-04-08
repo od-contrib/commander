@@ -24,19 +24,11 @@ check_buildroot() {
 
 make_buildroot() {
   cd "$BUILDROOT"
-  # Check dependencies manually as it's much faster than `make`.
-  local -a deps=()
-  if ! [[ -f output/staging/usr/include/SDL/SDL.h ]]; then
-    deps+=(sdl)
-  fi
-  if ! [[ -f output/staging/usr/include/SDL/SDL_image.h ]]; then
-    deps+=(sdl_image)
-  fi
-  if ! [[ -d output/staging/usr/include/freetype2/ ]]; then
+  local -a deps=(toolchain sdl sdl_image)
+  if [[ "$TARGET" == retrofw ]]; then
     deps+=(freetype)
-  fi
-  if ! [[ -f output/host/usr/share/buildroot/toolchainfile.cmake ]]; then
-    deps+=(toolchain)
+  else
+    deps+=(sdl_ttf sdl_gfx)
   fi
   if (( ${#deps[@]} )); then
     make "${deps[@]}" BR2_JLEVEL=0
