@@ -16,13 +16,19 @@ fi
 declare -r TARGET="${1}"
 
 check_buildroot() {
-  if ! [[ -d $BUILDROOT ]]; then
-    echo "Please set the BUILDROOT environment variable"
+  if [[ -n ${TOOLCHAIN:-} ]] && [[ -d $TOOLCHAIN ]]; then
+    return
+  elif ! [[ -d $BUILDROOT ]]; then
+    echo "Please set the BUILDROOT or TOOLCHAIN environment variable"
     exit 1
   fi
+  TOOLCHAIN="${BUILDROOT}/output/host/"
 }
 
 make_buildroot() {
+  if [[ -z ${BUILDROOT:-} ]]; then
+    return
+  fi
   cd "$BUILDROOT"
   local -a deps=(toolchain sdl sdl_image)
   if [[ "$TARGET" == retrofw ]]; then
@@ -42,7 +48,7 @@ build() {
   cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DTARGET_PLATFORM="$TARGET" \
-    -DCMAKE_TOOLCHAIN_FILE="$BUILDROOT/output/host/usr/share/buildroot/toolchainfile.cmake"
+    -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN}/usr/share/buildroot/toolchainfile.cmake"
   cmake --build . -j $(getconf _NPROCESSORS_ONLN)
   cd -
 }
