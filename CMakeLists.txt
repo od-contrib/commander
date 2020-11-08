@@ -102,6 +102,14 @@ target_link_libraries(${BIN_TARGET} PRIVATE
   m
 )
 
+set(RES_DIR \"res/\" CACHE STRING "Resources directory")
+set(FILE_SYSTEM \"/dev/mmcblk1p1\" CACHE STRING "Default filesystem (for Disk info)")
+set(PATH_DEFAULT "" CACHE STRING "Default path for the left pane (default: getenv(\"PWD\")")
+set(PATH_DEFAULT_RIGHT "" CACHE STRING "Default path for the right pane (default: getenv(\"HOME\")")
+set(AUTOSCALE 1 CACHE STRING "Auto-detect resolution and DPI scaling factors")
+set(WITH_SYSTEM_SDL_TTF OFF CACHE BOOL "Use system sdl_ttf")
+set(WITH_SYSTEM_SDL_GFX OFF CACHE BOOL "Use system sdl_gfx")
+
 set(TARGET_PLATFORM host CACHE STRING "Target platform")
 set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS host retrofw gcw0 rg350 rs90)
 
@@ -115,6 +123,7 @@ elseif(TARGET_PLATFORM STREQUAL "rs90")
   include(CMake/rs90_defs.cmake)
 endif()
 
+# These variables are passed as C macro definitons if they exist.
 foreach(
   def_name
   SCREEN_WIDTH
@@ -124,9 +133,6 @@ foreach(
   AUTOSCALE
   RES_DIR
   FONTS
-  PATH_DEFAULT
-  PATH_DEFAULT_RIGHT
-  PATH_DEFAULT_RIGHT_FALLBACK
   FILE_SYSTEM
   MYKEY_UP
   MYKEY_RIGHT
@@ -142,6 +148,19 @@ foreach(
   MYKEY_TRANSFER
 )
   if(DEFINED ${def_name})
+    list(APPEND def_list ${def_name}=${${def_name}})
+  endif()
+endforeach(def_name)
+target_compile_definitions(${BIN_TARGET} PRIVATE ${def_list})
+
+# These variables are passed as C macro definitons if they're not empty.
+foreach(
+  def_name
+  PATH_DEFAULT
+  PATH_DEFAULT_RIGHT
+  PATH_DEFAULT_RIGHT_FALLBACK
+)
+  if(DEFINED ${def_name} AND NOT ${def_name} STREQUAL "")
     list(APPEND def_list ${def_name}=${${def_name}})
   endif()
 endforeach(def_name)

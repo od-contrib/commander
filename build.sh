@@ -48,7 +48,8 @@ build() {
   cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DTARGET_PLATFORM="$TARGET" \
-    -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN}/usr/share/buildroot/toolchainfile.cmake"
+    -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN}/usr/share/buildroot/toolchainfile.cmake" \
+    -DRES_DIR=""
   cmake --build . -j $(getconf _NPROCESSORS_ONLN)
   cd -
 }
