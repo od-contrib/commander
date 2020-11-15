@@ -1,0 +1,17 @@
+BasedOnStyle: webkit
+AccessModifierOffset: 0
+AlignTrailingComments: true
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
+BreakBeforeBraces: Allman
+ColumnLimit: 80
+IndentCaseLabels: true
+PointerAlignment: Right
+SortIncludes: true
+TabWidth: 4
+UseTab: false
