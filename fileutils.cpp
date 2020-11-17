@@ -30,6 +30,22 @@
 namespace
 {
 
+void AsciiToLower(char *c)
+{
+    if (*c >= 'A' && *c <= 'Z') *c -= ('Z' - 'z');
+}
+
+char AsciiToLower(char c)
+{
+    AsciiToLower(&c);
+    return c;
+}
+
+void AsciiToLower(std::string *s)
+{
+    for (char &c : *s) AsciiToLower(&c);
+}
+
 int WaitPid(pid_t id)
 {
     int status, ret;
@@ -251,7 +267,10 @@ void ActionToDir(const std::vector<std::string> &inputs,
         const auto action_result = action_fn(input, dest_filename);
         if (!action_result.ok())
         {
-            switch (ErrorDialog(action_desc, action_result.message(), is_last))
+            std::string title = "Error ";
+            title += AsciiToLower(action_desc[0]);
+            title.append(action_desc.data() + 1, action_desc.size() - 1);
+            switch (ErrorDialog(title, action_result.message(), is_last))
             {
                 case ErrorDialogResult::CONTINUE: continue;
                 case ErrorDialogResult::ABORT: return;
@@ -319,7 +338,7 @@ void File_utils::renameFile(
         if (result.ok()) result = Run("sync", p_file2);
         if (!result.ok())
         {
-            ErrorDialog("Renaming " + getFileName(p_file1) + " to "
+            ErrorDialog("Error renaming " + getFileName(p_file1) + " to "
                     + getFileName(p_file2),
                 result.message());
         }
@@ -333,7 +352,7 @@ void File_utils::removeFile(const std::vector<std::string> &p_files)
         auto result = Run("rm", "-rf", path);
         if (!result.ok())
         {
-            switch (ErrorDialog("Removing " + path, result.message(),
+            switch (ErrorDialog("Error removing " + path, result.message(),
                 /*is_last=*/&path == &p_files.back()))
             {
                 case ErrorDialogResult::CONTINUE: continue;
@@ -347,19 +366,13 @@ void File_utils::makeDirectory(const std::string &p_file)
 {
     auto result = Run("mkdir", "-p", p_file);
     if (result.ok()) result = Run("sync", p_file);
-    if (!result.ok()) ErrorDialog("Creating " + p_file, result.message());
+    if (!result.ok()) ErrorDialog("Error creating " + p_file, result.message());
 }
 
 const bool File_utils::fileExists(const std::string &p_path)
 {
     struct stat l_stat;
     return stat(p_path.c_str(), &l_stat) == 0;
-}
-
-static void AsciiToLower(std::string *s)
-{
-    for (char &c : *s)
-        if (c >= 'A' && c <= 'Z') c -= ('Z' - 'z');
 }
 
 std::string File_utils::getLowercaseFileExtension(const std::string &name)
@@ -425,7 +438,7 @@ const unsigned long int File_utils::getFileSize(const std::string &p_file)
 {
     struct ::stat l_stat;
     if (::stat(p_file.c_str(), &l_stat) == -1)
-        ErrorDialog("Obtaining file size", std::strerror(errno));
+        ErrorDialog("Error getting file size", std::strerror(errno));
     return l_stat.st_size;
 }
 
@@ -439,7 +452,7 @@ void File_utils::diskInfo(void)
         FILE *l_pipe = popen("df -h " FILE_SYSTEM, "r");
         if (l_pipe == NULL)
         {
-            ErrorDialog("Getting disk information", std::strerror(errno));
+            ErrorDialog("Error getting disk info", std::strerror(errno));
             return;
         }
         while (
@@ -465,8 +478,8 @@ void File_utils::diskInfo(void)
         l_dialog.execute();
     }
     else
-        ErrorDialog("Getting disk information",
-            std::string(FILE_SYSTEM) + " not found");
+        ErrorDialog(
+            "Error getting disk info", std::string(FILE_SYSTEM) + " not found");
 }
 
 void File_utils::diskUsed(const std::vector<std::string> &p_files)
@@ -484,7 +497,7 @@ void File_utils::diskUsed(const std::vector<std::string> &p_files)
         FILE *l_pipe = popen(l_command.c_str(), "r");
         if (l_pipe == NULL)
         {
-            ErrorDialog("Getting file size", std::strerror(errno));
+            ErrorDialog("Error getting file size", std::strerror(errno));
             return;
         }
         while (fgets(l_buffer, sizeof(l_buffer), l_pipe) != NULL) { }

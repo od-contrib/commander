@@ -25,6 +25,9 @@ class CDialog : public CWindow
     // Add a menu option
     void addOption(const std::string &p_option);
 
+    // Sets the color of the borders and title background.
+    void setBorderColor(SDL_Color color) { m_borderColor = color; }
+
     // Init. Call after all options are added.
     void init(void);
 
@@ -53,6 +56,8 @@ class CDialog : public CWindow
     // Move cursor
     const bool moveCursorUp(const bool p_loop);
     const bool moveCursorDown(const bool p_loop);
+
+    SDL_Color m_borderColor;
 
     // Number of titles (0 or 1), labels, and options
     bool m_nbTitle;

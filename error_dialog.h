@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "def.h"
 #include "dialog.h"
 
 enum class ErrorDialogResult
@@ -13,10 +14,10 @@ enum class ErrorDialogResult
 };
 
 inline ErrorDialogResult ErrorDialog(
-    const std::string &action, const std::string &error, bool is_last = true)
+    const std::string &title, const std::string &error, bool is_last = true)
 {
-    CDialog dlg("Error:");
-    dlg.addLabel(action);
+    CDialog dlg(title);
+    dlg.setBorderColor({COLOR_BORDER_ERROR});
     dlg.addLabel(error);
     std::vector<ErrorDialogResult> options { ErrorDialogResult::ABORT };
     const auto add_option = [&](std::string text, ErrorDialogResult value) {
