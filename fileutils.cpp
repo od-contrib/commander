@@ -122,8 +122,7 @@ int SpawnAndWait(const char *argv[], std::string *capture_stdout = nullptr,
         sigprocmask(SIG_SETMASK, &save_mask, NULL);
 
         // This const cast is OK, see https://stackoverflow.com/a/190208.
-        if (execvp(argv[0], (char **)argv) == -1)
-            perror(argv[0]);
+        if (execvp(argv[0], (char **)argv) == -1) perror(argv[0]);
         exit(127);
     }
     wait_val = WaitPid(child_pid);
@@ -373,14 +372,13 @@ const bool File_utils::fileExists(const std::string &p_path)
 static void AsciiToLower(std::string *s)
 {
     for (char &c : *s)
-        if (c >= 'A' && c <= 'Z')
-            c -= ('Z' - 'z');
+        if (c >= 'A' && c <= 'Z') c -= ('Z' - 'z');
 }
 
-std::string File_utils::getLowercaseFileExtension(const std::string &name) {
+std::string File_utils::getLowercaseFileExtension(const std::string &name)
+{
     const auto dot_pos = name.rfind('.');
-    if (dot_pos == std::string::npos)
-        return "";
+    if (dot_pos == std::string::npos) return "";
     std::string ext = name.substr(dot_pos + 1);
     AsciiToLower(&ext);
     return ext;
@@ -401,15 +399,19 @@ const std::string File_utils::getPath(const std::string &p_path)
 void File_utils::executeFile(const std::string &p_file)
 {
     // Command
-    INHIBIT(std::cout << "File_utils::executeFile: " << p_file << " in " << getPath(p_file) << std::endl;)
+    INHIBIT(std::cout << "File_utils::executeFile: " << p_file << " in "
+                      << getPath(p_file) << std::endl;)
     // CD to the file's location
     chdir(getPath(p_file).c_str());
     // Quit
     SDL_utils::hastalavista();
     // Execute file
-    if (getLowercaseFileExtension(p_file) == "opk") {
+    if (getLowercaseFileExtension(p_file) == "opk")
+    {
         execlp("opkrun", "opkrun", p_file.c_str(), nullptr);
-    } else {
+    }
+    else
+    {
         execl(p_file.c_str(), p_file.c_str(), nullptr);
     }
     // If we're here, there was an error with the execution
@@ -417,7 +419,8 @@ void File_utils::executeFile(const std::string &p_file)
     std::cerr << "Error executing file " << p_file << std::endl;
     // Relaunch DinguxCommander
     const std::string self_name = getSelfExecutionName();
-    INHIBIT(std::cout << "File_utils::executeFile: " << self_name << " in " << getSelfExecutionPath() << std::endl;)
+    INHIBIT(std::cout << "File_utils::executeFile: " << self_name << " in "
+                      << getSelfExecutionPath() << std::endl;)
     chdir(getSelfExecutionPath().c_str());
     execl(self_name.c_str(), self_name.c_str(), NULL);
 }
@@ -448,7 +451,8 @@ const std::string File_utils::getSelfExecutionName(void)
     return l_exePath;
 }
 
-void File_utils::stringReplace(std::string &p_string, const std::string &p_search, const std::string &p_replace)
+void File_utils::stringReplace(std::string &p_string,
+    const std::string &p_search, const std::string &p_replace)
 {
     // Replace all occurrences of p_search by p_replace in p_string
     size_t l_pos = p_string.find(p_search, 0);
@@ -464,7 +468,8 @@ const unsigned long int File_utils::getFileSize(const std::string &p_file)
     unsigned long int l_ret(0);
     struct stat l_stat;
     if (stat(p_file.c_str(), &l_stat) == -1)
-        std::cerr << "File_utils::getFileSize: Error stat " << p_file << std::endl;
+        std::cerr << "File_utils::getFileSize: Error stat " << p_file
+                  << std::endl;
     else
         l_ret = l_stat.st_size;
     return l_ret;
@@ -483,9 +488,9 @@ void File_utils::diskInfo(void)
             std::cerr << "File_utils::diskInfo: Error popen" << std::endl;
             return;
         }
-        while (l_line.empty() && fgets(l_buffer, sizeof(l_buffer), l_pipe) != NULL)
-            if (strstr(l_buffer, FILE_SYSTEM) != NULL)
-                l_line = l_buffer;
+        while (
+            l_line.empty() && fgets(l_buffer, sizeof(l_buffer), l_pipe) != NULL)
+            if (strstr(l_buffer, FILE_SYSTEM) != NULL) l_line = l_buffer;
         pclose(l_pipe);
     }
     if (!l_line.empty())
@@ -493,7 +498,9 @@ void File_utils::diskInfo(void)
         // Separate line by spaces
         std::istringstream l_iss(l_line);
         std::vector<std::string> l_tokens;
-        copy(std::istream_iterator<std::string>(l_iss), std::istream_iterator<std::string>(), std::back_inserter<std::vector<std::string> >(l_tokens));
+        copy(std::istream_iterator<std::string>(l_iss),
+            std::istream_iterator<std::string>(),
+            std::back_inserter<std::vector<std::string>>(l_tokens));
         // Display dialog
         CDialog l_dialog("Disk information:", 0, 0);
         l_dialog.addLabel("Size: " + l_tokens[1]);
@@ -504,7 +511,8 @@ void File_utils::diskInfo(void)
         l_dialog.execute();
     }
     else
-        std::cerr << "File_utils::diskInfo: Unable to find " << FILE_SYSTEM << std::endl;
+        std::cerr << "File_utils::diskInfo: Unable to find " << FILE_SYSTEM
+                  << std::endl;
 }
 
 void File_utils::diskUsed(const std::vector<std::string> &p_files)
@@ -515,7 +523,8 @@ void File_utils::diskUsed(const std::vector<std::string> &p_files)
     // Build and execute command
     {
         std::string l_command("du -csh");
-        for (std::vector<std::string>::const_iterator l_it = p_files.begin(); l_it != p_files.end(); ++l_it)
+        for (std::vector<std::string>::const_iterator l_it = p_files.begin();
+             l_it != p_files.end(); ++l_it)
             l_command = l_command + " \"" + *l_it + "\"";
         char l_buffer[256];
         FILE *l_pipe = popen(l_command.c_str(), "r");
@@ -524,7 +533,8 @@ void File_utils::diskUsed(const std::vector<std::string> &p_files)
             std::cerr << "File_utils::diskUsed: Error popen" << std::endl;
             return;
         }
-        while (fgets(l_buffer, sizeof(l_buffer), l_pipe) != NULL);
+        while (fgets(l_buffer, sizeof(l_buffer), l_pipe) != NULL)
+            ;
         l_line = l_buffer;
         pclose(l_pipe);
     }
@@ -532,7 +542,9 @@ void File_utils::diskUsed(const std::vector<std::string> &p_files)
     {
         std::istringstream l_iss(l_line);
         std::vector<std::string> l_tokens;
-        copy(std::istream_iterator<std::string>(l_iss), std::istream_iterator<std::string>(), std::back_inserter<std::vector<std::string> >(l_tokens));
+        copy(std::istream_iterator<std::string>(l_iss),
+            std::istream_iterator<std::string>(),
+            std::back_inserter<std::vector<std::string>>(l_tokens));
         l_line = l_tokens[0];
     }
     // Dialog
