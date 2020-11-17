@@ -24,6 +24,7 @@
 
 #include "def.h"
 #include "dialog.h"
+#include "error_dialog.h"
 #include "sdlutils.h"
 
 namespace
@@ -210,35 +211,6 @@ OverwriteDialogResult OverwriteDialog(
 using ActionFn = std::function<ActionResult(
     const std::string & /*src*/, const std::string & /*dest*/)>;
 
-enum class ErrorDialogResult
-{
-    ABORT,
-    CONTINUE
-};
-ErrorDialogResult ErrorDialog(
-    const std::string &action, const std::string &error, bool is_last)
-{
-    CDialog dlg("Error:");
-    dlg.addLabel(action);
-    dlg.addLabel(error);
-    std::vector<ErrorDialogResult> options { ErrorDialogResult::ABORT };
-    const auto add_option = [&](std::string text, ErrorDialogResult value) {
-        dlg.addOption(text);
-        options.push_back(value);
-    };
-    if (!is_last)
-    {
-        add_option("Continue", ErrorDialogResult::CONTINUE);
-        add_option("Abort", ErrorDialogResult::ABORT);
-    }
-    else
-    {
-        add_option("OK", ErrorDialogResult::ABORT);
-    }
-    dlg.init();
-    return options[dlg.execute()];
-}
-
 using ProgressFn = std::function<void(
     const std::string & /*desc*/, std::size_t /*i*/, std::size_t /*n*/)>;
 
@@ -288,6 +260,22 @@ void ActionToDir(const std::vector<std::string> &inputs,
     }
 }
 
+// Returns absolute path to self (for re-launching on Execute failure).
+std::string getSelfExecutionPath()
+{
+    // Get execution path
+    std::string result;
+    char buf[1024];
+    int len = readlink("/proc/self/exe", buf, sizeof(buf));
+    if (len < 0)
+    {
+        perror("readlink(\"/proc/self/exe'\", ...)");
+        return result;
+    }
+    result.append(buf, len);
+    return result;
+}
+
 } // namespace
 
 void File_utils::copyFile(
@@ -333,7 +321,7 @@ void File_utils::renameFile(
         {
             ErrorDialog("Renaming " + getFileName(p_file1) + " to "
                     + getFileName(p_file2),
-                result.message(), /*is_last=*/true);
+                result.message());
         }
     }
 }
@@ -359,8 +347,7 @@ void File_utils::makeDirectory(const std::string &p_file)
 {
     auto result = Run("mkdir", "-p", p_file);
     if (result.ok()) result = Run("sync", p_file);
-    if (!result.ok())
-        ErrorDialog("Creating " + p_file, result.message(), /*is_last=*/true);
+    if (!result.ok()) ErrorDialog("Creating " + p_file, result.message());
 }
 
 const bool File_utils::fileExists(const std::string &p_path)
@@ -398,57 +385,28 @@ const std::string File_utils::getPath(const std::string &p_path)
 
 void File_utils::executeFile(const std::string &p_file)
 {
-    // Command
-    INHIBIT(std::cout << "File_utils::executeFile: " << p_file << " in "
-                      << getPath(p_file) << std::endl;)
-    // CD to the file's location
-    chdir(getPath(p_file).c_str());
-    // Quit
-    SDL_utils::hastalavista();
-    // Execute file
+    SDL_utils::hastalavista(); // Free all resources before exec
+
+    char *prev_pwd = ::getcwd(NULL, 0);
+    ::chdir(getPath(p_file).c_str());
     if (getLowercaseFileExtension(p_file) == "opk")
-    {
-        execlp("opkrun", "opkrun", p_file.c_str(), nullptr);
-    }
+        ::execlp("opkrun", "opkrun", p_file.c_str(), nullptr);
     else
-    {
-        execl(p_file.c_str(), p_file.c_str(), nullptr);
-    }
-    // If we're here, there was an error with the execution
-    perror("Child process error");
-    std::cerr << "Error executing file " << p_file << std::endl;
-    // Relaunch DinguxCommander
-    const std::string self_name = getSelfExecutionName();
-    INHIBIT(std::cout << "File_utils::executeFile: " << self_name << " in "
-                      << getSelfExecutionPath() << std::endl;)
-    chdir(getSelfExecutionPath().c_str());
-    execl(self_name.c_str(), self_name.c_str(), NULL);
-}
+        ::execl(p_file.c_str(), p_file.c_str(), nullptr);
 
-const std::string File_utils::getSelfExecutionPath(void)
-{
-    // Get execution path
-    std::string l_exePath("");
-    char l_buff[255];
-    int l_i = readlink("/proc/self/exe", l_buff, 255);
-    l_exePath = l_buff;
-    l_exePath = l_exePath.substr(0, l_i);
-    l_i = l_exePath.rfind("/");
-    l_exePath = l_exePath.substr(0, l_i);
-    return l_exePath;
-}
+    // If we're here, exec failed
+    const char *const child_error = std::strerror(errno);
+    perror("exec error");
+    std::string error_message = getFileName(p_file) + ": " + child_error;
 
-const std::string File_utils::getSelfExecutionName(void)
-{
-    // Get execution path
-    std::string l_exePath("");
-    char l_buff[255];
-    int l_i = readlink("/proc/self/exe", l_buff, 255);
-    l_exePath = l_buff;
-    l_exePath = l_exePath.substr(0, l_i);
-    l_i = l_exePath.rfind("/");
-    l_exePath = l_exePath.substr(l_i + 1);
-    return l_exePath;
+    // Relaunch self and show the error
+    ::chdir(prev_pwd);
+    const std::string self_path = getSelfExecutionPath();
+    ::free(prev_pwd);
+    execl(self_path.c_str(), self_path.c_str(), "--show_exec_error",
+        error_message.c_str(), NULL);
+    perror("relaunch error");
+    std::cerr << getSelfExecutionPath() << std::endl;
 }
 
 void File_utils::stringReplace(std::string &p_string,
@@ -465,14 +423,10 @@ void File_utils::stringReplace(std::string &p_string,
 
 const unsigned long int File_utils::getFileSize(const std::string &p_file)
 {
-    unsigned long int l_ret(0);
-    struct stat l_stat;
-    if (stat(p_file.c_str(), &l_stat) == -1)
-        std::cerr << "File_utils::getFileSize: Error stat " << p_file
-                  << std::endl;
-    else
-        l_ret = l_stat.st_size;
-    return l_ret;
+    struct ::stat l_stat;
+    if (::stat(p_file.c_str(), &l_stat) == -1)
+        ErrorDialog("Obtaining file size", std::strerror(errno));
+    return l_stat.st_size;
 }
 
 void File_utils::diskInfo(void)
@@ -485,7 +439,7 @@ void File_utils::diskInfo(void)
         FILE *l_pipe = popen("df -h " FILE_SYSTEM, "r");
         if (l_pipe == NULL)
         {
-            std::cerr << "File_utils::diskInfo: Error popen" << std::endl;
+            ErrorDialog("Getting disk information", std::strerror(errno));
             return;
         }
         while (
@@ -511,8 +465,8 @@ void File_utils::diskInfo(void)
         l_dialog.execute();
     }
     else
-        std::cerr << "File_utils::diskInfo: Unable to find " << FILE_SYSTEM
-                  << std::endl;
+        ErrorDialog("Getting disk information",
+            std::string(FILE_SYSTEM) + " not found");
 }
 
 void File_utils::diskUsed(const std::vector<std::string> &p_files)
@@ -530,11 +484,10 @@ void File_utils::diskUsed(const std::vector<std::string> &p_files)
         FILE *l_pipe = popen(l_command.c_str(), "r");
         if (l_pipe == NULL)
         {
-            std::cerr << "File_utils::diskUsed: Error popen" << std::endl;
+            ErrorDialog("Getting file size", std::strerror(errno));
             return;
         }
-        while (fgets(l_buffer, sizeof(l_buffer), l_pipe) != NULL)
-            ;
+        while (fgets(l_buffer, sizeof(l_buffer), l_pipe) != NULL) { }
         l_line = l_buffer;
         pclose(l_pipe);
     }

@@ -1,15 +1,19 @@
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <unistd.h>
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+
+#include "error_dialog.h"
+#include "commander.h"
 #include "def.h"
+#include "resourceManager.h"
 #include "screen.h"
 #include "sdlutils.h"
-#include "resourceManager.h"
-#include "commander.h"
 
 // Globals
 SDL_Surface *ScreenSurface;
@@ -109,6 +113,10 @@ int main(int argc, char** argv)
     if (access(r_path.c_str(), F_OK) != 0) r_path = "/";
 
     CCommander l_commander(l_path, r_path);
+
+    // exec error from the previous process (when relaunching)
+    if (argc >= 3 && std::strcmp(argv[1], "--show_exec_error") == 0)
+        ErrorDialog("Exec error", argv[2]);
 
     // Main loop
     l_commander.execute();

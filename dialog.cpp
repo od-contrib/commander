@@ -10,6 +10,7 @@ CDialog::CDialog(const std::string &p_title, const Sint16 p_x, const Sint16 p_y)
     m_nbTitle(false),
     m_nbLabels(0),
     m_nbOptions(0),
+    m_titleImg(NULL),
     m_highlightedLine(0),
     m_image(NULL),
     m_cursor1(NULL),
@@ -83,7 +84,8 @@ void CDialog::init(void)
     auto l_it = m_lines.begin();
     if (m_nbTitle) {
         m_titleImg = SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextTitle, {COLOR_BORDER});
-        l_width = m_titleImg->w;
+        // m_titleImg is nullptr when text has zero width.
+        l_width = m_titleImg != nullptr ? m_titleImg->w : 0;
         ++l_it;
     }
 
@@ -96,7 +98,7 @@ void CDialog::init(void)
         m_linesImg.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, {COLOR_BG_1}));
         m_linesImgCursor1.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_1}));
         m_linesImgCursor2.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_2}));
-        if (m_linesImg.back()->w > l_width)
+        if (m_linesImg.back() != nullptr && m_linesImg.back()->w > l_width)
             l_width = m_linesImg.back()->w;
     }
     l_width /= screen.ppu_x;
@@ -105,7 +107,12 @@ void CDialog::init(void)
     if (l_cursorWidth > screen.w - 2 * DIALOG_BORDER)
         l_cursorWidth = screen.w - 2 * DIALOG_BORDER;
     // Line clip
-    m_clip.h = m_linesImg.front()->h;
+    for (auto *img : m_linesImg)
+    {
+        if (img == nullptr) continue;
+        m_clip.h = img->h;
+        break;
+    }
     m_clip.w = (l_cursorWidth - DIALOG_MARGIN - 1) * screen.ppu_x;
     // Adjust image width
     l_width = l_width + 2 * DIALOG_MARGIN + 2 * DIALOG_BORDER;

@@ -36,10 +36,6 @@ namespace File_utils
 
     const std::string getPath(const std::string &p_path);
 
-    const std::string getSelfExecutionPath(void);
-
-    const std::string getSelfExecutionName(void);
-
     void stringReplace(std::string &p_string, const std::string &p_search, const std::string &p_replace);
 
     // Dialogs
