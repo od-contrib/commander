@@ -498,7 +498,7 @@ void File_utils::diskInfo(void)
         // Separate line by spaces
         std::istringstream l_iss(l_line);
         std::vector<std::string> l_tokens;
-        copy(std::istream_iterator<std::string>(l_iss),
+        std::copy(std::istream_iterator<std::string>(l_iss),
             std::istream_iterator<std::string>(),
             std::back_inserter<std::vector<std::string>>(l_tokens));
         // Display dialog
@@ -542,7 +542,7 @@ void File_utils::diskUsed(const std::vector<std::string> &p_files)
     {
         std::istringstream l_iss(l_line);
         std::vector<std::string> l_tokens;
-        copy(std::istream_iterator<std::string>(l_iss),
+        std::copy(std::istream_iterator<std::string>(l_iss),
             std::istream_iterator<std::string>(),
             std::back_inserter<std::vector<std::string>>(l_tokens));
         l_line = l_tokens[0];
