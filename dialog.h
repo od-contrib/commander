@@ -14,7 +14,7 @@ class CDialog : public CWindow
 
     // Constructor
     // Coordinates = 0 => centered
-    CDialog(const std::string &p_title, const Sint16 p_x, const Sint16 p_y);
+    CDialog(const std::string &p_title, const Sint16 p_x = 0, const Sint16 p_y = 0);
 
     // Destructor
     virtual ~CDialog(void);

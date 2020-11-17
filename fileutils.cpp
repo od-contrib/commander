@@ -1,52 +1,102 @@
+#include "fileutils.h"
+
+#include <array>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <iostream>
+#include <iterator>
+#include <memory>
+#include <sstream>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #ifdef _POSIX_SPAWN
+#include <poll.h>
 #include <spawn.h>
 #else
 #include <signal.h>
 #endif
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <cstdlib>
-#include <iostream>
-#include <iterator>
-#include <sstream>
-#include <unistd.h>
-#include "fileutils.h"
 #include "def.h"
 #include "dialog.h"
 #include "sdlutils.h"
 
-namespace {
+namespace
+{
 
 int WaitPid(pid_t id)
 {
-    int status;
-    while (waitpid(id, &status, WNOHANG) == 0)
+    int status, ret;
+    while ((ret = waitpid(id, &status, WNOHANG | WUNTRACED)) == 0)
         usleep(50 * 1000);
-    if (1 != WIFEXITED(status) || 0 != WEXITSTATUS(status))
-    {
-        perror("Child process error");
-        return -1;
-    }
-    return 0;
+    if (ret < 0) perror("waitpid");
+    return (WIFEXITED(status) != 0) ? WEXITSTATUS(status) : 0;
 }
 
-// If child_pid is NULL, waits for the child process to finish.
-// Otherwise, doesn't wait and stores child process pid into child_pid.
-int SpawnAndWait(const char *argv[])
+int SpawnAndWait(const char *argv[], std::string *capture_stdout = nullptr,
+    std::string *capture_stderr = nullptr)
 {
     pid_t child_pid;
 #ifdef _POSIX_SPAWN
+    std::vector<std::array<int, 2>> pipes;
+    std::vector<std::string *> captures;
+    posix_spawn_file_actions_t child_fd_actions;
+    int ret;
+    if (ret = ::posix_spawn_file_actions_init(&child_fd_actions)) return ret;
+    const auto add_capture_pipe = [&](std::string *capture, int child_fd) {
+        if (capture == nullptr) return 0;
+        captures.push_back(capture);
+        pipes.emplace_back();
+        if (ret = ::pipe(pipes.back().data())) return ret;
+        if (ret = ::posix_spawn_file_actions_addclose(
+                &child_fd_actions, pipes.back()[0]))
+            return ret;
+        if (ret = ::posix_spawn_file_actions_adddup2(
+                &child_fd_actions, pipes.back()[1], child_fd))
+            return ret;
+        return 0;
+    };
+    if (ret = add_capture_pipe(capture_stdout, 1)) return ret;
+    if (ret = add_capture_pipe(capture_stderr, 2)) return ret;
+
     // This const cast is OK, see https://stackoverflow.com/a/190208.
-    if (::posix_spawnp(&child_pid, argv[0], nullptr, nullptr, (char **)argv, nullptr) != 0)
+    if (ret = ::posix_spawnp(&child_pid, argv[0], &child_fd_actions, nullptr,
+            (char **)argv, nullptr))
+        return ret;
+
+    // Read from pipes
+    if (!pipes.empty())
     {
-        perror(argv[0]);
-        return -1;
+        for (auto &p : pipes) ::close(p[1]);
+        constexpr std::size_t kBufferSize = 1024;
+        std::unique_ptr<char[]> buffer { new char[kBufferSize] };
+        std::vector<::pollfd> poll_fds;
+        for (auto &p : pipes) poll_fds.push_back(::pollfd { p[0], POLL_IN });
+        while ((ret = ::poll(&poll_fds[0], poll_fds.size(), -1)) >= 0)
+        {
+            bool got_data = false;
+            for (std::size_t i = 0; i < poll_fds.size(); ++i)
+            {
+                if ((poll_fds[i].revents & POLL_IN) == 0) continue;
+                const int bytes_read
+                    = ::read(pipes[i][0], buffer.get(), kBufferSize);
+                got_data = true;
+                if (bytes_read > 0)
+                    captures[i]->append(buffer.get(), bytes_read);
+            }
+            if (!got_data) break; // nothing left to read
+        }
+        for (auto &p : pipes) ::close(p[0]);
     }
-    return WaitPid(child_pid);
+
+    ret = WaitPid(child_pid);
+    ::posix_spawn_file_actions_destroy(&child_fd_actions);
+    return ret;
 #else
     struct sigaction sa, save_quit, save_int;
     sigset_t save_mask;
@@ -88,213 +138,230 @@ out:
 const char *AsConstCStr(const char *s) { return s; }
 const char *AsConstCStr(const std::string &s) { return s.c_str(); }
 
-template <typename... Args>
-bool Run(Args... args)
+class ActionResult
 {
-    const char *execve_args[] = {AsConstCStr(args)..., nullptr};
-    return SpawnAndWait(execve_args) == 0;
+    public:
+    ActionResult(int errnum, std::string error_message)
+        : errnum_(errnum)
+        , message_(std::move(error_message))
+    {
+        if (errnum != 0 && message_.empty())
+            message_.append(std::strerror(errnum));
+    }
+
+    bool ok() const { return errnum_ == 0; }
+
+    const std::string &message() const { return message_; }
+
+    private:
+    int errnum_;
+    std::string message_;
+};
+
+template <typename... Args> ActionResult Run(Args... args)
+{
+    const char *execve_args[] = { AsConstCStr(args)..., nullptr };
+    std::string err;
+    const int errnum = SpawnAndWait(
+        execve_args, /*capture_stdout=*/nullptr, /*capture_stderr=*/&err);
+    if (errnum == 0) { err.clear(); }
+    else if (!err.empty() && err.back() == '\n')
+    {
+        err.resize(err.size() - 1);
+    }
+    return ActionResult { errnum, std::move(err) };
+}
+
+void JoinPath(const std::string &a, const std::string &b, std::string &out)
+{
+    out = a;
+    if (a.back() != '/') out += '/';
+    out.append(b);
+}
+
+enum class OverwriteDialogResult
+{
+    YES,
+    YES_TO_ALL,
+    NO,
+    CANCEL
+};
+OverwriteDialogResult OverwriteDialog(
+    const std::string &dest_filename, bool is_last)
+{
+    CDialog dlg("File already exists:");
+    dlg.addLabel("Overwrite " + dest_filename + "?");
+    std::vector<OverwriteDialogResult> options {
+        OverwriteDialogResult::CANCEL
+    };
+    const auto add_option = [&](std::string text, OverwriteDialogResult value) {
+        dlg.addOption(text);
+        options.push_back(value);
+    };
+    add_option("Yes", OverwriteDialogResult::YES);
+    if (!is_last) add_option("Yes to all", OverwriteDialogResult::YES_TO_ALL);
+    add_option("No", OverwriteDialogResult::NO);
+    if (!is_last) add_option("Cancel", OverwriteDialogResult::CANCEL);
+    dlg.init();
+    auto res = options[dlg.execute()];
+    SDL_utils::renderAll();
+    return res;
+}
+
+using ActionFn = std::function<ActionResult(
+    const std::string & /*src*/, const std::string & /*dest*/)>;
+
+enum class ErrorDialogResult
+{
+    ABORT,
+    CONTINUE
+};
+ErrorDialogResult ErrorDialog(
+    const std::string &action, const std::string &error, bool is_last)
+{
+    CDialog dlg("Error:");
+    dlg.addLabel(action);
+    dlg.addLabel(error);
+    std::vector<ErrorDialogResult> options { ErrorDialogResult::ABORT };
+    const auto add_option = [&](std::string text, ErrorDialogResult value) {
+        dlg.addOption(text);
+        options.push_back(value);
+    };
+    if (!is_last)
+    {
+        add_option("Continue", ErrorDialogResult::CONTINUE);
+        add_option("Abort", ErrorDialogResult::ABORT);
+    }
+    else
+    {
+        add_option("OK", ErrorDialogResult::ABORT);
+    }
+    dlg.init();
+    return options[dlg.execute()];
+}
+
+using ProgressFn = std::function<void(
+    const std::string & /*desc*/, std::size_t /*i*/, std::size_t /*n*/)>;
+
+// No-op for now.
+// TODO: Implement UI progress updates
+void DefaultProgressFn(
+    const std::string &description, std::size_t index, std::size_t count)
+{
+}
+
+void ActionToDir(const std::vector<std::string> &inputs,
+    const std::string &dest_dir, const char *description, ActionFn action_fn,
+    ProgressFn progress_fn = &DefaultProgressFn)
+{
+    bool confirm_overwrite = true;
+    std::string dest_filename, action_desc;
+    std::size_t i = 0;
+    for (const std::string &input : inputs)
+    {
+        action_desc = description;
+        action_desc += ' ';
+        action_desc.append(File_utils::getFileName(input));
+        const bool is_last = (i == input.size() - 1);
+        progress_fn(action_desc, i++, inputs.size());
+        JoinPath(dest_dir, File_utils::getFileName(input), dest_filename);
+        if (confirm_overwrite && File_utils::fileExists(dest_filename))
+        {
+            switch (OverwriteDialog(dest_filename, is_last))
+            {
+                case OverwriteDialogResult::YES: break;
+                case OverwriteDialogResult::YES_TO_ALL:
+                    confirm_overwrite = false;
+                    break;
+                case OverwriteDialogResult::NO: continue;
+                case OverwriteDialogResult::CANCEL: return;
+            }
+        }
+        const auto action_result = action_fn(input, dest_filename);
+        if (!action_result.ok())
+        {
+            switch (ErrorDialog(action_desc, action_result.message(), is_last))
+            {
+                case ErrorDialogResult::CONTINUE: continue;
+                case ErrorDialogResult::ABORT: return;
+            }
+        }
+    }
 }
 
 } // namespace
 
-void File_utils::copyFile(const std::vector<std::string> &p_src, const std::string &p_dest)
+void File_utils::copyFile(
+    const std::vector<std::string> &srcs, const std::string &dest_dir)
 {
-    std::string l_destFile;
-    std::string l_fileName;
-    bool l_loop(true);
-    bool l_confirm(true);
-    bool l_execute(true);
-    for (std::vector<std::string>::const_iterator l_it = p_src.begin(); l_loop && (l_it != p_src.end()); ++l_it)
-    {
-        l_execute = true;
-        l_fileName = getFileName(*l_it);
-        l_destFile = p_dest + (p_dest.at(p_dest.size() - 1) == '/' ? "" : "/") + l_fileName;
-
-        // Check if destination files already exists
-        if (l_confirm)
-        {
-            if (fileExists(l_destFile))
-            {
-                INHIBIT(std::cout << "File " << l_destFile << " already exists => ask for confirmation" << std::endl;)
-                CDialog l_dialog("Question:", 0, 0);
-                l_dialog.addLabel("Overwrite " + l_fileName + "?");
-                l_dialog.addOption("Yes");
-                l_dialog.addOption("Yes to all");
-                l_dialog.addOption("No");
-                l_dialog.addOption("Cancel");
-                l_dialog.init();
-                switch (l_dialog.execute())
-                {
-                    case 1:
-                        // Yes
-                        break;
-                    case 2:
-                        // Yes to all
-                        l_confirm = false;
-                        break;
-                    case 3:
-                        // No
-                        l_execute = false;
-                        break;
-                    default:
-                        // Cancel
-                        l_execute = false;
-                        l_loop = false;
-                        break;
-                }
-            }
-        }
-        if (l_execute)
-        {
-            Run("cp", "-r", *l_it, p_dest);
-            Run("sync", l_destFile);
-        }
-    }
+    ActionToDir(srcs, dest_dir, "Copying",
+        [&](const std::string &src, const std::string & /*dest*/) {
+            return Run("cp", "-f", "-r", src, dest_dir);
+        });
+    Run("sync", dest_dir);
 }
 
-void File_utils::moveFile(const std::vector<std::string> &p_src, const std::string &p_dest)
+void File_utils::moveFile(
+    const std::vector<std::string> &srcs, const std::string &dest_dir)
 {
-    std::string l_destFile;
-    std::string l_fileName;
-    bool l_loop(true);
-    bool l_confirm(true);
-    bool l_execute(true);
-    for (std::vector<std::string>::const_iterator l_it = p_src.begin(); l_loop && (l_it != p_src.end()); ++l_it)
-    {
-        l_execute = true;
-        // Check if destination files already exists
-        if (l_confirm)
-        {
-            l_fileName = getFileName(*l_it);
-            l_destFile = p_dest + (p_dest.at(p_dest.size() - 1) == '/' ? "" : "/") + l_fileName;
-            if (fileExists(l_destFile))
-            {
-                INHIBIT(std::cout << "File " << l_destFile << " already exists => ask for confirmation" << std::endl;)
-                CDialog l_dialog("Question:", 0, 0);
-                l_dialog.addLabel("Overwrite " + l_fileName + "?");
-                l_dialog.addOption("Yes");
-                l_dialog.addOption("Yes to all");
-                l_dialog.addOption("No");
-                l_dialog.addOption("Cancel");
-                l_dialog.init();
-                switch (l_dialog.execute())
-                {
-                    case 1:
-                        // Yes
-                        break;
-                    case 2:
-                        // Yes to all
-                        l_confirm = false;
-                        break;
-                    case 3:
-                        // No
-                        l_execute = false;
-                        break;
-                    default:
-                        // Cancel
-                        l_execute = false;
-                        l_loop = false;
-                        break;
-                }
-            }
-        }
-        if (l_execute)
-        {
-            Run("mv", *l_it, p_dest);
-            Run("sync", p_dest);
-        }
-    }
+    ActionToDir(srcs, dest_dir, "Moving",
+        [&](const std::string &src, const std::string &dest) {
+            return Run("mv", "-f", src, dest_dir);
+        });
+    Run("sync", dest_dir);
 }
 
-void File_utils::symlinkFile(const std::vector<std::string> &p_src, const std::string &p_dest)
+void File_utils::symlinkFile(
+    const std::vector<std::string> &srcs, const std::string &dest_dir)
 {
-    std::string l_destFile;
-    std::string l_fileName;
-    bool l_loop(true);
-    bool l_confirm(true);
-    bool l_execute(true);
-    for (std::vector<std::string>::const_iterator l_it = p_src.begin(); l_loop && (l_it != p_src.end()); ++l_it)
-    {
-        l_execute = true;
-        l_fileName = getFileName(*l_it);
-        l_destFile = p_dest + (p_dest.at(p_dest.size() - 1) == '/' ? "" : "/") + l_fileName;
-
-        // Check if destination files already exists
-        if (l_confirm)
-        {
-            if (fileExists(l_destFile))
-            {
-                INHIBIT(std::cout << "File " << l_destFile << " already exists => ask for confirmation" << std::endl;)
-                CDialog l_dialog("Question:", 0, 0);
-                l_dialog.addLabel("Overwrite " + l_fileName + "?");
-                l_dialog.addOption("Yes");
-                l_dialog.addOption("Yes to all");
-                l_dialog.addOption("No");
-                l_dialog.addOption("Cancel");
-                l_dialog.init();
-                switch (l_dialog.execute())
-                {
-                    case 1:
-                        // Yes
-                        break;
-                    case 2:
-                        // Yes to all
-                        l_confirm = false;
-                        break;
-                    case 3:
-                        // No
-                        l_execute = false;
-                        break;
-                    default:
-                        // Cancel
-                        l_execute = false;
-                        l_loop = false;
-                        break;
-                }
-            }
-        }
-        if (l_execute)
-        {
-            Run("ln", "-sf", *l_it, p_dest);
-            Run("sync", l_destFile);
-        }
-    }
+    ActionToDir(srcs, dest_dir, "Creating symlink",
+        [&](const std::string &src, const std::string &dest) {
+            return Run("ln", "-sf", src, dest_dir);
+        });
+    Run("sync", dest_dir);
 }
 
-void File_utils::renameFile(const std::string &p_file1, const std::string &p_file2)
+void File_utils::renameFile(
+    const std::string &p_file1, const std::string &p_file2)
 {
-    bool l_execute(true);
-    // Check if destination files already exists
-    if (fileExists(p_file2))
+    if (!fileExists(p_file2)
+        || OverwriteDialog(p_file2, /*is_last=*/true)
+            == OverwriteDialogResult::YES)
     {
-        INHIBIT(std::cout << "File " << p_file2 << " already exists => ask for confirmation" << std::endl;)
-        CDialog l_dialog("Question:", 0, 0);
-        l_dialog.addLabel("Overwrite " + getFileName(p_file2) + "?");
-        l_dialog.addOption("Yes");
-        l_dialog.addOption("No");
-        l_dialog.init();
-        if (l_dialog.execute() != 1)
-            l_execute = false;
-    }
-    if (l_execute)
-    {
-        Run("mv", p_file1, p_file2);
-        Run("sync", p_file2);
+        auto result = Run("mv", "-f", p_file1, p_file2);
+        if (result.ok()) result = Run("sync", p_file2);
+        if (!result.ok())
+        {
+            ErrorDialog("Renaming " + getFileName(p_file1) + " to "
+                    + getFileName(p_file2),
+                result.message(), /*is_last=*/true);
+        }
     }
 }
 
 void File_utils::removeFile(const std::vector<std::string> &p_files)
 {
-    for (std::vector<std::string>::const_iterator l_it = p_files.begin(); l_it != p_files.end(); ++l_it)
+    for (const std::string &path : p_files)
     {
-        Run("rm", "-rf", *l_it);
+        auto result = Run("rm", "-rf", path);
+        if (!result.ok())
+        {
+            switch (ErrorDialog("Removing " + path, result.message(),
+                /*is_last=*/&path == &p_files.back()))
+            {
+                case ErrorDialogResult::CONTINUE: continue;
+                case ErrorDialogResult::ABORT: return;
+            }
+        }
     }
 }
 
 void File_utils::makeDirectory(const std::string &p_file)
 {
-    Run("mkdir", "-p", p_file);
-    Run("sync", p_file);
+    auto result = Run("mkdir", "-p", p_file);
+    if (result.ok()) result = Run("sync", p_file);
+    if (!result.ok())
+        ErrorDialog("Creating " + p_file, result.message(), /*is_last=*/true);
 }
 
 const bool File_utils::fileExists(const std::string &p_path)
