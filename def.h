@@ -75,6 +75,7 @@
 #define COLOR_BG_1 255, 255, 255
 #define COLOR_BG_2 232, 228, 224
 #define COLOR_BORDER 102, 85, 74
+#define COLOR_BORDER_ERROR 128, 55, 55
 
 #ifndef MYKEY_UP
 #define MYKEY_UP SDLK_UP

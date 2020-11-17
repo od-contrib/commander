@@ -7,6 +7,7 @@
 
 CDialog::CDialog(const std::string &p_title, const Sint16 p_x, const Sint16 p_y):
     CWindow(),
+    m_borderColor({COLOR_BORDER}),
     m_nbTitle(false),
     m_nbLabels(0),
     m_nbOptions(0),
@@ -83,7 +84,7 @@ void CDialog::init(void)
     // Title
     auto l_it = m_lines.begin();
     if (m_nbTitle) {
-        m_titleImg = SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextTitle, {COLOR_BORDER});
+        m_titleImg = SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextTitle, m_borderColor);
         // m_titleImg is nullptr when text has zero width.
         l_width = m_titleImg != nullptr ? m_titleImg->w : 0;
         ++l_it;
@@ -120,7 +121,10 @@ void CDialog::init(void)
         l_width = screen.w;
     // Create dialog image
     const int m_image_h = m_lines.size() * LINE_HEIGHT + 2 * DIALOG_BORDER;
-    m_image = SDL_utils::createImage(l_width * screen.ppu_x, m_image_h * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+    m_image = SDL_utils::createImage(l_width * screen.ppu_x,
+        m_image_h * screen.ppu_y,
+        SDL_MapRGB(Globals::g_screen->format, m_borderColor.r, m_borderColor.g,
+            m_borderColor.b));
     {
         SDL_Rect l_rect;
         l_rect.x = DIALOG_BORDER * screen.ppu_x;
