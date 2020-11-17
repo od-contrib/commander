@@ -1,17 +1,18 @@
+#include "commander.h"
+
+#include <cstdio>
 #include <functional>
 #include <iostream>
 #include <sstream>
-#include "commander.h"
-#include "resourceManager.h"
-#include "screen.h"
-#include "sdlutils.h"
+
 #include "def.h"
 #include "dialog.h"
 #include "fileutils.h"
-#include "viewer.h"
 #include "keyboard.h"
-
-#include <stdio.h>
+#include "resourceManager.h"
+#include "screen.h"
+#include "sdlutils.h"
+#include "viewer.h"
 
 #define SPLITTER_LINE_W 1
 #define X_LEFT 1
