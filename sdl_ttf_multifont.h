@@ -14,7 +14,9 @@
 
 class Fonts {
  public:
-  Fonts(std::vector<TTF_Font *> fonts);
+  explicit Fonts(std::vector<TTF_Font *> fonts);
+  Fonts(Fonts &&) = default;
+  Fonts &operator=(Fonts &&) noexcept = default;
 
   // Not thread-safe.
   TTF_Font *GetFontForCodePoint(std::uint16_t code_point) const;

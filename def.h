@@ -16,7 +16,12 @@
 #endif
 
 #ifndef FONTS
-#define FONTS {RES_DIR"Fiery_Turk.ttf",8},{"/usr/share/fonts/dejavu/DejaVuSansCondensed.ttf",10},{RES_DIR"FreeSans.ttf",10},{RES_DIR"DroidSansFallback.ttf",9}
+#define FONTS {"/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf",10},{RES_DIR"FreeSans.ttf",10},{RES_DIR"DroidSansFallback.ttf",9}
+#endif
+
+// Font stack to use on screens with low DPI.
+#ifndef LOW_DPI_FONTS
+#define LOW_DPI_FONTS {RES_DIR"Fiery_Turk.ttf",8},{"/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf",10},{RES_DIR"FreeSans.ttf",10},{RES_DIR"DroidSansFallback.ttf",9}
 #endif
 
 #ifndef SCREEN_WIDTH

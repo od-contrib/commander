@@ -28,24 +28,34 @@ SDL_Surface *LoadIcon(const char *path) {
     return display;
 }
 
-Fonts LoadFonts() {
-    struct FontSpec {
-        const char *const path;
-        int size;
-    };
-    constexpr FontSpec kFonts[] = {FONTS};
-    constexpr std::size_t kFontsLen = sizeof(kFonts) / sizeof(kFonts[0]);
+struct FontSpec {
+    const char *const path;
+    int size;
+};
+static constexpr FontSpec kFonts[] = {FONTS};
+static constexpr std::size_t kFontsLen = sizeof(kFonts) / sizeof(kFonts[0]);
+static constexpr FontSpec kLowDpiFonts[] = {LOW_DPI_FONTS};
+static constexpr std::size_t kLowDpiFontsLen = sizeof(kLowDpiFonts) / sizeof(kLowDpiFonts[0]);
+
+std::vector<TTF_Font *> LoadFonts(bool low_dpi) {
+    const FontSpec *specs = low_dpi ? kLowDpiFonts : kFonts;
+    const std::size_t len = low_dpi ? kLowDpiFontsLen : kFontsLen;
+
     std::vector<TTF_Font *> fonts;
-    fonts.reserve(kFontsLen);
-    for (std::size_t i = 0; i < kFontsLen; ++i) {
-        auto *font = SDL_utils::loadFont(kFonts[i].path, kFonts[i].size);
+    fonts.reserve(len);
+    for (std::size_t i = 0; i < len; ++i) {
+        auto *font = SDL_utils::loadFont(specs[i].path, specs[i].size);
         if (font != nullptr) fonts.push_back(font);
     }
     if (fonts.empty()) {
         std::cerr << "No fonts found!" << std::endl;
         exit(1);
     }
-    return Fonts(std::move(fonts));
+    return fonts;
+}
+
+bool ShouldUseLowDpiFonts() {
+    return screen.ppu_x <= 1.0 && kFonts[0].size < 12;
 }
 
 } // namespace
@@ -56,7 +66,10 @@ CResourceManager& CResourceManager::instance()
     return l_singleton;
 }
 
-CResourceManager::CResourceManager() : m_fonts(LoadFonts()) {
+CResourceManager::CResourceManager()
+    : m_low_dpi_fonts(ShouldUseLowDpiFonts())
+    , m_fonts(LoadFonts(m_low_dpi_fonts))
+{
     // Load images
     m_surfaces[T_SURFACE_FOLDER] = LoadIcon(RES_DIR "folder.png");
     m_surfaces[T_SURFACE_FILE] = LoadIcon(RES_DIR "file-text.png");
@@ -71,6 +84,11 @@ CResourceManager::CResourceManager() : m_fonts(LoadFonts()) {
 void CResourceManager::onResize() {
     m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_CURSOR_1));
     m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_CURSOR_2));
+    if (m_low_dpi_fonts != ShouldUseLowDpiFonts()) {
+        m_low_dpi_fonts = !m_low_dpi_fonts;
+        closeFonts();
+        m_fonts = Fonts{LoadFonts(m_low_dpi_fonts)};
+    }
 }
 
 void CResourceManager::sdlCleanup() {
@@ -83,6 +101,10 @@ void CResourceManager::sdlCleanup() {
             m_surfaces[l_i] = NULL;
         }
     }
+    closeFonts();
+}
+
+void CResourceManager::closeFonts() {
     for (auto &font : m_fonts.fonts()) {
         if (font != nullptr) {
             TTF_CloseFont(font);

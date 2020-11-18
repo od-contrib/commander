@@ -36,6 +36,8 @@ class CResourceManager
     // Cleanup all resources
     void sdlCleanup(void);
 
+    void closeFonts();
+
     // Get a loaded surface
     SDL_Surface *getSurface(const T_SURFACE p_surface) const;
 
@@ -53,6 +55,7 @@ class CResourceManager
     SDL_Surface *m_surfaces[NB_SURFACES];
 
     // Fonts
+    bool m_low_dpi_fonts;
     Fonts m_fonts;
 };
 
