@@ -8,8 +8,8 @@
 #include "screen.h"
 #include "sdlutils.h"
 
-#define KEYHOLD_TIMER_FIRST   6
-#define KEYHOLD_TIMER         2
+#define KEYHOLD_TIMER_FIRST   12
+#define KEYHOLD_TIMER         3
 
 CWindow::CWindow(void):
     m_timer(0),
