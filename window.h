@@ -27,6 +27,9 @@ class CWindow
     // Constructor
     CWindow(void);
 
+    // Window resized.
+    virtual void onResize();
+
     // Key press management
     virtual const bool keyPress(const SDL_Event &p_event);
 

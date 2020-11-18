@@ -62,6 +62,8 @@ class CPanel
     void selectAll(void);
     void selectNone(void);
 
+    void setX(Sint16 x) { m_x = x; }
+
     private:
 
     // Forbidden
@@ -71,6 +73,9 @@ class CPanel
 
     // Adjust camera
     void adjustCamera(void);
+
+    SDL_Surface *cursor1() const;
+    SDL_Surface *cursor2() const;
 
     // File lister
     CFileLister m_fileLister;
@@ -82,7 +87,7 @@ class CPanel
     unsigned int m_camera;
 
     // X coordinate
-    const Sint16 m_x;
+    Sint16 m_x;
 
     // Highlighted line
     unsigned int m_highlightedLine;

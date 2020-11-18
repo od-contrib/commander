@@ -1,10 +1,13 @@
 #ifndef _DIALOG_H_
 #define _DIALOG_H_
 
+#include <functional>
 #include <string>
 #include <vector>
+
 #include <SDL.h>
 #include <SDL_ttf.h>
+
 #include "sdl_ttf_multifont.h"
 #include "window.h"
 
@@ -12,9 +15,11 @@ class CDialog : public CWindow
 {
     public:
 
-    // Constructor
-    // Coordinates = 0 => centered
-    CDialog(const std::string &p_title, const Sint16 p_x = 0, const Sint16 p_y = 0);
+    // x_fn and y_fn are function that return dialog coordinates.
+    // They are functions so that we can handle moving the dialog on resize.
+    // Empty functions mean centered.
+    CDialog(const std::string &p_title, std::function<Sint16()> x_fn = {},
+        std::function<Sint16()> y_fn = {});
 
     // Destructor
     virtual ~CDialog(void);
@@ -44,18 +49,22 @@ class CDialog : public CWindow
     CDialog(const CDialog &p_source);
     const CDialog &operator =(const CDialog &p_source);
 
+    void onResize() override;
+
     // Key press management
-    virtual const bool keyPress(const SDL_Event &p_event);
+    const bool keyPress(const SDL_Event &p_event) override;
 
     // Key hold management
-    virtual const bool keyHold(void);
+    const bool keyHold(void) override;
 
     // Draw
-    virtual void render(const bool p_focus) const;
+    void render(const bool p_focus) const override;
 
     // Move cursor
     const bool moveCursorUp(const bool p_loop);
     const bool moveCursorDown(const bool p_loop);
+
+    void freeResources();
 
     SDL_Color m_borderColor;
 
@@ -82,10 +91,16 @@ class CDialog : public CWindow
     SDL_Surface *m_cursor2;
 
     // Coordinates
+    std::function<Sint16()> m_x_fn;
+    std::function<Sint16()> m_y_fn;
     Sint16 m_x;
     Sint16 m_y;
     Sint16 m_cursorX;
     Sint16 m_cursorY;
+
+    // Relative coordinates, for better resize handling.
+    float relative_x;
+    float relative_y;
 
     // Line clip
     mutable SDL_Rect m_clip;

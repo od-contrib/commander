@@ -76,10 +76,17 @@ void CCommander::render(const bool p_focus) const
 {
     INHIBIT(std::cout << "CCommander::render  fullscreen: " << isFullScreen() << "  focus: " << p_focus << std::endl;)
     // Draw background image
-    SDL_utils::applySurface(0, 0, m_background, Globals::g_screen);
+    SDL_utils::applySurface(0, 0, m_background, screen.surface);
     // Draw panels
     m_panelLeft.render(p_focus && (m_panelSource == &m_panelLeft));
     m_panelRight.render(p_focus && (m_panelSource == &m_panelRight));
+}
+
+void CCommander::onResize()
+{
+    SDL_FreeSurface(m_background);
+    m_background = DrawBackground();
+    m_panelRight.setX(X_RIGHT);
 }
 
 const bool CCommander::keyPress(const SDL_Event &p_event)
@@ -215,7 +222,11 @@ const bool CCommander::openCopyMenu(void) const
         std::ostringstream l_stream;
         l_stream << l_list.size() << " selected:";
         // File operation dialog
-        CDialog l_dialog(l_stream.str(), 0, Y_LIST + m_panelSource->getHighlightedIndexRelative() * LINE_HEIGHT);
+        CDialog l_dialog { l_stream.str(), {}, [this]() {
+                              return Y_LIST
+                                  + m_panelSource->getHighlightedIndexRelative()
+                                  * LINE_HEIGHT;
+                          } };
 
         l_dialog.addOption(m_panelSource == &m_panelLeft ? "Copy >" : "< Copy");
         handlers.push_back([&]() {
@@ -270,7 +281,17 @@ const bool CCommander::openCopyMenu(void) const
             l_dialogRetVal = l_dialog.execute();
             if (l_dialogRetVal == delete_option)
             {
-                CDialog l_dialog2("", l_dialog.getX() + l_dialog.getImage()->w / screen.ppu_x - DIALOG_BORDER, l_dialog.getY() / screen.ppu_y + DIALOG_BORDER + (l_dialog.getHighlightedIndex() + 1) * LINE_HEIGHT);
+                CDialog l_dialog2 { "",
+                    [&]() {
+                        return l_dialog.getX()
+                            + l_dialog.getImage()->w / screen.ppu_x
+                            - DIALOG_BORDER;
+                    },
+                    [&]() {
+                        return l_dialog.getY() / screen.ppu_y + DIALOG_BORDER
+                            + (l_dialog.getHighlightedIndex() + 1)
+                            * LINE_HEIGHT;
+                    } };
                 l_dialog2.addOption("Yes");
                 l_dialog2.addOption("No");
                 l_dialog2.init();
@@ -293,7 +314,11 @@ const bool CCommander::openSystemMenu(void)
     int l_dialogRetVal(0);
     // Selection dialog
     {
-        CDialog l_dialog("System:", 0, Y_LIST + m_panelSource->getHighlightedIndexRelative() * LINE_HEIGHT);
+        CDialog l_dialog { "System:", {}, [this]() {
+                              return Y_LIST
+                                  + m_panelSource->getHighlightedIndexRelative()
+                                  * LINE_HEIGHT;
+                          } };
         l_dialog.addOption("Select all");
         l_dialog.addOption("Select none");
         l_dialog.addOption("New directory");
@@ -342,7 +367,12 @@ void CCommander::openExecuteMenu(void) const
     int l_dialogRetVal(0);
     // Dialog
     {
-        CDialog l_dialog(m_panelSource->getHighlightedItem() + ":", 0, Y_LIST + m_panelSource->getHighlightedIndexRelative() * LINE_HEIGHT);
+        CDialog l_dialog { m_panelSource->getHighlightedItem() + ":", {},
+            [this]() {
+                return Y_LIST
+                    + m_panelSource->getHighlightedIndexRelative()
+                    * LINE_HEIGHT;
+            } };
         l_dialog.addOption("View");
         l_dialog.addOption("Execute");
         l_dialog.init();
@@ -360,7 +390,7 @@ void CCommander::openExecuteMenu(void) const
                 if (File_utils::getFileSize(l_file) > VIEWER_SIZE_MAX)
                 {
                     // File is too big to be viewed!
-                    CDialog l_dialog("Error:", 0, 0);
+                    CDialog l_dialog{"Error:"};
                     l_dialog.addLabel("File is too big!");
                     l_dialog.addOption("OK");
                     l_dialog.init();

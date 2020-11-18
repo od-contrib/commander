@@ -16,7 +16,7 @@ enum class ErrorDialogResult
 inline ErrorDialogResult ErrorDialog(
     const std::string &title, const std::string &error, bool is_last = true)
 {
-    CDialog dlg(title);
+    CDialog dlg{title};
     dlg.setBorderColor({COLOR_BORDER_ERROR});
     dlg.addLabel(error);
     std::vector<ErrorDialogResult> options { ErrorDialogResult::ABORT };

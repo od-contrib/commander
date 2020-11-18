@@ -30,6 +30,9 @@ class CResourceManager
     // Method to get the instance
     static CResourceManager& instance(void);
 
+    // Called on window resize.
+    void onResize();
+
     // Cleanup all resources
     void sdlCleanup(void);
 

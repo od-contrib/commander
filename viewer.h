@@ -35,17 +35,21 @@ class CViewer : public CWindow
     CViewer(const CViewer &p_source);
     const CViewer &operator =(const CViewer &p_source);
 
+    void init();
+    void freeResources();
+    void onResize() override;
+
     // Key press management
-    virtual const bool keyPress(const SDL_Event &p_event);
+    const bool keyPress(const SDL_Event &p_event) override;
 
     // Key hold management
-    virtual const bool keyHold(void);
+    const bool keyHold(void) override;
 
     // Draw
-    virtual void render(const bool p_focus) const;
+    void render(const bool p_focus) const override;
 
     // Is window full screen?
-    virtual bool isFullScreen(void) const;
+    bool isFullScreen(void) const override;
 
     // Scroll (text mode only)
     bool moveUp(const unsigned int p_step);

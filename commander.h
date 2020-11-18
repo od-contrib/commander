@@ -23,11 +23,14 @@ class CCommander : public CWindow
     CCommander(const CCommander &p_source);
     const CCommander &operator =(const CCommander &p_source);
 
+    // Window resized.
+    void onResize() override;
+
     // Key press management
-    virtual const bool keyPress(const SDL_Event &p_event);
+    const bool keyPress(const SDL_Event &p_event) override;
 
     // Key hold management
-    virtual const bool keyHold(void);
+    const bool keyHold(void) override;
 
     // Draw
     virtual void render(const bool p_focus) const;

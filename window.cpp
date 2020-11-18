@@ -1,12 +1,15 @@
-#include <iostream>
 #include "window.h"
+
+#include <cstdint>
+#include <iostream>
+
 #include "def.h"
+#include "resourceManager.h"
+#include "screen.h"
 #include "sdlutils.h"
 
 #define KEYHOLD_TIMER_FIRST   6
 #define KEYHOLD_TIMER         2
-
-extern SDL_Surface *ScreenSurface;
 
 CWindow::CWindow(void):
     m_timer(0),
@@ -23,47 +26,70 @@ CWindow::~CWindow(void)
     Globals::g_windows.pop_back();
 }
 
+namespace
+{
+
+std::uint32_t frameDeadline = 0;
+
+// Limit FPS to avoid high CPU load, use when v-sync isn't available
+void LimitFrameRate()
+{
+    const int refreshDelay = 1000000 / screen.refreshRate;
+    std::uint32_t tc = SDL_GetTicks() * 1000;
+    std::uint32_t v = 0;
+    if (frameDeadline > tc)
+    {
+        v = tc % refreshDelay;
+        SDL_Delay(v / 1000 + 1); // ceil
+    }
+    frameDeadline = tc + v + refreshDelay;
+}
+
+void ResetFrameDeadline() {
+    frameDeadline = 0;
+}
+
+} // namespace
+
 const int CWindow::execute(void)
 {
     m_retVal = 0;
-    Uint32 l_time(0);
-    SDL_Event l_event;
+    SDL_Event event;
     bool l_loop(true);
     bool l_render(true);
     // Main loop
     while (l_loop)
     {
-        l_time = SDL_GetTicks();
         // Handle key press
-        while (SDL_PollEvent(&l_event))
+        while (SDL_PollEvent(&event))
         {
-            if (l_event.type == SDL_KEYDOWN)
+            switch (event.type)
             {
-                l_render = this->keyPress(l_event);
-                if (m_retVal)
-                    l_loop = false;
-            }
-            else if (l_event.type == SDL_QUIT) {
-                return m_retVal;
+                case SDL_KEYDOWN:
+                    l_render = this->keyPress(event);
+                    if (m_retVal) l_loop = false;
+                    break;
+                case SDL_QUIT: return m_retVal;
+                case SDL_VIDEORESIZE:
+                    l_render = true;
+                    ResetFrameDeadline();
+                    screen.onResize(event.resize.w, event.resize.h);
+                    CResourceManager::instance().onResize();
+                    for (auto *window : Globals::g_windows) window->onResize();
+                    break;
             }
         }
         // Handle key hold
-        if (l_loop)
-            l_render = this->keyHold() || l_render;
+        if (!l_loop) break;
+        l_render = this->keyHold() || l_render;
         // Render if necessary
-        if (l_render && l_loop)
+        if (l_render)
         {
             SDL_utils::renderAll();
-            // Flip twice to avoid graphical glitch on Dingoo
-            //SDL_Flip(Globals::g_screen);
-            //SDL_Flip(Globals::g_screen);
-            SDL_Flip(ScreenSurface);
+            screen.flip();
             l_render = false;
-            INHIBIT(std::cout << "Render time: " << SDL_GetTicks() - l_time << "ms"<< std::endl;)
         }
-        // Cap the framerate
-        l_time = MS_PER_FRAME - (SDL_GetTicks() - l_time);
-        if (l_time <= MS_PER_FRAME) SDL_Delay(l_time);
+        LimitFrameRate();
     }
     return m_retVal;
 }
@@ -82,6 +108,8 @@ const bool CWindow::keyHold(void)
     // Default behavior
     return false;
 }
+
+void CWindow::onResize() { }
 
 const bool CWindow::tick(const Uint8 p_held)
 {

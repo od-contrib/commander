@@ -205,7 +205,7 @@ enum class OverwriteDialogResult
 OverwriteDialogResult OverwriteDialog(
     const std::string &dest_filename, bool is_last)
 {
-    CDialog dlg("File already exists:");
+    CDialog dlg{"File already exists:"};
     dlg.addLabel("Overwrite " + dest_filename + "?");
     std::vector<OverwriteDialogResult> options {
         OverwriteDialogResult::CANCEL
@@ -469,7 +469,7 @@ void File_utils::diskInfo(void)
             std::istream_iterator<std::string>(),
             std::back_inserter<std::vector<std::string>>(l_tokens));
         // Display dialog
-        CDialog l_dialog("Disk information:", 0, 0);
+        CDialog l_dialog{"Disk information:"};
         l_dialog.addLabel("Size: " + l_tokens[1]);
         l_dialog.addLabel("Used: " + l_tokens[2] + " (" + l_tokens[4] + ")");
         l_dialog.addLabel("Available: " + l_tokens[3]);
@@ -515,7 +515,7 @@ void File_utils::diskUsed(const std::vector<std::string> &p_files)
     }
     // Dialog
     std::ostringstream l_stream;
-    CDialog l_dialog("Disk used:", 0, 0);
+    CDialog l_dialog{"Disk used:"};
     l_stream << p_files.size() << " items selected";
     l_dialog.addLabel(l_stream.str());
     l_dialog.addLabel("Disk used: " + l_line);

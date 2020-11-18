@@ -30,7 +30,7 @@ CKeyboard::CKeyboard(const std::string &p_inputText):
     {
         SDL_Rect l_rect;
         // Create keyboard image
-        m_imageKeyboard = SDL_utils::createImage(265 * screen.ppu_x, 84 * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+        m_imageKeyboard = SDL_utils::createImage(265 * screen.ppu_x, 84 * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_BORDER));
         l_rect.x = 2 * screen.ppu_x;
         l_rect.y = 2 * screen.ppu_y;
         l_rect.w = 261 * screen.ppu_x;
@@ -69,7 +69,7 @@ CKeyboard::CKeyboard(const std::string &p_inputText):
         l_rect.x = 134 * screen.ppu_x;
         SDL_FillRect(m_imageKeyboard, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BG_1));
         // Create text field image
-        m_textField = SDL_utils::createImage(265 * screen.ppu_x, 19 * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+        m_textField = SDL_utils::createImage(265 * screen.ppu_x, 19 * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_BORDER));
         l_rect.x = 2 * screen.ppu_x;
         l_rect.y = 2 * screen.ppu_y;
         l_rect.w = 261 * screen.ppu_x;
@@ -77,7 +77,7 @@ CKeyboard::CKeyboard(const std::string &p_inputText):
         SDL_FillRect(m_textField, &l_rect, SDL_MapRGB(m_imageKeyboard->format, COLOR_BG_1));
     }
     // Create footer
-    m_footer = SDL_utils::createImage(screen.w * screen.ppu_x, FOOTER_H * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+    m_footer = SDL_utils::createImage(screen.w * screen.ppu_x, FOOTER_H * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_BORDER));
     SDL_utils::applyText(screen.w >> 1, 1, m_footer, m_fonts, "A-Input   B-Cancel   START-OK   L/R-Change   Y-Backspace   X-Space", Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_CENTER);
 }
 
@@ -105,7 +105,7 @@ void CKeyboard::render(const bool p_focus) const
 {
     INHIBIT(std::cout << "CKeyboard::render  fullscreen: " << isFullScreen() << "  focus: " << p_focus << std::endl;)
     // Draw input text field
-    SDL_utils::applySurface(KB_X, FIELD_Y, m_textField, Globals::g_screen);
+    SDL_utils::applySurface(KB_X, FIELD_Y, m_textField, screen.surface);
     // Input text
     if (!m_inputText.empty())
     {
@@ -118,13 +118,13 @@ void CKeyboard::render(const bool p_focus) const
             l_rect.y = 0;
             l_rect.w = FIELD_W;
             l_rect.h = l_surfaceTmp->h;
-            SDL_utils::applySurface(KB_X + 5, FIELD_Y + 4, l_surfaceTmp, Globals::g_screen, &l_rect);
+            SDL_utils::applySurface(KB_X + 5, FIELD_Y + 4, l_surfaceTmp, screen.surface, &l_rect);
         }
         else
-            SDL_utils::applySurface(KB_X + 5, FIELD_Y + 4, l_surfaceTmp, Globals::g_screen);
+            SDL_utils::applySurface(KB_X + 5, FIELD_Y + 4, l_surfaceTmp, screen.surface);
     }
     // Draw keyboard
-    SDL_utils::applySurface(KB_X, KB_Y, m_imageKeyboard, Globals::g_screen);
+    SDL_utils::applySurface(KB_X, KB_Y, m_imageKeyboard, screen.surface);
     // Cursor
     unsigned int selected_letter_x = -1;
     unsigned int selected_letter_y = -1;
@@ -164,7 +164,7 @@ void CKeyboard::render(const bool p_focus) const
         l_rect.y *= screen.ppu_y;
         l_rect.w *= screen.ppu_x;
         l_rect.h *= screen.ppu_y;
-        SDL_FillRect(Globals::g_screen, &l_rect, SDL_MapRGB(Globals::g_screen->format, COLOR_CURSOR_1));
+        SDL_FillRect(screen.surface, &l_rect, SDL_MapRGB(screen.surface->format, COLOR_CURSOR_1));
     }
     // Draw keys text
     {
@@ -186,18 +186,18 @@ void CKeyboard::render(const bool p_focus) const
                     l_text = m_keySets[m_keySet].substr(l_i, 1);
                     l_i += 1;
                 }
-                SDL_utils::applyText(KB_X + 20 * l_x + 13, KB_Y + 7 + 20 * l_y, Globals::g_screen, m_fonts, l_text, Globals::g_colorTextNormal,
+                SDL_utils::applyText(KB_X + 20 * l_x + 13, KB_Y + 7 + 20 * l_y, screen.surface, m_fonts, l_text, Globals::g_colorTextNormal,
                     selected_letter_x == l_x && selected_letter_y == l_y ? SDL_Color{COLOR_CURSOR_1} : SDL_Color{COLOR_BG_1}, SDL_utils::T_TEXT_ALIGN_CENTER);
             }
         }
     }
     // Buttons text
-    SDL_utils::applyText(KB_X + 67, KB_Y + 67, Globals::g_screen, m_fonts, "Cancel", Globals::g_colorTextNormal,
+    SDL_utils::applyText(KB_X + 67, KB_Y + 67, screen.surface, m_fonts, "Cancel", Globals::g_colorTextNormal,
         m_selected == 39 ? SDL_Color{COLOR_CURSOR_1} : SDL_Color{COLOR_BG_1}, SDL_utils::T_TEXT_ALIGN_CENTER);
-    SDL_utils::applyText(KB_X + 197, KB_Y + 67, Globals::g_screen, m_fonts, "OK", Globals::g_colorTextNormal,
+    SDL_utils::applyText(KB_X + 197, KB_Y + 67, screen.surface, m_fonts, "OK", Globals::g_colorTextNormal,
         m_selected == 40 ? SDL_Color{COLOR_CURSOR_1} : SDL_Color{COLOR_BG_1}, SDL_utils::T_TEXT_ALIGN_CENTER);
     // Draw footer
-    SDL_utils::applySurface(0, 227, m_footer, Globals::g_screen);
+    SDL_utils::applySurface(0, 227, m_footer, screen.surface);
 }
 
 const bool CKeyboard::keyPress(const SDL_Event &p_event)

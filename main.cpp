@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -16,8 +15,6 @@
 #include "sdlutils.h"
 
 // Globals
-SDL_Surface *ScreenSurface;
-SDL_Surface *Globals::g_screen = NULL;
 const SDL_Color Globals::g_colorTextNormal = {COLOR_TEXT_NORMAL};
 const SDL_Color Globals::g_colorTextTitle = {COLOR_TEXT_TITLE};
 const SDL_Color Globals::g_colorTextDir = {COLOR_TEXT_DIR};
@@ -57,42 +54,7 @@ int main(int argc, char** argv)
     // Hide cursor before creating the output surface.
     SDL_ShowCursor(SDL_DISABLE);
 
-    // Screen
-	const auto &best = *SDL_GetVideoInfo();
-	fprintf(stderr, "Best video mode reported as: %dx%d bpp=%d hw_available=%u\n",
-	    best.current_w, best.current_h, best.vfmt->BitsPerPixel, best.hw_available);
-
-    // Detect non 320x240/480 screens.
-#if AUTOSCALE == 1
-    if (best.current_w >= SCREEN_WIDTH * 2)
-    {
-        // E.g. 640x480. Upscale to the smaller of the two.
-        double scale = std::min(
-            best.current_w / static_cast<double>(SCREEN_WIDTH),
-            best.current_h / static_cast<double>(SCREEN_HEIGHT));
-        scale = std::min(scale, 2.0);
-        screen.ppu_x = screen.ppu_y = scale;
-        screen.w = best.current_w / scale;
-        screen.h = best.current_h / scale;
-        screen.actual_w = best.current_w;
-        screen.actual_h = best.current_h;
-    }
-    else if (best.current_w != SCREEN_WIDTH)
-    {
-        // E.g. RS07 with 480x272 screen.
-        screen.actual_w = screen.w = best.current_w;
-        screen.actual_h = screen.h = best.current_h;
-        screen.ppu_x = screen.ppu_y = 1;
-    }
-#endif
-    ScreenSurface = SetVideoMode(screen.actual_w, screen.actual_h, SCREEN_BPP, SURFACE_FLAGS);
-
-    Globals::g_screen = ScreenSurface;
-    if (Globals::g_screen == NULL)
-    {
-        std::cerr << "SDL_SetVideoMode failed: " << SDL_GetError() << std::endl;
-        return 1;
-    }
+    if (screen.init() != 0) return 1;
 
     // Init font
     if (TTF_Init() == -1)

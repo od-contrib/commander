@@ -38,16 +38,19 @@ void ReplaceTabs(std::string *line) {
 
 } // namespace
 
-CViewer::CViewer(const std::string &p_fileName):
-    CWindow(),
-    m_fileName(p_fileName),
-    m_fonts(CResourceManager::instance().getFonts()),
-    m_background(nullptr),
-    m_firstLine(0),
-    m_image(nullptr)
+CViewer::CViewer(const std::string &p_fileName)
+    : CWindow()
+    , m_fileName(p_fileName)
+    , m_fonts(CResourceManager::instance().getFonts())
+    , m_firstLine(0)
 {
+    m_clip.x = m_clip.y = 0;
+    init();
+}
+
+void CViewer::init() {
     // Create background image
-    m_background = SDL_utils::createImage(screen.w * screen.ppu_x, screen.h * screen.ppu_y, SDL_MapRGB(Globals::g_screen->format, COLOR_BG_1));
+    m_background = SDL_utils::createImage(screen.w * screen.ppu_x, screen.h * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_BG_1));
     {
         SDL_Rect l_rect = SDL_utils::Rect(0, 0, screen.w * screen.ppu_x, HEADER_H * screen.ppu_y);
         SDL_FillRect(m_background, &l_rect, SDL_MapRGB(m_background->format, COLOR_BORDER));
@@ -99,8 +102,6 @@ CViewer::CViewer(const std::string &p_fileName):
         m_mode = TEXT;
 
         // Init clip rect
-        m_clip.x = 0;
-        m_clip.y = 0;
         m_clip.w = (screen.w - 2 * VIEWER_MARGIN) * screen.ppu_x;
 
         std::ifstream l_file(m_fileName.c_str());
@@ -123,21 +124,38 @@ CViewer::CViewer(const std::string &p_fileName):
 
 CViewer::~CViewer(void)
 {
-    // Free surfaces
-    if (m_image != NULL)
-        SDL_FreeSurface(m_image);
-    if (m_background != NULL)
-        SDL_FreeSurface(m_background);
+    freeResources();
 }
+
+void CViewer::freeResources()
+{
+    if (m_image != nullptr)
+    {
+        SDL_FreeSurface(m_image);
+        m_image = nullptr;
+    }
+    if (m_background != nullptr)
+    {
+        SDL_FreeSurface(m_background);
+        m_background = nullptr;
+    }
+}
+
+void CViewer::onResize()
+{
+    freeResources();
+    init();
+}
+
 
 void CViewer::render(const bool p_focus) const
 {
     INHIBIT(std::cout << "CViewer::render  fullscreen: " << isFullScreen() << "  focus: " << p_focus << std::endl;)
     // Draw background
-    SDL_utils::applySurface(0, 0, m_background, Globals::g_screen);
+    SDL_utils::applySurface(0, 0, m_background, screen.surface);
     if (m_mode == IMAGE)
     {
-        SDL_utils::applySurface((screen.w - m_image->w / screen.ppu_x) / 2, Y_LIST + (screen.h - Y_LIST - m_image->h / screen.ppu_y) / 2, m_image, Globals::g_screen);
+        SDL_utils::applySurface((screen.w - m_image->w / screen.ppu_x) / 2, Y_LIST + (screen.h - Y_LIST - m_image->h / screen.ppu_y) / 2, m_image, screen.surface);
     }
     else if (m_mode == TEXT)
     {
@@ -150,7 +168,7 @@ void CViewer::render(const bool p_focus) const
                 continue;
             SDL_Surface *l_surfaceTmp = SDL_utils::renderText(m_fonts, line, Globals::g_colorTextNormal, {COLOR_BG_1});
             if (l_surfaceTmp != nullptr) {
-                SDL_utils::applySurface(VIEWER_MARGIN, VIEWER_Y_LIST + (i - m_firstLine) * VIEWER_LINE_HEIGHT, l_surfaceTmp, Globals::g_screen, &m_clip);
+                SDL_utils::applySurface(VIEWER_MARGIN, VIEWER_Y_LIST + (i - m_firstLine) * VIEWER_LINE_HEIGHT, l_surfaceTmp, screen.surface, &m_clip);
                 SDL_FreeSurface(l_surfaceTmp);
             }
         }

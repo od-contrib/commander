@@ -24,8 +24,6 @@ CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
     m_iconOpk(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_PACKAGE)),
     m_iconIsSymlink(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_IS_SYMLINK)),
     m_iconUp(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_UP)),
-    m_cursor1(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR1)),
-    m_cursor2(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_CURSOR2)),
     m_fonts(CResourceManager::instance().getFonts())
 {
     // List the given path
@@ -42,8 +40,18 @@ CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
     }
 }
 
-CPanel::~CPanel(void)
+CPanel::~CPanel(void) { }
+
+SDL_Surface *CPanel::cursor1() const
 {
+    return CResourceManager::instance().getSurface(
+        CResourceManager::T_SURFACE_CURSOR1);
+}
+
+SDL_Surface *CPanel::cursor2() const
+{
+    return CResourceManager::instance().getSurface(
+        CResourceManager::T_SURFACE_CURSOR2);
 }
 
 void CPanel::render(const bool p_active) const
@@ -63,18 +71,19 @@ void CPanel::render(const bool p_active) const
         l_rect.y = 0;
         l_rect.w = PANEL_SIZE * screen.ppu_x;
         l_rect.h = l_surfaceTmp->h;
-        SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, Globals::g_screen, &l_rect);
+        SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, screen.surface, &l_rect);
     }
     else
     {
-        SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, Globals::g_screen);
+        SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, screen.surface);
     }
+
     SDL_FreeSurface(l_surfaceTmp);
     SDL_Rect clip_contents_rect = SDL_utils::Rect(0, Y_LIST * screen.ppu_y, screen.w * screen.ppu_x, CONTENTS_H * screen.ppu_y);
     // Content
-    SDL_SetClipRect(Globals::g_screen, &clip_contents_rect);
+    SDL_SetClipRect(screen.surface, &clip_contents_rect);
     // Draw cursor
-    SDL_utils::applySurface(m_x - 1, Y_LIST + (m_highlightedLine - m_camera) * LINE_HEIGHT, p_active ? m_cursor1 : m_cursor2, Globals::g_screen);
+    SDL_utils::applySurface(m_x - 1, Y_LIST + (m_highlightedLine - m_camera) * LINE_HEIGHT, p_active ? cursor1() : cursor2(), screen.surface);
     for (unsigned int l_i = m_camera; l_i < m_camera + NB_VISIBLE_LINES && l_i < l_nbTotal; ++l_i)
     {
         // Icon and color
@@ -109,9 +118,9 @@ void CPanel::render(const bool p_active) const
             else
                 l_color = &Globals::g_colorTextNormal;
         }
-        SDL_utils::applySurface(m_x, l_y, l_surfaceTmp, Globals::g_screen);
+        SDL_utils::applySurface(m_x, l_y, l_surfaceTmp, screen.surface);
         if (m_fileLister[l_i].is_symlink)
-            SDL_utils::applySurface(m_x, l_y, m_iconIsSymlink, Globals::g_screen);
+            SDL_utils::applySurface(m_x, l_y, m_iconIsSymlink, screen.surface);
         // Text
         SDL_Color l_bg;
         if (l_i == m_highlightedLine) {
@@ -130,17 +139,17 @@ void CPanel::render(const bool p_active) const
             l_rect.y = 0;
             l_rect.w = NAME_SIZE * screen.ppu_x;
             l_rect.h = l_surfaceTmp->h;
-            SDL_utils::applySurface(l_x, l_y + 2, l_surfaceTmp, Globals::g_screen, &l_rect);
+            SDL_utils::applySurface(l_x, l_y + 2, l_surfaceTmp, screen.surface, &l_rect);
         }
         else
         {
-            SDL_utils::applySurface(l_x, l_y + 2, l_surfaceTmp, Globals::g_screen);
+            SDL_utils::applySurface(l_x, l_y + 2, l_surfaceTmp, screen.surface);
         }
         SDL_FreeSurface(l_surfaceTmp);
         // Next line
         l_y += LINE_HEIGHT;
     }
-    SDL_SetClipRect(Globals::g_screen, nullptr);
+    SDL_SetClipRect(screen.surface, nullptr);
 
     // Footer
     std::string l_footer("-");
@@ -151,8 +160,8 @@ void CPanel::render(const bool p_active) const
         l_footer = l_s.str();
         File_utils::formatSize(l_footer);
     }
-    SDL_utils::applyText(m_x + 2, FOOTER_Y + FOOTER_PADDING_TOP, Globals::g_screen, m_fonts, "Size:", Globals::g_colorTextTitle, {COLOR_TITLE_BG});
-    SDL_utils::applyText(m_x + PANEL_SIZE - 2, FOOTER_Y + FOOTER_PADDING_TOP, Globals::g_screen, m_fonts, l_footer, Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_RIGHT);
+    SDL_utils::applyText(m_x + 2, FOOTER_Y + FOOTER_PADDING_TOP, screen.surface, m_fonts, "Size:", Globals::g_colorTextTitle, {COLOR_TITLE_BG});
+    SDL_utils::applyText(m_x + PANEL_SIZE - 2, FOOTER_Y + FOOTER_PADDING_TOP, screen.surface, m_fonts, l_footer, Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_RIGHT);
 }
 
 const bool CPanel::moveCursorUp(unsigned char p_step)

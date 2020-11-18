@@ -11,8 +11,6 @@
 #include "screen.h"
 #include "sdl_ttf_multifont.h"
 
-extern SDL_Surface *ScreenSurface;
-
 bool SDL_utils::isSupportedImageExt(const std::string &ext) {
     return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "ico" || ext == "bmp" || ext == "xcf";
 }
@@ -106,7 +104,7 @@ void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, co
 
 SDL_Surface *SDL_utils::createSurface(int width, int height)
 {
-    return SDL_CreateRGBSurface(SURFACE_FLAGS, width, height, Globals::g_screen->format->BitsPerPixel, Globals::g_screen->format->Rmask, Globals::g_screen->format->Gmask, Globals::g_screen->format->Bmask, Globals::g_screen->format->Amask);
+    return SDL_CreateRGBSurface(SURFACE_FLAGS, width, height, screen.surface->format->BitsPerPixel, screen.surface->format->Rmask, screen.surface->format->Gmask, screen.surface->format->Bmask, screen.surface->format->Amask);
 }
 
 SDL_Surface *SDL_utils::createImage(const int p_width, const int p_height, const Uint32 p_color)
@@ -153,15 +151,13 @@ void SDL_utils::pleaseWait(void)
         (screen.h * screen.ppu_y - (l_surfaceTmp->h + 9)) / 2,
         l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * screen.ppu_x,
         l_surfaceTmp->h + 4 * screen.ppu_y);
-    SDL_FillRect(Globals::g_screen, &l_rect, SDL_MapRGB(Globals::g_screen->format, COLOR_BORDER));
+    SDL_FillRect(screen.surface, &l_rect, SDL_MapRGB(screen.surface->format, COLOR_BORDER));
     l_rect.x += DIALOG_BORDER * screen.ppu_x;
     l_rect.y += DIALOG_BORDER * screen.ppu_y;
     l_rect.w -= 2 * DIALOG_BORDER * screen.ppu_x;
     l_rect.h -= 2 * DIALOG_BORDER * screen.ppu_y;
-    SDL_FillRect(Globals::g_screen, &l_rect, SDL_MapRGB(Globals::g_screen->format, COLOR_BG_1));
-    applySurface((screen.w - l_surfaceTmp->w / screen.ppu_x) / 2, (screen.h - l_surfaceTmp->h / screen.ppu_y) / 2, l_surfaceTmp, Globals::g_screen);
+    SDL_FillRect(screen.surface, &l_rect, SDL_MapRGB(screen.surface->format, COLOR_BG_1));
+    applySurface((screen.w - l_surfaceTmp->w / screen.ppu_x) / 2, (screen.h - l_surfaceTmp->h / screen.ppu_y) / 2, l_surfaceTmp, screen.surface);
     SDL_FreeSurface(l_surfaceTmp);
-    //SDL_Flip(Globals::g_screen);
-    //SDL_Flip(Globals::g_screen);
-    SDL_Flip(ScreenSurface);
+    screen.flip();
 }
