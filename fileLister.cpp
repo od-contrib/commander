@@ -1,9 +1,13 @@
+#include "fileLister.h"
+
+#include <algorithm>
 #include <iostream>
+#include <string.h>
+
 #include <dirent.h>
 #include <sys/stat.h>
-#include <algorithm>
-#include <string.h>
-#include "fileLister.h"
+
+#include "file_info.h"
 #include "sdlutils.h"
 
 bool compareNoCase(const T_FILE& p_s1, const T_FILE& p_s2)
@@ -42,32 +46,13 @@ const bool CFileLister::list(const std::string &p_path)
         // Filter the '.' and '..' dirs
         if (l_file != "." && l_file != "..")
         {
-            // Stat the file
             l_fileFull = p_path + "/" + l_file;
-            if (lstat(l_fileFull.c_str(), &st) == -1)
-            {
-                std::cerr << "CFileLister::list: Error lstat " << l_fileFull << std::endl;
-            }
+            auto info = FileInfo::Get(l_fileFull);
+            auto tfile = T_FILE(l_file, info.symlink(), info.size());
+            if (info.directory())
+                m_listDirs.push_back(std::move(tfile));
             else
-            {
-                const bool is_symlink = S_ISLNK(st.st_mode);
-                auto tfile = T_FILE(l_file, is_symlink);
-                if (tfile.is_symlink) {
-                    // Follow the link.
-                    if (stat(l_fileFull.c_str(), &st) == -1) {
-                        st.st_size = 0;  // Invalid symlink.
-                    }
-                }
-                tfile.m_size = st.st_size;
-
-                // Check type
-                if (S_ISDIR(st.st_mode))
-                    // It's a directory
-                    m_listDirs.push_back(std::move(tfile));
-                else
-                    // It's a file
-                    m_listFiles.push_back(std::move(tfile));
-            }
+                m_listFiles.push_back(std::move(tfile));
         }
         // Next
         l_dirent = readdir(l_dir);

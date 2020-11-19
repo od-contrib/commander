@@ -7,6 +7,8 @@
 
 #include "def.h"
 #include "dialog.h"
+#include "error_dialog.h"
+#include "file_info.h"
 #include "fileutils.h"
 #include "keyboard.h"
 #include "resourceManager.h"
@@ -362,52 +364,64 @@ const bool CCommander::openSystemMenu(void)
     return l_ret;
 }
 
+namespace {
+
+enum class OpenFileResult
+{
+    CANCEL,
+    VIEW,
+    EXECUTE
+};
+
+OpenFileResult OpenFileDialog(const std::string &path,
+    std::function<Sint16()> x_fn = {}, std::function<Sint16()> y_fn = {})
+{
+    const auto info = FileInfo::Get(path);
+
+    if (File_utils::getLowercaseFileExtension(path) == "opk")
+        return OpenFileResult::EXECUTE;
+
+    if (!info.executable()) return OpenFileResult::VIEW;
+
+    CDialog dlg { File_utils::getFileName(path) + ":" };
+    std::vector<OpenFileResult> options { OpenFileResult::CANCEL };
+    const auto add_option = [&](std::string text, OpenFileResult value) {
+        dlg.addOption(text);
+        options.push_back(value);
+    };
+    add_option("View", OpenFileResult::VIEW);
+    add_option("Execute", OpenFileResult::EXECUTE);
+    dlg.init();
+    return options[dlg.execute()];
+}
+
+void ViewFile(const std::string &path)
+{
+    // Check size
+    const auto file_size = File_utils::getFileSize(path);
+    if (file_size > VIEWER_SIZE_MAX)
+        ErrorDialog(path, "Error:", "File too large (>16 MiB)");
+    else
+        CViewer(path).execute();
+}
+
+} // namespace
+
 void CCommander::openExecuteMenu(void) const
 {
-    int l_dialogRetVal(0);
-    // Dialog
+    switch (
+        OpenFileDialog(m_panelSource->getHighlightedItemFull(), {}, [this]() {
+            return Y_LIST
+                + m_panelSource->getHighlightedIndexRelative() * LINE_HEIGHT;
+        }))
     {
-        CDialog l_dialog { m_panelSource->getHighlightedItem() + ":", {},
-            [this]() {
-                return Y_LIST
-                    + m_panelSource->getHighlightedIndexRelative()
-                    * LINE_HEIGHT;
-            } };
-        l_dialog.addOption("View");
-        l_dialog.addOption("Execute");
-        l_dialog.init();
-        l_dialogRetVal = l_dialog.execute();
-    }
-    // Perform operation
-    switch (l_dialogRetVal)
-    {
-        case 1:
-            // View
-            {
-                // Check size
-                const std::string l_file(m_panelSource->getHighlightedItemFull());
-                INHIBIT(std::cout << "File size: " << File_utils::getFileSize(l_file) << std::endl;)
-                if (File_utils::getFileSize(l_file) > VIEWER_SIZE_MAX)
-                {
-                    // File is too big to be viewed!
-                    CDialog l_dialog{"Error:"};
-                    l_dialog.addLabel("File is too big!");
-                    l_dialog.addOption("OK");
-                    l_dialog.init();
-                    l_dialog.execute();
-                }
-                else
-                {
-                    CViewer l_viewer(m_panelSource->getHighlightedItemFull());
-                    l_viewer.execute();
-                }
-            }
+        case OpenFileResult::VIEW:
+            ViewFile(m_panelSource->getHighlightedItemFull());
             break;
-        case 2:
-            // Execute
+        case OpenFileResult::EXECUTE:
             File_utils::executeFile(m_panelSource->getHighlightedItemFull());
             break;
-        default:
+        case OpenFileResult::CANCEL:
             break;
     }
 }
