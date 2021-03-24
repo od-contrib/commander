@@ -32,14 +32,20 @@ namespace SDL_utils
     // Load a TTF font
     TTF_Font *loadFont(const std::string &p_font, const int p_size);
 
-    // Apply a surface on another surface
+    // Apply a surface on another surface (logical coordinates)
     void applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip = NULL);
+
+    // Apply a surface on another surface (actual coordinates)
+    void applyPpuScaledSurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip = NULL);
 
     // Render a text
     SDL_Surface *renderText(const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg);
 
-    // Render a text and apply on a given surface
+    // Render a text and apply on a given surface (logical coordinates)
     void applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align = T_TEXT_ALIGN_LEFT);
+
+    // Render a text and apply on a given surface (actual coordinates)
+    void applyPpuScaledText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align = T_TEXT_ALIGN_LEFT);
 
     // Create a surface in the same format as the screen
     SDL_Surface *createSurface(int width, int height);

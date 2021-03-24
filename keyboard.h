@@ -3,18 +3,25 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <SDL.h>
 #include <SDL_ttf.h>
+
 #include "sdl_ttf_multifont.h"
 #include "window.h"
 
-#define NB_KEY_SETS 5
+struct KeyboardLayout
+{
+    using Rows = std::vector<std::vector<std::string>>;
+    std::vector<Rows> layers;
+    std::size_t max_keys_per_row;
+    std::size_t max_rows;
+};
 
 class CKeyboard : public CWindow
 {
     public:
-
     // Constructor
     CKeyboard(const std::string &p_inputText);
 
@@ -26,19 +33,79 @@ class CKeyboard : public CWindow
 
     private:
 
+    struct Keyboard
+    {
+        KeyboardLayout layout;
+
+        const KeyboardLayout::Rows &current_keys() const
+        {
+            return layout.layers[current_keyset];
+        }
+
+        std::size_t num_rows() const
+        {
+            return layout.layers[current_keyset].size();
+        }
+
+        std::size_t num_row_keys(std::size_t row_index) const
+        {
+            return layout.layers[current_keyset][row_index].size();
+        }
+
+        const std::string &keycap(std::size_t x, std::size_t y) const;
+        bool isBackspace(std::size_t x, std::size_t y) const;
+        const std::string &text(std::size_t x, std::size_t y) const;
+
+        // keycap dimensions: includes the border but not the gap.
+        std::size_t key_w, key_h;
+
+        std::size_t key_gap, border_w;
+
+        bool collapse_borders;
+
+        // Total width and height.
+        std::size_t width, height;
+
+        // Index of the selected keyset.
+        std::size_t current_keyset;
+        const std::size_t num_keysets() const { return layout.layers.size(); }
+    };
+
     // Forbidden
     CKeyboard(void);
     CKeyboard(const CKeyboard &p_source);
-    const CKeyboard &operator =(const CKeyboard &p_source);
+    const CKeyboard &operator=(const CKeyboard &p_source);
+
+    void init();
+    void freeResources();
+
+    void loadKeyboard();
+    void calculateKeyboardDimensions(std::size_t max_w);
+    std::pair<int, int> getKeyCoordinates(int x, int y) const;
+
+    void renderKeys(std::vector<SDL_Surface *> &out_surfaces, Sint16 x0, Sint16 y0,
+        std::uint32_t key_bg_color, SDL_Color sdl_key_bg_color, std::uint32_t key_border_color) const;
+
+    void renderButton(
+        SDL_Surface &out, SDL_Rect rect, const std::string &text) const;
+    void renderButtonHighlighted(
+        SDL_Surface &out, SDL_Rect rect, const std::string &text) const;
+    void renderButton(SDL_Surface &out, SDL_Rect rect, const std::string &text,
+        std::uint32_t border_color, std::uint32_t bg_color,
+        SDL_Color sdl_bg_color) const;
+    void renderInputText();
+
+    // Window resized.
+    void onResize() override;
 
     // Key press management
-    virtual const bool keyPress(const SDL_Event &p_event);
+    const bool keyPress(const SDL_Event &p_event) override;
 
     // Key hold management
-    virtual const bool keyHold(void);
+    const bool keyHold(void) override;
 
     // Draw
-    virtual void render(const bool p_focus) const;
+    void render(const bool p_focus) const override;
 
     // Move cursor
     const bool moveCursorUp(const bool p_loop);
@@ -46,8 +113,9 @@ class CKeyboard : public CWindow
     const bool moveCursorLeft(const bool p_loop);
     const bool moveCursorRight(const bool p_loop);
 
-    // Type a letter
-    const bool type(const std::string &p_text = "");
+    bool pressFocusedKey();
+
+    bool appendText(const std::string &text);
 
     // Remove last letter
     const bool backspace(void);
@@ -55,27 +123,47 @@ class CKeyboard : public CWindow
     // UTF8 character or not
     const bool utf8Code(const unsigned char p_c) const;
 
-    // The image representing the keyboard
-    SDL_Surface *m_imageKeyboard;
+    const bool isFocusOnButtonsRow() const;
+    const bool isFocusOnOk() const;
+    const bool isFocusOnCancel() const;
 
-    // The image representing the input text field
-    SDL_Surface *m_textField;
+    // Colors:
+    std::uint32_t border_color_;
+    std::uint32_t bg_color_;
+    SDL_Color sdl_bg_color_;
+    std::uint32_t bg2_color_;
+    std::uint32_t highlight_color_;
+    SDL_Color sdl_highlight_color_;
 
     // The input text
-    std::string m_inputText;
+    std::string input_text_;
 
     // The cursor index
-    unsigned char m_selected;
-
-    // The footer
-    SDL_Surface *m_footer;
-
-    // Key sets
-    std::string m_keySets[NB_KEY_SETS];
-    unsigned char m_keySet;
+    std::size_t focus_x_;
+    std::size_t focus_y_;
 
     // Pointers to resources
     const Fonts &m_fonts;
+
+    // Layout:
+    std::size_t frame_padding_x_, frame_padding_y_;
+    std::size_t x_, y_, width_, height_;
+    SDL_Rect text_field_inner_rect_, kb_buttons_rect_, cancel_rect_, ok_rect_;
+
+    Keyboard keyboard_;
+    std::size_t keycap_text_offset_y_;
+
+    // Background surfaces:
+    std::vector<SDL_Surface *> surfaces_;
+    SDL_Surface *footer_;
+
+    // Highlighted keyboard keys
+    std::vector<SDL_Surface *> kb_highlighted_surfaces_;
+
+    // Foreground layer surfaces:
+    SDL_Surface *input_text_surface_;
+    SDL_Surface *cancel_highlighted_;
+    SDL_Surface *ok_highlighted_;
 };
 
 #endif

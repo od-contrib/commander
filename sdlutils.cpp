@@ -46,15 +46,20 @@ SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w,
     return l_img3;
 }
 
-void SDL_utils::applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip)
+void SDL_utils::applyPpuScaledSurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip)
 {
     // Rectangle to hold the offsets
     SDL_Rect l_offset;
     // Set offsets
-    l_offset.x = p_x * screen.ppu_x;
-    l_offset.y = p_y * screen.ppu_y;
+    l_offset.x = p_x;
+    l_offset.y = p_y;
     //Blit the surface
     SDL_BlitSurface(p_source, p_clip, p_destination, &l_offset);
+}
+
+void SDL_utils::applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip)
+{
+    return applyPpuScaledSurface(p_x * screen.ppu_x, p_y * screen.ppu_y, p_source, p_destination);
 }
 
 TTF_Font *SDL_utils::loadFont(const std::string &p_font, const int p_size)
@@ -80,6 +85,26 @@ SDL_Surface *SDL_utils::renderText(const Fonts &p_fonts, const std::string &p_te
         SDL_ClearError();
     }
     return result;
+}
+
+void SDL_utils::applyPpuScaledText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
+{
+    SDL_Surface *l_text = renderText(p_fonts, p_text, p_fg, p_bg);
+    switch (p_align)
+    {
+        case T_TEXT_ALIGN_LEFT:
+            applyPpuScaledSurface(p_x, p_y, l_text, p_destination);
+            break;
+        case T_TEXT_ALIGN_RIGHT:
+            applyPpuScaledSurface(p_x - l_text->w, p_y, l_text, p_destination);
+            break;
+        case T_TEXT_ALIGN_CENTER:
+            applyPpuScaledSurface(p_x - l_text->w / 2, p_y, l_text, p_destination);
+            break;
+        default:
+            break;
+    }
+    SDL_FreeSurface(l_text);
 }
 
 void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
