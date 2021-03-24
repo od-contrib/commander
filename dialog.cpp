@@ -43,24 +43,18 @@ CDialog::~CDialog(void)
 
 void CDialog::freeResources()
 {
-    if (m_image != NULL)
+    for (auto *surface_ptr : { &m_titleImg, &m_image, &m_cursor1, &m_cursor2 })
     {
-        SDL_FreeSurface(m_image);
-        m_image = NULL;
+        if (*surface_ptr == nullptr) continue;
+        SDL_FreeSurface(*surface_ptr);
+        *surface_ptr = NULL;
     }
-    if (m_cursor1 != NULL)
+    for (auto *surfaces : { &m_linesImg, &m_linesImgCursor1, &m_linesImgCursor2 })
     {
-        SDL_FreeSurface(m_cursor1);
-        m_cursor1 = NULL;
+        for (auto *surface_ptr : *surfaces)
+            if (surface_ptr != nullptr) SDL_FreeSurface(surface_ptr);
+        surfaces->clear();
     }
-    if (m_cursor2 != NULL)
-    {
-        SDL_FreeSurface(m_cursor2);
-        m_cursor2 = NULL;
-    }
-    for (auto *surface_ptr : m_linesImg)
-        if (surface_ptr != nullptr) SDL_FreeSurface(surface_ptr);
-    m_linesImg.clear();
 }
 
 void CDialog::addLabel(const std::string &p_label)

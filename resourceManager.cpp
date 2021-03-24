@@ -78,10 +78,16 @@ CResourceManager::CResourceManager()
     m_surfaces[T_SURFACE_FILE_PACKAGE] = LoadIcon(RES_DIR "file-opk.png");
     m_surfaces[T_SURFACE_FILE_IS_SYMLINK] = LoadIcon(RES_DIR "file-is-symlink.png");
     m_surfaces[T_SURFACE_UP] = LoadIcon(RES_DIR "up.png");
+    m_surfaces[T_SURFACE_CURSOR1] = nullptr;
+    m_surfaces[T_SURFACE_CURSOR2] = nullptr;
     onResize();
 }
 
 void CResourceManager::onResize() {
+    if (m_surfaces[T_SURFACE_CURSOR1] != nullptr)
+        SDL_FreeSurface(m_surfaces[T_SURFACE_CURSOR1]);
+    if (m_surfaces[T_SURFACE_CURSOR2] != nullptr)
+        SDL_FreeSurface(m_surfaces[T_SURFACE_CURSOR2]);
     m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_CURSOR_1));
     m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_CURSOR_2));
     if (m_low_dpi_fonts != ShouldUseLowDpiFonts()) {
