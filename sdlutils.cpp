@@ -59,7 +59,7 @@ void SDL_utils::applyPpuScaledSurface(const Sint16 p_x, const Sint16 p_y, SDL_Su
 
 void SDL_utils::applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip)
 {
-    return applyPpuScaledSurface(p_x * screen.ppu_x, p_y * screen.ppu_y, p_source, p_destination);
+    return applyPpuScaledSurface(p_x * screen.ppu_x, p_y * screen.ppu_y, p_source, p_destination, p_clip);
 }
 
 TTF_Font *SDL_utils::loadFont(const std::string &p_font, const int p_size)
