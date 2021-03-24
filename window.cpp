@@ -91,6 +91,9 @@ const int CWindow::execute(void)
         }
         LimitFrameRate();
     }
+
+    // -1 is used to signal cancellation but we must return 0 in that case.
+    if (m_retVal == -1) m_retVal = 0;
     return m_retVal;
 }
 
