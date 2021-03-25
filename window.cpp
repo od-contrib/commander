@@ -65,8 +65,17 @@ const int CWindow::execute(void)
         {
             switch (event.type)
             {
+                case SDL_MOUSEMOTION:
+                    SDL_utils::setMouseCursorEnabled(true);
+                    break;
+                case SDL_MOUSEBUTTONDOWN:
+                    SDL_utils::setMouseCursorEnabled(true);
+                    l_render = this->mouseDown(event.button.button, event.button.x, event.button.y) || l_render;
+                    if (m_retVal) l_loop = false;
+                    break;
                 case SDL_KEYDOWN:
-                    l_render = this->keyPress(event);
+                    SDL_utils::setMouseCursorEnabled(false);
+                    l_render = this->keyPress(event) || l_render;
                     if (m_retVal) l_loop = false;
                     break;
                 case SDL_QUIT: return m_retVal;
@@ -144,6 +153,8 @@ const bool CWindow::tick(const Uint8 p_held)
     }
     return l_ret;
 }
+
+bool CWindow::mouseDown(int button, int x, int y) { return false; }
 
 const int CWindow::getReturnValue(void) const
 {

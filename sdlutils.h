@@ -10,6 +10,8 @@
 
 namespace SDL_utils
 {
+    void setMouseCursorEnabled(bool enabled);
+
     // Text alignment
     typedef enum
     {

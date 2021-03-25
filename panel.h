@@ -25,6 +25,10 @@ class CPanel
     // Move cursor
     const bool moveCursorUp(unsigned char p_step);
     const bool moveCursorDown(unsigned char p_step);
+    void moveCursorToVisibleLineIndex(int index);
+
+    // Returns the viewport line index at the given coordinates or -1.
+    int getLineAt(int x, int y) const;
 
     // Open selected item
     const bool open(const std::string &p_path = "");
@@ -70,6 +74,9 @@ class CPanel
     CPanel(void);
     CPanel(const CPanel &p_source);
     const CPanel &operator =(const CPanel &p_source);
+
+    // Returns the number of currently visible list items (lines).
+    int getNumVisibleListItems() const;
 
     // Adjust camera
     void adjustCamera(void);

@@ -166,7 +166,6 @@ void CPanel::render(const bool p_active) const
 
 const bool CPanel::moveCursorUp(unsigned char p_step)
 {
-    bool l_ret(false);
     if (m_highlightedLine)
     {
         // Move cursor
@@ -177,14 +176,13 @@ const bool CPanel::moveCursorUp(unsigned char p_step)
         // Adjust camera
         adjustCamera();
         // Return true for new render
-        l_ret = true;
+        return true;
     }
-    return l_ret;
+    return false;
 }
 
 const bool CPanel::moveCursorDown(unsigned char p_step)
 {
-    bool l_ret(false);
     const unsigned int l_nb = m_fileLister.getNbTotal();
     if (m_highlightedLine < l_nb - 1)
     {
@@ -196,9 +194,29 @@ const bool CPanel::moveCursorDown(unsigned char p_step)
         // Adjust camera
         adjustCamera();
         // Return true for new render
-        l_ret = true;
+        return true;
     }
-    return l_ret;
+    return false;
+}
+
+int CPanel::getNumVisibleListItems() const
+{
+    return std::min(
+        static_cast<decltype(m_fileLister.getNbTotal())>(NB_VISIBLE_LINES),
+        m_fileLister.getNbTotal());
+}
+
+int CPanel::getLineAt(int x, int y) const
+{
+    if (x <= 0 || y <= Y_LIST * screen.ppu_y
+        || y > (Y_LIST + getNumVisibleListItems() * LINE_HEIGHT) * screen.ppu_y)
+        return -1;
+    return (y - Y_LIST * screen.ppu_y) / (LINE_HEIGHT * screen.ppu_y);
+}
+
+void CPanel::moveCursorToVisibleLineIndex(int index)
+{
+    m_highlightedLine = m_camera + index;
 }
 
 const bool CPanel::open(const std::string &p_path)

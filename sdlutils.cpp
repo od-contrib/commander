@@ -11,6 +11,10 @@
 #include "screen.h"
 #include "sdl_ttf_multifont.h"
 
+void SDL_utils::setMouseCursorEnabled(bool enabled) {
+    SDL_ShowCursor(enabled ? 1 : 0);
+}
+
 bool SDL_utils::isSupportedImageExt(const std::string &ext) {
     return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "ico" || ext == "bmp" || ext == "xcf";
 }

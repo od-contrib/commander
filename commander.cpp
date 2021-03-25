@@ -18,7 +18,7 @@
 
 #define SPLITTER_LINE_W 1
 #define X_LEFT 1
-#define X_RIGHT screen.w / 2 + SPLITTER_LINE_W + 1
+#define X_RIGHT (screen.w / 2 + SPLITTER_LINE_W + 1)
 
 namespace {
 
@@ -131,17 +131,7 @@ const bool CCommander::keyPress(const SDL_Event &p_event)
             }
             break;
         case MYKEY_OPEN:
-            if (m_panelSource->isDirectoryHighlighted())
-            {
-                // It's a dir => open it
-                l_ret = m_panelSource->open();
-            }
-            else
-            {
-                // It's a file => open execute menu
-                openExecuteMenu();
-                l_ret = true;
-            }
+            l_ret = itemMenu();
             break;
         case MYKEY_PARENT:
             l_ret = m_panelSource->goToParentDir();
@@ -150,21 +140,7 @@ const bool CCommander::keyPress(const SDL_Event &p_event)
             // If there's no file in the select list, add current file
             if (m_panelSource->getSelectList().empty() && m_panelSource->getHighlightedItem() != "..")
                 m_panelSource->addToSelectList(false);
-            if (!m_panelSource->getSelectList().empty())
-            {
-                if (openCopyMenu())
-                {
-                    // Refresh file lists
-                    m_panelSource->refresh();
-                    m_panelTarget->refresh();
-                }
-                else
-                {
-                    if (m_panelSource->getSelectList().size() == 1 && (*m_panelSource->getSelectList().begin()) == m_panelSource->getHighlightedIndex())
-                        m_panelSource->selectNone();
-                }
-                l_ret = true;
-            }
+            l_ret = operationMenu();
             break;
         case MYKEY_SELECT:
             l_ret = m_panelSource->addToSelectList(true);
@@ -210,6 +186,86 @@ const bool CCommander::keyHold(void)
             break;
     }
     return l_ret;
+}
+
+bool CCommander::mouseDown(int button, int x, int y)
+{
+    if (x < X_LEFT * screen.ppu_x) return false;
+    bool changed = false;
+
+    CPanel *target;
+    if (x >= X_RIGHT * screen.ppu_x)
+    {
+        target = &m_panelRight;
+        x -= X_RIGHT * screen.ppu_x;
+    }
+    else
+    {
+        target = &m_panelLeft;
+        x -= X_LEFT * screen.ppu_x;
+    }
+    if (m_panelSource != target)
+    {
+        m_panelTarget = m_panelSource;
+        m_panelSource = target;
+        changed = true;
+    }
+
+    const int line = target->getLineAt(x, y);
+    switch (button)
+    {
+        case SDL_BUTTON_LEFT:
+            if (line == -1) { openSystemMenu(); }
+            else
+            {
+                target->moveCursorToVisibleLineIndex(line);
+                itemMenu();
+            }
+            return true;
+        case SDL_BUTTON_MIDDLE:
+            if (line != -1)
+            {
+                target->moveCursorToVisibleLineIndex(line);
+                target->addToSelectList(/*p_step=*/false);
+                return true;
+            }
+            return changed;
+        case SDL_BUTTON_RIGHT: return operationMenu() || changed;
+        case SDL_BUTTON_X2: return target->goToParentDir() || changed;
+        case SDL_BUTTON_WHEELUP:
+            return target->moveCursorUp(1) || changed;
+        case SDL_BUTTON_WHEELDOWN:
+            return target->moveCursorDown(1) || changed;
+    }
+    return changed;
+}
+
+bool CCommander::itemMenu() const
+{
+    if (m_panelSource->isDirectoryHighlighted())
+        return m_panelSource->open();
+    // It's a file => open execute menu
+    openExecuteMenu();
+    return true;
+}
+
+bool CCommander::operationMenu() const
+{
+    if (m_panelSource->getSelectList().empty()) return false;
+    if (openCopyMenu())
+    {
+        // Refresh file lists
+        m_panelSource->refresh();
+        m_panelTarget->refresh();
+    }
+    else
+    {
+        if (m_panelSource->getSelectList().size() == 1
+            && (*m_panelSource->getSelectList().begin())
+                == m_panelSource->getHighlightedIndex())
+            m_panelSource->selectNone();
+    }
+    return true;
 }
 
 const bool CCommander::openCopyMenu(void) const

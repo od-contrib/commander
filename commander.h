@@ -32,6 +32,8 @@ class CCommander : public CWindow
     // Key hold management
     const bool keyHold(void) override;
 
+    bool mouseDown(int button, int x, int y) override;
+
     // Draw
     virtual void render(const bool p_focus) const;
 
@@ -39,6 +41,9 @@ class CCommander : public CWindow
     virtual bool isFullScreen(void) const;
 
     // Open the file operation menus
+    bool itemMenu() const;
+    bool operationMenu() const;
+
     const bool openCopyMenu(void) const;
     void openExecuteMenu(void) const;
 

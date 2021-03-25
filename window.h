@@ -30,6 +30,10 @@ class CWindow
     // Window resized.
     virtual void onResize();
 
+    // Mouse down event.
+    // Return true if re-render is needed after handling this.
+    virtual bool mouseDown(int button, int x, int y);
+
     // Key press management
     virtual const bool keyPress(const SDL_Event &p_event);
 
