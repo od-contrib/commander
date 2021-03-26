@@ -208,7 +208,7 @@ int CPanel::getNumVisibleListItems() const
 
 int CPanel::getLineAt(int x, int y) const
 {
-    if (x <= 0 || y <= Y_LIST * screen.ppu_y
+    if (x < 0 || y < Y_LIST * screen.ppu_y
         || y > (Y_LIST + getNumVisibleListItems() * LINE_HEIGHT) * screen.ppu_y)
         return -1;
     return (y - Y_LIST * screen.ppu_y) / (LINE_HEIGHT * screen.ppu_y);

@@ -113,10 +113,14 @@ void CDialog::init(void)
     l_width = l_width + 2 * DIALOG_MARGIN + 2 * DIALOG_BORDER;
     if (l_width > screen.w)
         l_width = screen.w;
+    width_ = l_width * screen.ppu_x;
+
     // Create dialog image
-    const int m_image_h = m_lines.size() * LINE_HEIGHT + 2 * DIALOG_BORDER;
+    const int l_height = m_lines.size() * LINE_HEIGHT + 2 * DIALOG_BORDER;
+    height_ = l_height * screen.ppu_y;
+
     m_image = SDL_utils::createImage(l_width * screen.ppu_x,
-        m_image_h * screen.ppu_y,
+        l_height * screen.ppu_y,
         SDL_MapRGB(screen.surface->format, m_borderColor.r, m_borderColor.g,
             m_borderColor.b));
     {
@@ -124,7 +128,7 @@ void CDialog::init(void)
         l_rect.x = DIALOG_BORDER * screen.ppu_x;
         l_rect.y = (DIALOG_BORDER + m_nbTitle * LINE_HEIGHT) * screen.ppu_y;
         l_rect.w = m_image->w - 2 * DIALOG_BORDER * screen.ppu_x;
-        l_rect.h = (m_image_h - 2 * DIALOG_BORDER - m_nbTitle * LINE_HEIGHT) * screen.ppu_y;
+        l_rect.h = (l_height - 2 * DIALOG_BORDER - m_nbTitle * LINE_HEIGHT) * screen.ppu_y;
         SDL_FillRect(m_image, &l_rect, SDL_MapRGB(m_image->format, COLOR_BG_1));
     }
     // Create cursor image
@@ -134,7 +138,7 @@ void CDialog::init(void)
     // Adjust dialog coordinates
     m_x = m_x_fn ? m_x_fn() : (screen.w - m_image->w / screen.ppu_x) / 2;
     if (!m_y_fn) {
-        m_y = (screen.h - m_image_h) / 2;
+        m_y = (screen.h - l_height) / 2;
     }
     else
     {
@@ -142,9 +146,9 @@ void CDialog::init(void)
 
         // Ensure the dialog fits vertically regardless of the requested
         // coordinates.
-        m_y = m_y - (m_image_h >> 1) + (LINE_HEIGHT >> 1);
+        m_y = m_y - (l_height >> 1) + (LINE_HEIGHT >> 1);
         if (m_y < Y_LIST) m_y = Y_LIST;
-        if (m_y + m_image_h > FOOTER_Y + 1) m_y = FOOTER_Y + 1 - m_image_h;
+        if (m_y + l_height > FOOTER_Y + 1) m_y = FOOTER_Y + 1 - l_height;
     }
     // Cursor coordinates
     m_cursorX = m_x + DIALOG_BORDER;
@@ -219,6 +223,43 @@ const bool CDialog::keyPress(const SDL_Event &p_event)
             break;
     }
     return l_ret;
+}
+
+int CDialog::getLineAt(int x, int y) const {
+    const int x0 = (m_x + DIALOG_BORDER) * screen.ppu_x;
+    const int x1 = x0 + width_ - 2 * DIALOG_BORDER * screen.ppu_x;
+    const int y0 = (m_y + DIALOG_BORDER + (m_nbTitle + m_nbLabels) * LINE_HEIGHT) * screen.ppu_y;
+    const int y1 = y0 + m_nbOptions * LINE_HEIGHT * screen.ppu_y;
+    if (x < x0 || x > x1 || y < y0 || y > y1) return -1;
+    return (y - y0) / (LINE_HEIGHT * screen.ppu_y);
+}
+
+bool CDialog::mouseDown(int button, int x, int y) {
+    if (x < m_x * screen.ppu_x || x > m_x * screen.ppu_x + width_
+        || y < m_y * screen.ppu_y || y > m_y * screen.ppu_y + height_)
+    {
+        m_retVal = -1;
+        return true;
+    }
+    const int line = getLineAt(x, y);
+    if (line == -1) return false;
+    switch (button)
+    {
+        case SDL_BUTTON_LEFT:
+            m_highlightedLine = line;
+            m_retVal = m_highlightedLine + 1;
+            return true;
+        case SDL_BUTTON_MIDDLE:
+        case SDL_BUTTON_RIGHT:
+            m_highlightedLine = line;
+            return true;
+        case SDL_BUTTON_X2: m_retVal = -1; return true;
+        case SDL_BUTTON_WHEELUP:
+            return moveCursorUp(/*p_loop=*/false);
+        case SDL_BUTTON_WHEELDOWN:
+            return moveCursorDown(/*p_loop=*/false);
+    }
+    return false;
 }
 
 const bool CDialog::moveCursorUp(const bool p_loop)

@@ -57,6 +57,8 @@ class CDialog : public CWindow
     // Key hold management
     const bool keyHold(void) override;
 
+    bool mouseDown(int button, int x, int y) override;
+
     // Draw
     void render(const bool p_focus) const override;
 
@@ -65,6 +67,9 @@ class CDialog : public CWindow
     const bool moveCursorDown(const bool p_loop);
 
     void freeResources();
+
+    // Returns the line index at the given coordinates or -1.
+    int getLineAt(int x, int y) const;
 
     SDL_Color m_borderColor;
 
@@ -97,6 +102,9 @@ class CDialog : public CWindow
     Sint16 m_y;
     Sint16 m_cursorX;
     Sint16 m_cursorY;
+
+    // Dimensions in actual pixels.
+    int width_, height_;
 
     // Relative coordinates, for better resize handling.
     float relative_x;
