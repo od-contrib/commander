@@ -176,3 +176,18 @@ if(UBSAN)
 target_compile_options(${BIN_TARGET} PUBLIC -fsanitize=undefined)
 target_link_libraries(${BIN_TARGET} PUBLIC -fsanitize=undefined)
 endif()
+
+install(
+  TARGETS ${BIN_TARGET}
+  RUNTIME DESTINATION bin)
+install(
+  DIRECTORY "${PROJECT_SOURCE_DIR}/res"
+  DESTINATION share/commander
+  FILES_MATCHING PATTERN "*.png")
+install(
+  DIRECTORY "${PROJECT_SOURCE_DIR}/res"
+  DESTINATION share/commander
+  FILES_MATCHING PATTERN "*.ttf")
+install(
+  FILES "${PROJECT_SOURCE_DIR}/opkg/commander.png"
+  DESTINATION share/icons/hicolor/32x32/apps)

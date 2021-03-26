@@ -9,8 +9,8 @@
 
 namespace {
 
-SDL_Surface *LoadIcon(const char *path) {
-    SDL_Surface *img = IMG_Load(path);
+SDL_Surface *LoadIcon(const std::string &path) {
+    SDL_Surface *img = IMG_Load(path.c_str());
     if(img == nullptr)
     {
         std::cerr << "LoadIcon(\"" << path << "\"): " << IMG_GetError() << std::endl;
@@ -37,6 +37,11 @@ static constexpr std::size_t kFontsLen = sizeof(kFonts) / sizeof(kFonts[0]);
 static constexpr FontSpec kLowDpiFonts[] = {LOW_DPI_FONTS};
 static constexpr std::size_t kLowDpiFontsLen = sizeof(kLowDpiFonts) / sizeof(kLowDpiFonts[0]);
 
+std::string ResDir = RES_DIR "";
+
+std::string ResPath(const char *path) { return ResDir + path; }
+std::string ResPath(const std::string &path) { return ResDir + path; }
+
 std::vector<TTF_Font *> LoadFonts(bool low_dpi) {
     const FontSpec *specs = low_dpi ? kLowDpiFonts : kFonts;
     const std::size_t len = low_dpi ? kLowDpiFontsLen : kFontsLen;
@@ -44,7 +49,8 @@ std::vector<TTF_Font *> LoadFonts(bool low_dpi) {
     std::vector<TTF_Font *> fonts;
     fonts.reserve(len);
     for (std::size_t i = 0; i < len; ++i) {
-        auto *font = SDL_utils::loadFont(specs[i].path, specs[i].size);
+        const std::string &path = specs[i].path;
+        auto *font = SDL_utils::loadFont(path.front() == '/' ? path : ResPath(path), specs[i].size);
         if (font != nullptr) fonts.push_back(font);
     }
     if (fonts.empty()) {
@@ -60,6 +66,13 @@ bool ShouldUseLowDpiFonts() {
 
 } // namespace
 
+void CResourceManager::SetResDir(const char *res_dir)
+{
+    ResDir = res_dir;
+    if (!ResDir.empty() && ResDir.back() != '/') ResDir += '/';
+    std::fprintf(stderr, "Set resource directory to %s\n", ResDir.c_str());
+}
+
 CResourceManager& CResourceManager::instance()
 {
     static CResourceManager l_singleton;
@@ -71,13 +84,13 @@ CResourceManager::CResourceManager()
     , m_fonts(LoadFonts(m_low_dpi_fonts))
 {
     // Load images
-    m_surfaces[T_SURFACE_FOLDER] = LoadIcon(RES_DIR "folder.png");
-    m_surfaces[T_SURFACE_FILE] = LoadIcon(RES_DIR "file-text.png");
-    m_surfaces[T_SURFACE_FILE_IMAGE] = LoadIcon(RES_DIR "file-image.png");
-    m_surfaces[T_SURFACE_FILE_INSTALLABLE_PACKAGE] = LoadIcon(RES_DIR "file-ipk.png");
-    m_surfaces[T_SURFACE_FILE_PACKAGE] = LoadIcon(RES_DIR "file-opk.png");
-    m_surfaces[T_SURFACE_FILE_IS_SYMLINK] = LoadIcon(RES_DIR "file-is-symlink.png");
-    m_surfaces[T_SURFACE_UP] = LoadIcon(RES_DIR "up.png");
+    m_surfaces[T_SURFACE_FOLDER] = LoadIcon(ResPath("folder.png"));
+    m_surfaces[T_SURFACE_FILE] = LoadIcon(ResPath("file-text.png"));
+    m_surfaces[T_SURFACE_FILE_IMAGE] = LoadIcon(ResPath("file-image.png"));
+    m_surfaces[T_SURFACE_FILE_INSTALLABLE_PACKAGE] = LoadIcon(ResPath("file-ipk.png"));
+    m_surfaces[T_SURFACE_FILE_PACKAGE] = LoadIcon(ResPath("file-opk.png"));
+    m_surfaces[T_SURFACE_FILE_IS_SYMLINK] = LoadIcon(ResPath("file-is-symlink.png"));
+    m_surfaces[T_SURFACE_UP] = LoadIcon(ResPath("up.png"));
     m_surfaces[T_SURFACE_CURSOR1] = nullptr;
     m_surfaces[T_SURFACE_CURSOR2] = nullptr;
     onResize();

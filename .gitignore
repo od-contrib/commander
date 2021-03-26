@@ -4,3 +4,4 @@ commander
 /build/
 /build-*/
 nbproject/**
+/linuxdeploy/

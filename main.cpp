@@ -38,6 +38,17 @@ SDL_Surface *SetVideoMode(int width, int height, int bpp, std::uint32_t flags) {
 
 int main(int argc, char** argv)
 {
+    std::string exec_error;
+    for (int i = 1; i < argc; i++) {
+        if (std::strcmp(argv[i], "--show_exec_error") == 0)
+        {
+            exec_error = argv[++i];
+        } else if (std::strcmp(argv[i], "--res-dir") == 0)
+        {
+            CResourceManager::SetResDir(argv[++i]);
+        }
+    }
+
     // Avoid crash due to the absence of mouse
     char l_s[]="SDL_NOMOUSE=1";
     putenv(l_s);
@@ -76,9 +87,8 @@ int main(int argc, char** argv)
 
     CCommander l_commander(l_path, r_path);
 
-    // exec error from the previous process (when relaunching)
-    if (argc >= 3 && std::strcmp(argv[1], "--show_exec_error") == 0)
-        ErrorDialog("Exec error", argv[2]);
+    if (!exec_error.empty())
+        ErrorDialog("Exec error", exec_error);
 
     // Main loop
     l_commander.execute();

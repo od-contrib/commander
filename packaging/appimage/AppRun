@@ -1,0 +1,2 @@
+#!/bin/sh
+exec "${APPDIR}/usr/bin/commander" --res-dir "${APPDIR}/usr/share/commander/res/"

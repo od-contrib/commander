@@ -13,6 +13,8 @@ class CResourceManager
 {
     public:
 
+    static void SetResDir(const char *res_dir);
+
     typedef enum
     {
         T_SURFACE_FOLDER = 0,
