@@ -230,7 +230,17 @@ bool CCommander::mouseDown(int button, int x, int y)
                 return true;
             }
             return changed;
-        case SDL_BUTTON_RIGHT: return operationMenu() || changed;
+        case SDL_BUTTON_RIGHT:
+            if (m_panelSource->getSelectList().empty()) {
+                if (line == -1) {
+                    openSystemMenu();
+                    return true;
+                }
+                target->moveCursorToVisibleLineIndex(line);
+                target->addToSelectList(/*p_step=*/false);
+                changed = true;
+            }
+            return operationMenu() || changed;
         case SDL_BUTTON_X2: return target->goToParentDir() || changed;
         case SDL_BUTTON_WHEELUP:
             return target->moveCursorUp(1) || changed;
