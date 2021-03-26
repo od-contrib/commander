@@ -476,7 +476,8 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
 {
     CWindow::keyPress(p_event);
     bool l_ret(false);
-    switch (p_event.key.keysym.sym)
+    const auto keysym = p_event.key.keysym;
+    switch (keysym.sym)
     {
         case MYKEY_PARENT:
             // B => Cancel
@@ -516,7 +517,18 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
             // START => OK
             m_retVal = 1;
             l_ret = true;
-        default: break;
+        default:
+            if (keysym.sym == SDLK_BACKSPACE || keysym.sym == SDLK_DELETE)
+            {
+                l_ret = backspace();
+            }
+            else if ((keysym.unicode & 0xFF80) == 0)
+            {
+                input_text_ += keysym.unicode & 0x7F;
+                renderInputText();
+                l_ret = true;
+            }
+            break;
     }
     return l_ret;
 }

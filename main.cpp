@@ -74,6 +74,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    SDL_EnableUNICODE(1);
+
     // Create instances
     CResourceManager::instance();
 

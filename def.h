@@ -94,7 +94,7 @@
 #define MYKEY_LEFT SDLK_LEFT
 #endif
 #ifndef MYKEY_SYSTEM
-#define MYKEY_SYSTEM SDLK_q
+#define MYKEY_SYSTEM SDLK_ESCAPE
 #endif
 #ifndef MYKEY_PAGEUP
 #define MYKEY_PAGEUP SDLK_PAGEUP
@@ -109,13 +109,13 @@
 #define MYKEY_PARENT SDLK_BACKSPACE
 #endif
 #ifndef MYKEY_OPERATION
-#define MYKEY_OPERATION SDLK_a
+#define MYKEY_OPERATION SDLK_SPACE
 #endif
 #ifndef MYKEY_SELECT
 #define MYKEY_SELECT SDLK_INSERT
 #endif
 #ifndef MYKEY_TRANSFER
-#define MYKEY_TRANSFER SDLK_w
+#define MYKEY_TRANSFER SDLK_TAB
 #endif
 
 #endif // _DEF_H_
