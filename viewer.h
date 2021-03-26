@@ -45,6 +45,8 @@ class CViewer : public CWindow
     // Key hold management
     const bool keyHold(void) override;
 
+    bool mouseDown(int button, int x, int y);
+
     // Draw
     void render(const bool p_focus) const override;
 

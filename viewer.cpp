@@ -248,6 +248,20 @@ const bool CViewer::keyHold(void)
     return false;
 }
 
+bool CViewer::mouseDown(int button, int x, int y)
+{
+    switch (button)
+    {
+        case SDL_BUTTON_WHEELUP:
+            return moveUp(/*p_step=*/1);
+        case SDL_BUTTON_WHEELDOWN:
+            return moveDown(/*p_step=*/1);
+        case SDL_BUTTON_RIGHT:
+        case SDL_BUTTON_X2: m_retVal = -1; return true;
+    }
+    return false;
+}
+
 bool CViewer::isFullScreen(void) const
 {
     return true;
