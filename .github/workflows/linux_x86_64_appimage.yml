@@ -1,0 +1,60 @@
+name: Build Linux x86_64 AppImage
+
+on: [push]
+
+env:
+  BUILD_TYPE: Release
+  # AppImage directory
+  APP_DIR: ${{github.workspace}}/AppDir
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Install APT packages (build dependencies)
+      run: sudo apt-get install -y -qq libsdl1.2-dev libsdl-image1.2-dev
+
+    - uses: actions/checkout@v2
+
+    - name: "CMake: Create Build Directory"
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: "CMake: Configure for AppImage"
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      run: |
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DPPU_X=2 -DPPU_Y=2 \
+          -DCMAKE_INSTALL_PREFIX=$APP_DIR/usr -DRES_DIR='"usr/share/commander/res/"'
+
+    - name: "CMake: Build"
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE
+
+    - name: "CMake: Install into AppImage scratch directory"
+      run: cmake --install build
+
+    - name: Download AppImage LinuxDeploy
+      working-directory: ${{github.workspace}}
+      run: |
+        wget --no-verbose https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage && \
+        chmod +x linuxdeploy-x86_64.AppImage
+
+    - name: Package AppImage
+      working-directory: ${{github.workspace}}
+      shell: bash
+      run: |
+        ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run \
+          --appimage-extract-and-run \
+          --appdir="$APP_DIR" \
+          --custom-apprun=packaging/appimage/AppRun \
+          --desktop-file=packaging/commander.desktop \
+          --icon-file="${APP_DIR}/usr/share/icons/hicolor/32x32/apps/commander.png" \
+          --output=appimage
+
+    - name: Upload dist
+      uses: actions/upload-artifact@v2
+      with:
+        name: appimage
+        path: Commander-*.AppImage
