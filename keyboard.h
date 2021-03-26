@@ -8,6 +8,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#include "sdl_backports.h"
 #include "sdl_ttf_multifont.h"
 #include "window.h"
 
@@ -81,7 +82,9 @@ class CKeyboard : public CWindow
 
     void loadKeyboard();
     void calculateKeyboardDimensions(std::size_t max_w);
-    std::pair<int, int> getKeyCoordinates(int x, int y) const;
+
+    SDL_Point getKeyCoordinates(int x, int y) const;
+    std::pair<int, int> getButtonAt(SDL_Point p) const;
 
     void renderKeys(std::vector<SDL_Surface *> &out_surfaces, Sint16 x0, Sint16 y0,
         std::uint32_t key_bg_color, SDL_Color sdl_key_bg_color, std::uint32_t key_border_color) const;
@@ -103,6 +106,8 @@ class CKeyboard : public CWindow
 
     // Key hold management
     const bool keyHold(void) override;
+
+    bool mouseDown(int button, int x, int y);
 
     // Draw
     void render(const bool p_focus) const override;

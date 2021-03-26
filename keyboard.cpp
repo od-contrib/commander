@@ -290,19 +290,49 @@ void CKeyboard::loadKeyboard()
     keyboard_.current_keyset = 0;
 }
 
-std::pair<int, int> CKeyboard::getKeyCoordinates(int x, int y) const
+SDL_Point CKeyboard::getKeyCoordinates(int x, int y) const
 {
     const auto &kb = keyboard_;
-    std::pair<int, int> result {
-        x * (kb.key_w + kb.key_gap * screen.ppu_x),
-        y * (kb.key_h + kb.key_gap * screen.ppu_y),
-    };
+    SDL_Point result;
+    result.x = x * (kb.key_w + kb.key_gap * screen.ppu_x);
+    result.y = y * (kb.key_h + kb.key_gap * screen.ppu_y);
     if (kb.collapse_borders)
     {
-        result.first -= x * kb.border_w;
-        result.second -= y * kb.border_w;
+        result.x -= x * kb.border_w;
+        result.y -= y * kb.border_w;
     }
     return result;
+}
+
+std::pair<int, int> CKeyboard::getButtonAt(SDL_Point p) const
+{
+    const auto &kb = keyboard_;
+    const int x_gap = kb.key_gap * screen.ppu_x;
+    const int y_gap = kb.key_gap * screen.ppu_y;
+    SDL_Rect buttons_rect = kb_buttons_rect_;
+    buttons_rect.x += x_;
+    buttons_rect.y += y_;
+    buttons_rect.h += kb.key_h; // OK / Cancel row
+    if (!SDL_PointInRect(&p, &buttons_rect)) return { -1, -1 };
+
+    const int y_idx = (p.y - buttons_rect.y)
+        / (kb.key_h + y_gap - (kb.collapse_borders ? kb.border_w : 0));
+    if (y_idx == kb.num_rows())
+    {
+        // Buttons row. We cheat slightly here and ignore the gap.
+        const int x_idx = 2 * (p.x - buttons_rect.x) / buttons_rect.w;
+        return { x_idx, y_idx };
+    }
+    const int x_idx = (p.x - buttons_rect.x)
+        / (kb.key_w + x_gap - (kb.collapse_borders ? kb.border_w : 0));
+
+    // Check that we're not in a gap:
+    const SDL_Point p_top_left = getKeyCoordinates(x_idx, y_idx);
+    if (p.x - buttons_rect.x - p_top_left.x > kb.key_w
+        || p.y - buttons_rect.y - p_top_left.y > kb.key_h)
+        return { -1, -1 };
+
+    return { x_idx, y_idx };
 }
 
 void CKeyboard::calculateKeyboardDimensions(std::size_t max_w)
@@ -324,10 +354,9 @@ void CKeyboard::calculateKeyboardDimensions(std::size_t max_w)
         = std::max(0, std::min(static_cast<int>(kMaxKeyH) - 15, 3))
         * screen.ppu_y;
     kb.border_w = kKeyBorderW;
-    std::tie(kb.width, kb.height)
-        = getKeyCoordinates(kb.layout.max_keys_per_row, kb.layout.max_rows);
-    kb.width -= kb.key_gap * screen.ppu_x;
-    kb.height -= kb.key_gap * screen.ppu_y;
+    const SDL_Point end = getKeyCoordinates(kb.layout.max_keys_per_row, kb.layout.max_rows);
+    kb.width = end.x - kb.key_gap * screen.ppu_x;
+    kb.height = end.y - kb.key_gap * screen.ppu_y;
     if (kb.collapse_borders)
     {
         kb.width += kb.border_w;
@@ -429,8 +458,9 @@ void CKeyboard::render(const bool p_focus) const
     else
     {
         SDL_Rect clip_rect;
-        std::tie(clip_rect.x, clip_rect.y)
-            = getKeyCoordinates(focus_x_, focus_y_);
+        const SDL_Point key_top_left = getKeyCoordinates(focus_x_, focus_y_);
+        clip_rect.x = key_top_left.x;
+        clip_rect.y = key_top_left.y;
         clip_rect.w = keyboard_.key_w;
         clip_rect.h = keyboard_.key_h;
         SDL_utils::applyPpuScaledSurface(x_ + kb_buttons_rect_.x + clip_rect.x,
@@ -529,6 +559,32 @@ const bool CKeyboard::keyHold(void)
         default: break;
     }
     return l_ret;
+}
+
+bool CKeyboard::mouseDown(int button, int x, int y)
+{
+    if (x < x_ || x > x_ + width_ || y < y_ || y > y_ + height_)
+    {
+        m_retVal = -1;
+        return true;
+    }
+    const std::pair<int, int> key = getButtonAt(SDL_Point { x, y });
+    if (key.first == -1) return false;
+    switch (button)
+    {
+        case SDL_BUTTON_LEFT:
+            focus_x_ = key.first;
+            focus_y_ = key.second;
+            pressFocusedKey();
+            return true;
+        case SDL_BUTTON_MIDDLE:
+        case SDL_BUTTON_RIGHT:
+            focus_x_ = key.first;
+            focus_y_ = key.second;
+            return true;
+        case SDL_BUTTON_X2: m_retVal = -1; return true;
+    }
+    return false;
 }
 
 const bool CKeyboard::moveCursorUp(const bool p_loop)
