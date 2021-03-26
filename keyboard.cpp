@@ -626,6 +626,7 @@ const bool CKeyboard::backspace(void)
             input_text_.resize(input_text_.size() - 2);
         else
             input_text_.resize(input_text_.size() - 1);
+        renderInputText();
         l_ret = true;
     }
     return l_ret;
