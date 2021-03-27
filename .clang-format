@@ -1,5 +1,5 @@
 BasedOnStyle: webkit
-AccessModifierOffset: 0
+AccessModifierOffset: -2
 AlignTrailingComments: true
 AllowShortBlocksOnASingleLine: Always
 AllowShortCaseLabelsOnASingleLine: true
@@ -8,7 +8,6 @@ AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: WithoutElse
 AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: true
-BreakBeforeBraces: Allman
 ColumnLimit: 80
 IndentCaseLabels: true
 PointerAlignment: Right
