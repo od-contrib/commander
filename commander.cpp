@@ -412,6 +412,7 @@ const bool CCommander::openSystemMenu(void)
                 if (l_keyboard.execute() == 1 && !l_keyboard.getInputText().empty())
                 {
                     File_utils::makeDirectory(m_panelSource->getCurrentPath() + (m_panelSource->getCurrentPath() == "/" ? "" : "/") + l_keyboard.getInputText());
+                    m_panelSource->refresh();
                     l_ret = true;
                 }
             }
