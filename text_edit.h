@@ -10,6 +10,11 @@
 
 class TextEdit {
   public:
+    explicit TextEdit(bool support_tabs = false)
+        : support_tabs_(support_tabs)
+    {
+    }
+
     void setDimensions(int width, int height);
     int width() const { return width_; }
     int height() const { return height_; }
@@ -64,6 +69,8 @@ class TextEdit {
 
     SDL_Color sdl_bg_color_ = SDL_Color { COLOR_BG_1 };
     std::uint32_t bg_color_;
+
+    const bool support_tabs_;
 };
 
 #endif // TEXT_EDIT_H_

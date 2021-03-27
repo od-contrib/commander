@@ -75,12 +75,23 @@ void TextEdit::updateForeground() const
     }
     const int max_w = foreground_rect_.w - 2 * padding_x_;
 
+    std::string text_buf;
+    const auto text_for_render
+        = [this, &text_buf](const std::string &str) -> const std::string & {
+        if (!support_tabs_) return str;
+        text_buf = str;
+        utf8::replaceTabsWithSpaces(&text_buf);
+        return text_buf;
+    };
+
     const auto &fonts = CResourceManager::instance().getFonts();
-    SDLSurfaceUniquePtr tmp_surface { SDL_utils::renderText(
-        fonts, text_, Globals::g_colorTextNormal, { COLOR_BG_1 }) };
+    SDLSurfaceUniquePtr tmp_surface { SDL_utils::renderText(fonts,
+        text_for_render(text_), Globals::g_colorTextNormal, { COLOR_BG_1 }) };
     const int cursor_x = cursor_pos_ == text_.size()
         ? tmp_surface->w
-        : SDL_utils::measureText(fonts, text_.substr(0, cursor_pos_)).first;
+        : SDL_utils::measureText(
+            fonts, text_for_render(text_.substr(0, cursor_pos_)))
+              .first;
     if (cursor_x < text_x_) text_x_ = cursor_x;
     if (cursor_x > text_x_ + max_w) text_x_ = cursor_x - max_w;
 
