@@ -34,6 +34,7 @@ set(DinguxCommander_SRCS
   screen.cpp
   sdl_ttf_multifont.cpp
   sdlutils.cpp
+  text_edit.cpp
   viewer.cpp
   window.cpp
 )

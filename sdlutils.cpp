@@ -11,21 +11,23 @@
 #include "screen.h"
 #include "sdl_ttf_multifont.h"
 
-void SDL_utils::setMouseCursorEnabled(bool enabled) {
+namespace SDL_utils {
+
+void setMouseCursorEnabled(bool enabled) {
     SDL_ShowCursor(enabled ? 1 : 0);
 }
 
-bool SDL_utils::isSupportedImageExt(const std::string &ext) {
+bool isSupportedImageExt(const std::string &ext) {
     return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "ico" || ext == "bmp" || ext == "xcf";
 }
 
-SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w, int fit_h)
+SDL_Surface *loadImageToFit(const std::string &p_filename, int fit_w, int fit_h)
 {
     // Load image
     SDL_Surface *l_img = IMG_Load(p_filename.c_str());
     if (IMG_GetError() != nullptr && *IMG_GetError() != '\0') {
         if (!strcmp(IMG_GetError(), "Unsupported image format") == 0)
-            std::cerr << "SDL_utils::loadImageToFit: " << IMG_GetError() << std::endl;
+            std::cerr << "loadImageToFit: " << IMG_GetError() << std::endl;
         SDL_ClearError();
         return nullptr;
     }
@@ -50,7 +52,7 @@ SDL_Surface *SDL_utils::loadImageToFit(const std::string &p_filename, int fit_w,
     return l_img3;
 }
 
-void SDL_utils::applyPpuScaledSurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip)
+void applyPpuScaledSurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip)
 {
     // Rectangle to hold the offsets
     SDL_Rect l_offset;
@@ -61,27 +63,27 @@ void SDL_utils::applyPpuScaledSurface(const Sint16 p_x, const Sint16 p_y, SDL_Su
     SDL_BlitSurface(p_source, p_clip, p_destination, &l_offset);
 }
 
-void SDL_utils::applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip)
+void applySurface(const Sint16 p_x, const Sint16 p_y, SDL_Surface* p_source, SDL_Surface* p_destination, SDL_Rect *p_clip)
 {
     return applyPpuScaledSurface(p_x * screen.ppu_x, p_y * screen.ppu_y, p_source, p_destination, p_clip);
 }
 
-TTF_Font *SDL_utils::loadFont(const std::string &p_font, const int p_size)
+TTF_Font *loadFont(const std::string &p_font, const int p_size)
 {
-    INHIBIT(std::cout << "SDL_utils::loadFont(" << p_font << ", " << p_size << ")" << std::endl;)
+    INHIBIT(std::cout << "loadFont(" << p_font << ", " << p_size << ")" << std::endl;)
 #ifdef USE_TTF_OPENFONT_DPI
     TTF_Font *l_font = TTF_OpenFontDPI(p_font.c_str(), p_size, 72 * screen.ppu_x, 72 * screen.ppu_y);
 #else
     TTF_Font *l_font = TTF_OpenFont(p_font.c_str(), p_size);
 #endif
     if (l_font == NULL) {
-        std::cerr << "SDL_utils::loadFont: " << SDL_GetError() << std::endl;
+        std::cerr << "loadFont: " << SDL_GetError() << std::endl;
         SDL_ClearError();
     }
     return l_font;
 }
 
-SDL_Surface *SDL_utils::renderText(const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg)
+SDL_Surface *renderText(const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg)
 {
     SDL_Surface *result = TTFMultiFont_RenderUTF8_Shaded(p_fonts, p_text, p_fg, p_bg);
     if (result == nullptr) {
@@ -91,7 +93,7 @@ SDL_Surface *SDL_utils::renderText(const Fonts &p_fonts, const std::string &p_te
     return result;
 }
 
-void SDL_utils::applyPpuScaledText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
+void applyPpuScaledText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
 {
     SDL_Surface *l_text = renderText(p_fonts, p_text, p_fg, p_bg);
     switch (p_align)
@@ -111,7 +113,7 @@ void SDL_utils::applyPpuScaledText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destin
     SDL_FreeSurface(l_text);
 }
 
-void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
+void applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
 {
     SDL_Surface *l_text = renderText(p_fonts, p_text, p_fg, p_bg);
     switch (p_align)
@@ -131,22 +133,49 @@ void SDL_utils::applyText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, co
     SDL_FreeSurface(l_text);
 }
 
-SDL_Surface *SDL_utils::createSurface(int width, int height)
+void removeBorder(SDL_Rect *rect, int border_width_x, int border_width_y)
+{
+    rect->x += border_width_x;
+    rect->y += border_width_y;
+    rect->w -= 2 * border_width_x;
+    rect->h -= 2 * border_width_y;
+}
+
+void renderRectWithBorder(SDL_Surface *out, SDL_Rect rect,
+    int border_width_x, int border_width_y, Uint32 border_color, Uint32 bg_color)
+{
+    SDL_Rect line = rect;
+    line.w = border_width_x;
+    SDL_FillRect(out, &line, border_color);
+    line.x = rect.x + rect.w - border_width_x;
+    SDL_FillRect(out, &line, border_color);
+    line.x = rect.x;
+    line.w = rect.w;
+    line.h = border_width_y;
+    SDL_FillRect(out, &line, border_color);
+    line.y = rect.y + rect.h - border_width_y;
+    SDL_FillRect(out, &line, border_color);
+
+    removeBorder(&rect, border_width_x, border_width_y);
+    SDL_FillRect(out, &rect, bg_color);
+}
+
+SDL_Surface *createSurface(int width, int height)
 {
     return SDL_CreateRGBSurface(SURFACE_FLAGS, width, height, screen.surface->format->BitsPerPixel, screen.surface->format->Rmask, screen.surface->format->Gmask, screen.surface->format->Bmask, screen.surface->format->Amask);
 }
 
-SDL_Surface *SDL_utils::createImage(const int p_width, const int p_height, const Uint32 p_color)
+SDL_Surface *createImage(const int p_width, const int p_height, const Uint32 p_color)
 {
     SDL_Surface *l_ret = createSurface(p_width, p_height);
     if (l_ret == NULL)
-        std::cerr << "SDL_utils::createImage: " << SDL_GetError() << std::endl;
+        std::cerr << "createImage: " << SDL_GetError() << std::endl;
     // Fill image with the given color
     SDL_FillRect(l_ret, NULL, p_color);
     return l_ret;
 }
 
-void SDL_utils::renderAll(void)
+void renderAll(void)
 {
     if (Globals::g_windows.empty())
         return;
@@ -159,7 +188,7 @@ void SDL_utils::renderAll(void)
         (*l_it)->render(l_it + 1 == Globals::g_windows.end());
 }
 
-void SDL_utils::hastalavista(void)
+void hastalavista(void)
 {
     // Destroy all dialogs except the first one (the commander)
     while (Globals::g_windows.size() > 1)
@@ -172,7 +201,7 @@ void SDL_utils::hastalavista(void)
     SDL_Quit();
 }
 
-void SDL_utils::pleaseWait(void)
+void pleaseWait(void)
 {
     SDL_Surface *l_surfaceTmp = renderText(CResourceManager::instance().getFonts(), "Please wait...", Globals::g_colorTextNormal, {COLOR_BG_1});
     SDL_Rect l_rect = Rect(
@@ -190,3 +219,5 @@ void SDL_utils::pleaseWait(void)
     SDL_FreeSurface(l_surfaceTmp);
     screen.flip();
 }
+
+} // namespace SDL_utils

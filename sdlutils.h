@@ -1,10 +1,13 @@
 #ifndef _SDLUTILS_H_
 #define _SDLUTILS_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
+
 #include <SDL.h>
 #include <SDL_ttf.h>
+
 #include "sdl_ttf_multifont.h"
 #include "window.h"
 
@@ -48,6 +51,26 @@ namespace SDL_utils
 
     // Render a text and apply on a given surface (actual coordinates)
     void applyPpuScaledText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align = T_TEXT_ALIGN_LEFT);
+
+    inline std::uint32_t mapRGB(const SDL_PixelFormat *fmt, SDL_Color c)
+    {
+        return SDL_MapRGB(fmt, c.r, c.g, c.b);
+    }
+
+    void removeBorder(SDL_Rect *rect, int border_width_x, int border_width_y);
+    inline void removeBorder(SDL_Rect *rect, int border_width) {
+        return removeBorder(rect, border_width, border_width);
+    }
+
+    void renderRectWithBorder(SDL_Surface *out, SDL_Rect rect,
+        int border_width_x, int border_width_y, Uint32 border_color,
+        Uint32 bg_color);
+    inline void renderRectWithBorder(SDL_Surface *out, SDL_Rect rect,
+        int border_width, Uint32 border_color, Uint32 bg_color)
+    {
+        return renderRectWithBorder(
+            out, rect, border_width, border_width, border_color, bg_color);
+    }
 
     // Create a surface in the same format as the screen
     SDL_Surface *createSurface(int width, int height);

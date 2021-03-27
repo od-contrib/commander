@@ -1,6 +1,7 @@
 #include "keyboard.h"
 
 #include <array>
+#include <cctype>
 #include <iostream>
 #include <tuple>
 
@@ -9,8 +10,10 @@
 #include "screen.h"
 #include "sdlutils.h"
 
-namespace
-{
+namespace {
+
+using SDL_utils::removeBorder;
+using SDL_utils::renderRectWithBorder;
 
 constexpr char kKeycapBackspace[] = "←";
 constexpr char kKeycapSpace[] = " ";
@@ -53,33 +56,6 @@ const KeyboardLayout &UsAsciiLayout()
     return *kLayout;
 }
 
-void removeBorder(SDL_Rect *rect, std::size_t border_width)
-{
-    rect->x += border_width;
-    rect->y += border_width;
-    rect->w -= 2 * border_width;
-    rect->h -= 2 * border_width;
-}
-
-void renderRectWithBorder(SDL_Surface *out, SDL_Rect rect,
-    std::size_t border_width, Uint32 border_color, Uint32 bg_color)
-{
-    SDL_Rect line = rect;
-    line.w = border_width;
-    SDL_FillRect(out, &line, border_color);
-    line.x = rect.x + rect.w - border_width;
-    SDL_FillRect(out, &line, border_color);
-    line.x = rect.x;
-    line.w = rect.w;
-    line.h = border_width;
-    SDL_FillRect(out, &line, border_color);
-    line.y = rect.y + rect.h - border_width;
-    SDL_FillRect(out, &line, border_color);
-
-    removeBorder(&rect, border_width);
-    SDL_FillRect(out, &rect, bg_color);
-}
-
 std::vector<SDL_Surface *> AllocSurfaces(
     std::size_t len, int w, int h, std::uint32_t color)
 {
@@ -113,13 +89,12 @@ const std::string &CKeyboard::Keyboard::text(std::size_t x, std::size_t y) const
 
 CKeyboard::CKeyboard(const std::string &p_inputText)
     : CWindow()
-    , input_text_(p_inputText)
     , m_fonts(CResourceManager::instance().getFonts())
     , footer_(nullptr)
-    , input_text_surface_(nullptr)
     , cancel_highlighted_(nullptr)
     , ok_highlighted_(nullptr)
 {
+    text_edit_.appendText(p_inputText);
     loadKeyboard();
     init();
 }
@@ -158,16 +133,14 @@ void CKeyboard::init()
     sdl_highlight_color_ = SDL_Color { COLOR_CURSOR_1 };
     highlight_color_ = SDL_MapRGB(pixel_format, COLOR_CURSOR_1);
 
-    SDL_Rect text_field_rect;
-    text_field_rect.x = frame_padding_x_;
-    text_field_rect.y = frame_padding_y_;
-    text_field_rect.w = keyboard_.width;
-    text_field_rect.h = kTextFieldHeight * screen.ppu_y;
-    text_field_inner_rect_ = text_field_rect;
-    removeBorder(&text_field_inner_rect_, kTextFieldBorder);
+    text_field_rect_.x = frame_padding_x_;
+    text_field_rect_.y = frame_padding_y_;
+    text_field_rect_.w = keyboard_.width;
+    text_field_rect_.h = kTextFieldHeight * screen.ppu_y;
+    text_edit_.setDimensions(text_field_rect_.w, text_field_rect_.h);
 
     kb_buttons_rect_.x = frame_padding_x_;
-    kb_buttons_rect_.y = text_field_rect.y + text_field_rect.h
+    kb_buttons_rect_.y = text_field_rect_.y + text_field_rect_.h
         + kTextFieldMarginBottom * screen.ppu_y;
     kb_buttons_rect_.w = width_ - 2 * frame_padding_x_;
     kb_buttons_rect_.h = keyboard_.height + ok_cancel_height
@@ -187,8 +160,7 @@ void CKeyboard::init()
     ok_rect_ = cancel_rect_;
     ok_rect_.x
         = cancel_rect_.x + cancel_rect_.w + keyboard_.key_gap * screen.ppu_x;
-    if (keyboard_.collapse_borders)
-    {
+    if (keyboard_.collapse_borders) {
         ok_rect_.x -= keyboard_.border_w;
         ok_rect_.w += keyboard_.border_w;
     }
@@ -198,17 +170,15 @@ void CKeyboard::init()
     cancel_rect_.w += extend_by;
     ok_rect_.x += extend_by;
 
-    for (auto &surface : surfaces_)
-    {
+    for (auto *surface : surfaces_) {
         // Overall background:
         renderRectWithBorder(surface,
             SDL_Rect { 0, 0, static_cast<decltype(SDL_Rect {}.w)>(width_),
                 static_cast<decltype(SDL_Rect {}.h)>(height_) },
             kFrameBorder, border_color_, bg2_color_);
 
-        // Text field:
-        renderRectWithBorder(surface, text_field_rect, kTextFieldBorder,
-            border_color_, bg_color_);
+        text_edit_.blitBackground(
+            *surface, text_field_rect_.x, text_field_rect_.y);
 
         // OK / Cancel buttons:
         renderButton(*surface, cancel_rect_, "Cancel");
@@ -235,8 +205,6 @@ void CKeyboard::init()
     SDL_utils::applyText(screen.w / 2, 1, footer_, m_fonts,
         "A-Input B-Cancel START-OK L/R⇧ Y← X␣", Globals::g_colorTextTitle,
         { COLOR_TITLE_BG }, SDL_utils::T_TEXT_ALIGN_CENTER);
-
-    renderInputText();
 }
 
 void CKeyboard::renderButton(
@@ -269,11 +237,8 @@ CKeyboard::~CKeyboard() { freeResources(); }
 void CKeyboard::freeResources()
 {
     // Free surfaces
-    for (auto *surface : { &input_text_surface_, &cancel_highlighted_,
-             &ok_highlighted_, &footer_ })
-    {
-        if (*surface != nullptr)
-        {
+    for (auto *surface : { &cancel_highlighted_, &ok_highlighted_, &footer_ }) {
+        if (*surface != nullptr) {
             SDL_FreeSurface(*surface);
             *surface = nullptr;
         }
@@ -296,8 +261,7 @@ SDL_Point CKeyboard::getKeyCoordinates(int x, int y) const
     SDL_Point result;
     result.x = x * (kb.key_w + kb.key_gap * screen.ppu_x);
     result.y = y * (kb.key_h + kb.key_gap * screen.ppu_y);
-    if (kb.collapse_borders)
-    {
+    if (kb.collapse_borders) {
         result.x -= x * kb.border_w;
         result.y -= y * kb.border_w;
     }
@@ -317,8 +281,7 @@ std::pair<int, int> CKeyboard::getButtonAt(SDL_Point p) const
 
     const int y_idx = (p.y - buttons_rect.y)
         / (kb.key_h + y_gap - (kb.collapse_borders ? kb.border_w : 0));
-    if (y_idx == kb.num_rows())
-    {
+    if (y_idx == kb.num_rows()) {
         // Buttons row. We cheat slightly here and ignore the gap.
         const int x_idx = 2 * (p.x - buttons_rect.x) / buttons_rect.w;
         return { x_idx, y_idx };
@@ -343,8 +306,8 @@ void CKeyboard::calculateKeyboardDimensions(std::size_t max_w)
                               kMaxKeyW + kMaxKeyGap * 2)
         / 2 * 2;
     if (w > kMaxKeyW)
-        kb.key_gap = std::min(
-            static_cast<std::size_t>((w * 0.2) / 4) * 2, kMaxKeyGap);
+        kb.key_gap
+            = std::min(static_cast<std::size_t>((w * 0.2) / 4) * 2, kMaxKeyGap);
     else
         kb.key_gap = 0;
     kb.collapse_borders = kb.key_gap > 0 ? 0 : 1;
@@ -354,11 +317,11 @@ void CKeyboard::calculateKeyboardDimensions(std::size_t max_w)
         = std::max(0, std::min(static_cast<int>(kMaxKeyH) - 15, 3))
         * screen.ppu_y;
     kb.border_w = kKeyBorderW;
-    const SDL_Point end = getKeyCoordinates(kb.layout.max_keys_per_row, kb.layout.max_rows);
+    const SDL_Point end
+        = getKeyCoordinates(kb.layout.max_keys_per_row, kb.layout.max_rows);
     kb.width = end.x - kb.key_gap * screen.ppu_x;
     kb.height = end.y - kb.key_gap * screen.ppu_y;
-    if (kb.collapse_borders)
-    {
+    if (kb.collapse_borders) {
         kb.width += kb.border_w;
         kb.height += kb.border_w;
     }
@@ -373,15 +336,12 @@ void CKeyboard::renderKeys(std::vector<SDL_Surface *> &out_surfaces, Sint16 x0,
     key_rect.w = kb.key_w;
     key_rect.h = kb.key_h;
     auto surface_it = out_surfaces.begin();
-    for (const auto &layer : kb.layout.layers)
-    {
+    for (const auto &layer : kb.layout.layers) {
         auto *out = *surface_it++;
         key_rect.y = y0;
-        for (const auto &row : layer)
-        {
+        for (const auto &row : layer) {
             key_rect.x = x0;
-            for (const auto &key : row)
-            {
+            for (const auto &key : row) {
                 renderRectWithBorder(
                     out, key_rect, kb.border_w, key_border_color, key_bg_color);
                 SDL_utils::applyPpuScaledText(
@@ -398,41 +358,6 @@ void CKeyboard::renderKeys(std::vector<SDL_Surface *> &out_surfaces, Sint16 x0,
     }
 }
 
-void CKeyboard::renderInputText()
-{
-    constexpr std::size_t kTextOffsetX = 5;
-    constexpr std::size_t kTextOffsetY = 3;
-    if (input_text_surface_ == nullptr)
-    {
-        input_text_surface_ = SDL_utils::createSurface(
-            text_field_inner_rect_.w, text_field_inner_rect_.h);
-    }
-    const auto bg_color = SDL_MapRGB(input_text_surface_->format, COLOR_BG_1);
-    SDL_FillRect(input_text_surface_, nullptr, bg_color);
-    if (!input_text_.empty())
-    {
-        SDL_Surface *tmp_surface = SDL_utils::renderText(
-            m_fonts, input_text_, Globals::g_colorTextNormal, { COLOR_BG_1 });
-        if (tmp_surface->w > text_field_inner_rect_.w)
-        {
-            // Text is too big => clip it
-            SDL_Rect rect;
-            rect.x = tmp_surface->w - text_field_inner_rect_.w;
-            rect.y = 0;
-            rect.w = text_field_inner_rect_.w;
-            rect.h = tmp_surface->h;
-            SDL_utils::applySurface(kTextOffsetX, kTextOffsetY, tmp_surface,
-                input_text_surface_, &rect);
-        }
-        else
-        {
-            SDL_utils::applySurface(
-                kTextOffsetX, kTextOffsetY, tmp_surface, input_text_surface_);
-        }
-        SDL_FreeSurface(tmp_surface);
-    }
-}
-
 void CKeyboard::render(const bool p_focus) const
 {
     INHIBIT(std::cout << "CKeyboard::render  fullscreen: " << isFullScreen()
@@ -442,21 +367,18 @@ void CKeyboard::render(const bool p_focus) const
         x_, y_, surfaces_[keyboard_.current_keyset], screen.surface);
 
     // Draw input text
-    SDL_utils::applyPpuScaledSurface(x_ + text_field_inner_rect_.x,
-        y_ + text_field_inner_rect_.y, input_text_surface_, screen.surface);
+    text_edit_.blitForeground(
+        *screen.surface, x_ + text_field_rect_.x, y_ + text_field_rect_.y);
 
     // Draw focused button
-    if (isFocusOnButtonsRow())
-    {
+    if (isFocusOnButtonsRow()) {
         if (isFocusOnCancel())
             SDL_utils::applyPpuScaledSurface(x_ + cancel_rect_.x,
                 y_ + cancel_rect_.y, cancel_highlighted_, screen.surface);
         else
             SDL_utils::applyPpuScaledSurface(x_ + ok_rect_.x, y_ + ok_rect_.y,
                 ok_highlighted_, screen.surface);
-    }
-    else
-    {
+    } else {
         SDL_Rect clip_rect;
         const SDL_Point key_top_left = getKeyCoordinates(focus_x_, focus_y_);
         clip_rect.x = key_top_left.x;
@@ -475,115 +397,105 @@ void CKeyboard::render(const bool p_focus) const
 const bool CKeyboard::keyPress(const SDL_Event &p_event)
 {
     CWindow::keyPress(p_event);
-    bool l_ret(false);
     const auto keysym = p_event.key.keysym;
-    switch (keysym.sym)
-    {
+    switch (keysym.sym) {
         case MYKEY_PARENT:
             // B => Cancel
             m_retVal = -1;
-            l_ret = true;
-            break;
-        case MYKEY_UP: l_ret = moveCursorUp(true); break;
-        case MYKEY_DOWN: l_ret = moveCursorDown(true); break;
-        case MYKEY_LEFT: l_ret = moveCursorLeft(true); break;
-        case MYKEY_RIGHT: l_ret = moveCursorRight(true); break;
+            return true;
+        case MYKEY_UP: return moveCursorUp(true);
+        case MYKEY_DOWN: return moveCursorDown(true);
+        case MYKEY_LEFT: return moveCursorLeft(true);
+        case MYKEY_RIGHT: return moveCursorRight(true);
         case MYKEY_SYSTEM:
             // Y => Backspace
-            l_ret = backspace();
-            break;
+            return text_edit_.backspace();
         case MYKEY_OPERATION:
             // X => Space
-            l_ret = appendText(" ");
-            break;
+            text_edit_.appendText(' ');
+            return true;
         case MYKEY_OPEN:
             // A => press button
-            l_ret = pressFocusedKey();
-            break;
+            return pressFocusedKey();
         case MYKEY_PAGEDOWN:
             // R => Change keys forward
             keyboard_.current_keyset
                 = (keyboard_.current_keyset + 1) % keyboard_.num_keysets();
-            l_ret = true;
-            break;
+            return true;
         case MYKEY_PAGEUP:
             // L => Change keys backward
             keyboard_.current_keyset
                 = (keyboard_.num_keysets() + keyboard_.current_keyset - 1)
                 % keyboard_.num_keysets();
-            l_ret = true;
-            break;
+            return true;
         case MYKEY_TRANSFER:
             // START => OK
             m_retVal = 1;
-            l_ret = true;
+            return true;
         default:
-            if (keysym.sym == SDLK_BACKSPACE || keysym.sym == SDLK_DELETE)
-            {
-                l_ret = backspace();
+            if (keysym.sym == SDLK_BACKSPACE || keysym.sym == SDLK_DELETE) {
+                return text_edit_.backspace();
+            } else if ((keysym.unicode & 0xFF80) == 0) {
+                const unsigned char c = keysym.unicode & 0x7F;
+                if (std::isprint(c)) {
+                    text_edit_.appendText(c);
+                    return true;
+                }
             }
-            else if ((keysym.unicode & 0xFF80) == 0)
-            {
-                input_text_ += keysym.unicode & 0x7F;
-                renderInputText();
-                l_ret = true;
-            }
-            break;
+            return false;
     }
-    return l_ret;
 }
 
 const bool CKeyboard::keyHold(void)
 {
-    bool l_ret(false);
-    switch (m_lastPressed)
-    {
+    switch (m_lastPressed) {
         case MYKEY_UP:
             if (tick(SDL_GetKeyState(NULL)[MYKEY_UP]))
-                l_ret = moveCursorUp(false);
-            break;
+                return moveCursorUp(false);
+            return false;
         case MYKEY_DOWN:
             if (tick(SDL_GetKeyState(NULL)[MYKEY_DOWN]))
-                l_ret = moveCursorDown(false);
-            break;
+                return moveCursorDown(false);
+            return false;
         case MYKEY_LEFT:
             if (tick(SDL_GetKeyState(NULL)[MYKEY_LEFT]))
-                l_ret = moveCursorLeft(false);
-            break;
+                return moveCursorLeft(false);
+            return false;
         case MYKEY_RIGHT:
             if (tick(SDL_GetKeyState(NULL)[MYKEY_RIGHT]))
-                l_ret = moveCursorRight(false);
-            break;
+                return moveCursorRight(false);
+            return false;
         case MYKEY_OPEN:
             // A => Add letter
             if (tick(SDL_GetKeyState(NULL)[MYKEY_OPEN]))
-                l_ret = pressFocusedKey();
-            break;
+                return pressFocusedKey();
+            return false;
         case MYKEY_SYSTEM:
             // Y => Backspace
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_SYSTEM])) l_ret = backspace();
-            break;
+            if (tick(SDL_GetKeyState(NULL)[MYKEY_SYSTEM]))
+                return text_edit_.backspace();
+            return false;
         case MYKEY_OPERATION:
             // X => Space
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_OPERATION]))
-                l_ret = appendText(" ");
-            break;
-        default: break;
+            if (tick(SDL_GetKeyState(NULL)[MYKEY_OPERATION])) {
+                text_edit_.appendText(' ');
+                return true;
+            }
+            return false;
+        default: return false;
     }
-    return l_ret;
+    return true;
 }
 
 bool CKeyboard::mouseDown(int button, int x, int y)
 {
-    if (x < x_ || x > x_ + width_ || y < y_ || y > y_ + height_)
-    {
+    if (x < x_ || x > x_ + width_ || y < y_ || y > y_ + height_) {
         m_retVal = -1;
         return true;
     }
     const std::pair<int, int> key = getButtonAt(SDL_Point { x, y });
     if (key.first == -1) return false;
-    switch (button)
-    {
+    switch (button) {
         case SDL_BUTTON_LEFT:
             focus_x_ = key.first;
             focus_y_ = key.second;
@@ -661,46 +573,18 @@ const bool CKeyboard::isFocusOnCancel() const
 bool CKeyboard::pressFocusedKey()
 {
     bool updated = false;
-    if (isFocusOnButtonsRow()) { m_retVal = isFocusOnCancel() ? -1 : 1; }
-    else if (keyboard_.isBackspace(focus_x_, focus_y_))
-    {
-        updated = backspace();
-    }
-    else
-    {
+    if (isFocusOnButtonsRow()) {
+        m_retVal = isFocusOnCancel() ? -1 : 1;
+    } else if (keyboard_.isBackspace(focus_x_, focus_y_)) {
+        updated = text_edit_.backspace();
+    } else {
+        text_edit_.appendText(keyboard_.text(focus_x_, focus_y_));
         updated = true;
-        input_text_.append(keyboard_.text(focus_x_, focus_y_));
     }
-    if (updated) renderInputText();
     return true;
 }
 
-bool CKeyboard::appendText(const std::string &text)
+const std::string &CKeyboard::getInputText(void) const
 {
-    input_text_.append(text);
-    renderInputText();
-    return true;
-}
-
-const std::string &CKeyboard::getInputText(void) const { return input_text_; }
-
-const bool CKeyboard::backspace(void)
-{
-    bool l_ret(false);
-    if (!input_text_.empty())
-    {
-        if (input_text_.size() >= 2
-            && utf8Code(input_text_.at(input_text_.size() - 2)))
-            input_text_.resize(input_text_.size() - 2);
-        else
-            input_text_.resize(input_text_.size() - 1);
-        renderInputText();
-        l_ret = true;
-    }
-    return l_ret;
-}
-
-const bool CKeyboard::utf8Code(const unsigned char p_c) const
-{
-    return (p_c >= 194 && p_c <= 198) || p_c == 208 || p_c == 209;
+    return text_edit_.text();
 }

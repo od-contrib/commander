@@ -10,6 +10,7 @@
 
 #include "sdl_backports.h"
 #include "sdl_ttf_multifont.h"
+#include "text_edit.h"
 #include "window.h"
 
 struct KeyboardLayout
@@ -96,7 +97,6 @@ class CKeyboard : public CWindow
     void renderButton(SDL_Surface &out, SDL_Rect rect, const std::string &text,
         std::uint32_t border_color, std::uint32_t bg_color,
         SDL_Color sdl_bg_color) const;
-    void renderInputText();
 
     // Window resized.
     void onResize() override;
@@ -120,14 +120,6 @@ class CKeyboard : public CWindow
 
     bool pressFocusedKey();
 
-    bool appendText(const std::string &text);
-
-    // Remove last letter
-    const bool backspace(void);
-
-    // UTF8 character or not
-    const bool utf8Code(const unsigned char p_c) const;
-
     const bool isFocusOnButtonsRow() const;
     const bool isFocusOnOk() const;
     const bool isFocusOnCancel() const;
@@ -140,8 +132,7 @@ class CKeyboard : public CWindow
     std::uint32_t highlight_color_;
     SDL_Color sdl_highlight_color_;
 
-    // The input text
-    std::string input_text_;
+    TextEdit text_edit_;
 
     // The cursor index
     std::size_t focus_x_;
@@ -153,7 +144,7 @@ class CKeyboard : public CWindow
     // Layout:
     std::size_t frame_padding_x_, frame_padding_y_;
     std::size_t x_, y_, width_, height_;
-    SDL_Rect text_field_inner_rect_, kb_buttons_rect_, cancel_rect_, ok_rect_;
+    SDL_Rect text_field_rect_, kb_buttons_rect_, cancel_rect_, ok_rect_;
 
     Keyboard keyboard_;
     std::size_t keycap_text_offset_y_;
@@ -166,7 +157,6 @@ class CKeyboard : public CWindow
     std::vector<SDL_Surface *> kb_highlighted_surfaces_;
 
     // Foreground layer surfaces:
-    SDL_Surface *input_text_surface_;
     SDL_Surface *cancel_highlighted_;
     SDL_Surface *ok_highlighted_;
 };
