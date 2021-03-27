@@ -1,6 +1,8 @@
 #ifndef UTF8_H_
 #define UTF8_H_
 
+#include <string>
+
 namespace utf8 {
 
 inline size_t codePointLen(const char *src)
@@ -10,6 +12,8 @@ inline size_t codePointLen(const char *src)
 }
 
 inline bool isTrailByte(char x) { return static_cast<signed char>(x) < -0x40; }
+
+void replaceTabsWithSpaces(std::string *line, std::size_t tab_width = 4);
 
 } // namespace utf8
 

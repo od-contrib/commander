@@ -8,33 +8,6 @@
 #include "sdlutils.h"
 #include "utf8.h"
 
-namespace {
-
-void ReplaceTabs(std::string *line) {
-    constexpr std::size_t kTabWidth = 8;
-    const std::size_t num_tabs = std::count(line->begin(), line->end(), '\t');
-    if (num_tabs == 0) return;
-    std::string result;
-    result.reserve(line->size() + num_tabs * (kTabWidth - 1));
-    std::size_t prev_tab_end = 0;
-    std::size_t column = 0;
-    for (std::size_t i = 0; i < line->size(); i += utf8::codePointLen(line->data() + i)) {
-        if ((*line)[i] == '\t') {
-            result.append(*line, prev_tab_end, i - prev_tab_end);
-            const std::size_t num_spaces = kTabWidth - (column % kTabWidth);
-            result.append(num_spaces, ' ');
-            prev_tab_end = i + 1;
-            column += num_spaces;
-        } else {
-            ++column;
-        }
-    }
-    result.append(*line, prev_tab_end, std::string::npos);
-    *line = std::move(result);
-}
-
-} // namespace
-
 CViewer::CViewer(const std::string &p_fileName)
     : CWindow()
     , m_fileName(p_fileName)
@@ -109,7 +82,7 @@ void CViewer::init() {
             {
                 m_lines.emplace_back();
                 std::getline(l_file, m_lines.back());
-                ReplaceTabs(&m_lines.back());
+                utf8::replaceTabsWithSpaces(&m_lines.back());
             }
             l_file.close();
         }
