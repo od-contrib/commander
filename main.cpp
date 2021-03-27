@@ -21,21 +21,6 @@ const SDL_Color Globals::g_colorTextDir = {COLOR_TEXT_DIR};
 const SDL_Color Globals::g_colorTextSelected = {COLOR_TEXT_SELECTED};
 std::vector<CWindow *> Globals::g_windows;
 
-namespace {
-
-SDL_Surface *SetVideoMode(int width, int height, int bpp, std::uint32_t flags) {
-	fprintf(stderr, "Setting video mode %dx%d bpp=%u flags=0x%08X\n", width, height, bpp, flags);
-    fflush(stderr);
-	auto *result = SDL_SetVideoMode(width, height, bpp, flags);
-	const auto &current = *SDL_GetVideoInfo();
-	fprintf(stderr, "Video mode is now %dx%d bpp=%u flags=0x%08X\n",
-	    current.current_w, current.current_h, current.vfmt->BitsPerPixel, SDL_GetVideoSurface()->flags);
-	fflush(stderr);
-    return result;
-}
-
-} // namespace
-
 int main(int argc, char** argv)
 {
     std::string exec_error;
