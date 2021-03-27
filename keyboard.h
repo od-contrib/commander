@@ -9,6 +9,7 @@
 #include <SDL_ttf.h>
 
 #include "sdl_backports.h"
+#include "sdl_ptrs.h"
 #include "sdl_ttf_multifont.h"
 #include "text_edit.h"
 #include "window.h"
@@ -28,7 +29,7 @@ class CKeyboard : public CWindow
     CKeyboard(const std::string &p_inputText);
 
     // Destructor
-    virtual ~CKeyboard(void);
+    ~CKeyboard() override = default;
 
     // Get input text
     const std::string &getInputText(void) const;
@@ -79,7 +80,6 @@ class CKeyboard : public CWindow
     const CKeyboard &operator=(const CKeyboard &p_source);
 
     void init();
-    void freeResources();
 
     void loadKeyboard();
     void calculateKeyboardDimensions(std::size_t max_w);
@@ -87,7 +87,7 @@ class CKeyboard : public CWindow
     SDL_Point getKeyCoordinates(int x, int y) const;
     std::pair<int, int> getButtonAt(SDL_Point p) const;
 
-    void renderKeys(std::vector<SDL_Surface *> &out_surfaces, Sint16 x0, Sint16 y0,
+    void renderKeys(std::vector<SDLSurfaceUniquePtr> &out_surfaces, Sint16 x0, Sint16 y0,
         std::uint32_t key_bg_color, SDL_Color sdl_key_bg_color, std::uint32_t key_border_color) const;
 
     void renderButton(
@@ -150,15 +150,15 @@ class CKeyboard : public CWindow
     std::size_t keycap_text_offset_y_;
 
     // Background surfaces:
-    std::vector<SDL_Surface *> surfaces_;
-    SDL_Surface *footer_;
+    std::vector<SDLSurfaceUniquePtr> surfaces_;
+    SDLSurfaceUniquePtr footer_;
 
     // Highlighted keyboard keys
-    std::vector<SDL_Surface *> kb_highlighted_surfaces_;
+    std::vector<SDLSurfaceUniquePtr> kb_highlighted_surfaces_;
 
     // Foreground layer surfaces:
-    SDL_Surface *cancel_highlighted_;
-    SDL_Surface *ok_highlighted_;
+    SDLSurfaceUniquePtr cancel_highlighted_;
+    SDLSurfaceUniquePtr ok_highlighted_;
 };
 
 #endif

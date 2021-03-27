@@ -56,13 +56,13 @@ const KeyboardLayout &UsAsciiLayout()
     return *kLayout;
 }
 
-std::vector<SDL_Surface *> AllocSurfaces(
+std::vector<SDLSurfaceUniquePtr> AllocSurfaces(
     std::size_t len, int w, int h, std::uint32_t color)
 {
-    std::vector<SDL_Surface *> surfaces;
+    std::vector<SDLSurfaceUniquePtr> surfaces;
     surfaces.reserve(len);
     for (std::size_t i = 0; i < len; ++i)
-        surfaces.push_back(SDL_utils::createImage(w, h, color));
+        surfaces.emplace_back(SDL_utils::createImage(w, h, color));
     return surfaces;
 }
 
@@ -90,9 +90,6 @@ const std::string &CKeyboard::Keyboard::text(std::size_t x, std::size_t y) const
 CKeyboard::CKeyboard(const std::string &p_inputText)
     : CWindow()
     , m_fonts(CResourceManager::instance().getFonts())
-    , footer_(nullptr)
-    , cancel_highlighted_(nullptr)
-    , ok_highlighted_(nullptr)
 {
     text_edit_.appendText(p_inputText);
     loadKeyboard();
@@ -101,7 +98,6 @@ CKeyboard::CKeyboard(const std::string &p_inputText)
 
 void CKeyboard::onResize()
 {
-    freeResources();
     init();
 }
 
@@ -170,9 +166,9 @@ void CKeyboard::init()
     cancel_rect_.w += extend_by;
     ok_rect_.x += extend_by;
 
-    for (auto *surface : surfaces_) {
+    for (auto &surface : surfaces_) {
         // Overall background:
-        renderRectWithBorder(surface,
+        renderRectWithBorder(surface.get(),
             SDL_Rect { 0, 0, static_cast<decltype(SDL_Rect {}.w)>(width_),
                 static_cast<decltype(SDL_Rect {}.h)>(height_) },
             kFrameBorder, border_color_, bg2_color_);
@@ -192,17 +188,18 @@ void CKeyboard::init()
         /*key_bg_color=*/highlight_color_, sdl_highlight_color_,
         /*key_border_color=*/border_color_);
 
-    cancel_highlighted_
-        = SDL_utils::createSurface(cancel_rect_.w, cancel_rect_.h);
+    cancel_highlighted_.reset(
+        SDL_utils::createSurface(cancel_rect_.w, cancel_rect_.h));
     renderButtonHighlighted(*cancel_highlighted_,
         SDL_Rect { 0, 0, cancel_rect_.w, cancel_rect_.h }, "Cancel");
-    ok_highlighted_ = SDL_utils::createSurface(ok_rect_.w, ok_rect_.h);
+    ok_highlighted_.reset(SDL_utils::createSurface(ok_rect_.w, ok_rect_.h));
     renderButtonHighlighted(
         *ok_highlighted_, SDL_Rect { 0, 0, ok_rect_.w, ok_rect_.h }, "OK");
 
-    footer_ = SDL_utils::createImage(screen.actual_w, FOOTER_H * screen.ppu_y,
-        SDL_MapRGB(surfaces_[0]->format, COLOR_TITLE_BG));
-    SDL_utils::applyText(screen.w / 2, 1, footer_, m_fonts,
+    footer_.reset(
+        SDL_utils::createImage(screen.actual_w, FOOTER_H * screen.ppu_y,
+            SDL_MapRGB(surfaces_[0]->format, COLOR_TITLE_BG)));
+    SDL_utils::applyText(screen.w / 2, 1, footer_.get(), m_fonts,
         "A-Input B-Cancel START-OK L/R⇧ Y← X␣", Globals::g_colorTextTitle,
         { COLOR_TITLE_BG }, SDL_utils::T_TEXT_ALIGN_CENTER);
 }
@@ -230,23 +227,6 @@ void CKeyboard::renderButton(SDL_Surface &out, SDL_Rect rect,
         rect.y + keycap_text_offset_y_, &out, m_fonts, text,
         Globals::g_colorTextNormal, sdl_bg_color,
         SDL_utils::T_TEXT_ALIGN_CENTER);
-}
-
-CKeyboard::~CKeyboard() { freeResources(); }
-
-void CKeyboard::freeResources()
-{
-    // Free surfaces
-    for (auto *surface : { &cancel_highlighted_, &ok_highlighted_, &footer_ }) {
-        if (*surface != nullptr) {
-            SDL_FreeSurface(*surface);
-            *surface = nullptr;
-        }
-    }
-    for (auto *surface : surfaces_) SDL_FreeSurface(surface);
-    surfaces_.clear();
-    for (auto *surface : kb_highlighted_surfaces_) SDL_FreeSurface(surface);
-    kb_highlighted_surfaces_.clear();
 }
 
 void CKeyboard::loadKeyboard()
@@ -327,7 +307,7 @@ void CKeyboard::calculateKeyboardDimensions(std::size_t max_w)
     }
 }
 
-void CKeyboard::renderKeys(std::vector<SDL_Surface *> &out_surfaces, Sint16 x0,
+void CKeyboard::renderKeys(std::vector<SDLSurfaceUniquePtr> &out_surfaces, Sint16 x0,
     Sint16 y0, std::uint32_t key_bg_color, SDL_Color sdl_key_bg_color,
     std::uint32_t key_border_color) const
 {
@@ -337,7 +317,8 @@ void CKeyboard::renderKeys(std::vector<SDL_Surface *> &out_surfaces, Sint16 x0,
     key_rect.h = kb.key_h;
     auto surface_it = out_surfaces.begin();
     for (const auto &layer : kb.layout.layers) {
-        auto *out = *surface_it++;
+        auto *out = surface_it->get();
+        ++surface_it;
         key_rect.y = y0;
         for (const auto &row : layer) {
             key_rect.x = x0;
@@ -364,7 +345,7 @@ void CKeyboard::render(const bool p_focus) const
                       << "  focus: " << p_focus << std::endl;)
     // Draw background layer
     SDL_utils::applyPpuScaledSurface(
-        x_, y_, surfaces_[keyboard_.current_keyset], screen.surface);
+        x_, y_, surfaces_[keyboard_.current_keyset].get(), screen.surface);
 
     // Draw input text
     text_edit_.blitForeground(
@@ -374,10 +355,10 @@ void CKeyboard::render(const bool p_focus) const
     if (isFocusOnButtonsRow()) {
         if (isFocusOnCancel())
             SDL_utils::applyPpuScaledSurface(x_ + cancel_rect_.x,
-                y_ + cancel_rect_.y, cancel_highlighted_, screen.surface);
+                y_ + cancel_rect_.y, cancel_highlighted_.get(), screen.surface);
         else
             SDL_utils::applyPpuScaledSurface(x_ + ok_rect_.x, y_ + ok_rect_.y,
-                ok_highlighted_, screen.surface);
+                ok_highlighted_.get(), screen.surface);
     } else {
         SDL_Rect clip_rect;
         const SDL_Point key_top_left = getKeyCoordinates(focus_x_, focus_y_);
@@ -387,11 +368,13 @@ void CKeyboard::render(const bool p_focus) const
         clip_rect.h = keyboard_.key_h;
         SDL_utils::applyPpuScaledSurface(x_ + kb_buttons_rect_.x + clip_rect.x,
             y_ + kb_buttons_rect_.y + clip_rect.y,
-            kb_highlighted_surfaces_[keyboard_.current_keyset], screen.surface,
+            kb_highlighted_surfaces_[keyboard_.current_keyset].get(), screen.surface,
             &clip_rect);
     }
     // Draw footer
-    SDL_utils::applySurface(0, screen.h - FOOTER_H, footer_, screen.surface);
+    SDL_utils::applyPpuScaledSurface(0,
+        screen.actual_h - FOOTER_H * screen.ppu_y, footer_.get(),
+        screen.surface);
 }
 
 const bool CKeyboard::keyPress(const SDL_Event &p_event)
