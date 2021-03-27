@@ -91,22 +91,19 @@ CKeyboard::CKeyboard(const std::string &p_inputText)
     : CWindow()
     , m_fonts(CResourceManager::instance().getFonts())
 {
-    text_edit_.appendText(p_inputText);
+    text_edit_.typeText(p_inputText);
     loadKeyboard();
     init();
 }
 
-void CKeyboard::onResize()
-{
-    init();
-}
+void CKeyboard::onResize() { init(); }
 
 void CKeyboard::init()
 {
     frame_padding_x_ = (2 + kFrameBorder) * screen.ppu_x;
     frame_padding_y_ = (2 + kFrameBorder) * screen.ppu_y;
 
-    focus_x_ = focus_y_ = 0;
+    focusOnTextEdit();
     calculateKeyboardDimensions(screen.actual_w - 2);
 
     const int ok_cancel_height = keyboard_.key_h;
@@ -307,9 +304,9 @@ void CKeyboard::calculateKeyboardDimensions(std::size_t max_w)
     }
 }
 
-void CKeyboard::renderKeys(std::vector<SDLSurfaceUniquePtr> &out_surfaces, Sint16 x0,
-    Sint16 y0, std::uint32_t key_bg_color, SDL_Color sdl_key_bg_color,
-    std::uint32_t key_border_color) const
+void CKeyboard::renderKeys(std::vector<SDLSurfaceUniquePtr> &out_surfaces,
+    Sint16 x0, Sint16 y0, std::uint32_t key_bg_color,
+    SDL_Color sdl_key_bg_color, std::uint32_t key_border_color) const
 {
     const auto &kb = keyboard_;
     SDL_Rect key_rect;
@@ -368,8 +365,8 @@ void CKeyboard::render(const bool p_focus) const
         clip_rect.h = keyboard_.key_h;
         SDL_utils::applyPpuScaledSurface(x_ + kb_buttons_rect_.x + clip_rect.x,
             y_ + kb_buttons_rect_.y + clip_rect.y,
-            kb_highlighted_surfaces_[keyboard_.current_keyset].get(), screen.surface,
-            &clip_rect);
+            kb_highlighted_surfaces_[keyboard_.current_keyset].get(),
+            screen.surface, &clip_rect);
     }
     // Draw footer
     SDL_utils::applyPpuScaledSurface(0,
@@ -388,14 +385,18 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
             return true;
         case MYKEY_UP: return moveCursorUp(true);
         case MYKEY_DOWN: return moveCursorDown(true);
-        case MYKEY_LEFT: return moveCursorLeft(true);
-        case MYKEY_RIGHT: return moveCursorRight(true);
+        case MYKEY_LEFT:
+            return isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
+                                       : moveCursorLeft(true);
+        case MYKEY_RIGHT:
+            return isFocusOnTextEdit() ? text_edit_.moveCursorNext()
+                                       : moveCursorRight(true);
         case MYKEY_SYSTEM:
             // Y => Backspace
             return text_edit_.backspace();
         case MYKEY_OPERATION:
             // X => Space
-            text_edit_.appendText(' ');
+            text_edit_.typeText(' ');
             return true;
         case MYKEY_OPEN:
             // A => press button
@@ -416,16 +417,23 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
             m_retVal = 1;
             return true;
         default:
-            if (keysym.sym == SDLK_BACKSPACE || keysym.sym == SDLK_DELETE) {
-                return text_edit_.backspace();
-            } else if ((keysym.unicode & 0xFF80) == 0) {
-                const unsigned char c = keysym.unicode & 0x7F;
-                if (std::isprint(c)) {
-                    text_edit_.appendText(c);
-                    return true;
-                }
+            switch (keysym.sym) {
+                case SDLK_BACKSPACE:
+                case SDLK_DELETE: return text_edit_.backspace();
+                case SDLK_HOME:
+                    return text_edit_.setCursorToStart();
+                case SDLK_END:
+                    return text_edit_.setCursorToEnd();
+                default:
+                    if ((keysym.unicode & 0xFF80) == 0) {
+                        const unsigned char c = keysym.unicode & 0x7F;
+                        if (std::isprint(c)) {
+                            text_edit_.typeText(c);
+                            return true;
+                        }
+                    }
+                    return false;
             }
-            return false;
     }
 }
 
@@ -442,11 +450,13 @@ const bool CKeyboard::keyHold(void)
             return false;
         case MYKEY_LEFT:
             if (tick(SDL_GetKeyState(NULL)[MYKEY_LEFT]))
-                return moveCursorLeft(false);
+                return isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
+                                           : moveCursorLeft(false);
             return false;
         case MYKEY_RIGHT:
             if (tick(SDL_GetKeyState(NULL)[MYKEY_RIGHT]))
-                return moveCursorRight(false);
+                return isFocusOnTextEdit() ? text_edit_.moveCursorNext()
+                                           : moveCursorRight(false);
             return false;
         case MYKEY_OPEN:
             // A => Add letter
@@ -461,7 +471,7 @@ const bool CKeyboard::keyHold(void)
         case MYKEY_OPERATION:
             // X => Space
             if (tick(SDL_GetKeyState(NULL)[MYKEY_OPERATION])) {
-                text_edit_.appendText(' ');
+                text_edit_.typeText(' ');
                 return true;
             }
             return false;
@@ -496,7 +506,18 @@ bool CKeyboard::mouseDown(int button, int x, int y)
 
 const bool CKeyboard::moveCursorUp(const bool p_loop)
 {
-    if (!p_loop && focus_y_ == 0) return false;
+    if (!p_loop && focus_y_ == -1) return false;
+
+    // Special case: going to/from text edit.
+    if (focus_y_ == 0) {
+        focusOnTextEdit();
+        return true;
+    } else if (isFocusOnTextEdit()) {
+        text_edit_.setFocused(false);
+        focus_y_ = keyboard_.num_rows();
+        focus_x_ = 0;
+        return true;
+    }
 
     // Special case: going from buttons to keyboard:
     if (isFocusOnButtonsRow())
@@ -510,6 +531,17 @@ const bool CKeyboard::moveCursorUp(const bool p_loop)
 const bool CKeyboard::moveCursorDown(const bool p_loop)
 {
     if (!p_loop && isFocusOnButtonsRow()) return false;
+
+    // Special case: going to/from text edit.
+    if (isFocusOnButtonsRow()) {
+        focusOnTextEdit();
+        return true;
+    } else if (isFocusOnTextEdit()) {
+        text_edit_.setFocused(false);
+        focus_y_ = 0;
+        focus_x_ = 0;
+        return true;
+    }
 
     // Special case: going from keyboard to buttons:
     if (focus_y_ == keyboard_.num_rows() - 1)
@@ -538,17 +570,29 @@ const bool CKeyboard::moveCursorRight(const bool p_loop)
     return true;
 }
 
-const bool CKeyboard::isFocusOnButtonsRow() const
+void CKeyboard::focusOnTextEdit()
+{
+    text_edit_.setFocused(true);
+    focus_y_ = -1;
+    focus_x_ = 0;
+}
+
+bool CKeyboard::isFocusOnTextEdit() const
+{
+    return focus_y_ == -1;
+}
+
+bool CKeyboard::isFocusOnButtonsRow() const
 {
     return focus_y_ == keyboard_.num_rows();
 }
 
-const bool CKeyboard::isFocusOnOk() const
+bool CKeyboard::isFocusOnOk() const
 {
     return isFocusOnButtonsRow() && focus_x_ == 1;
 }
 
-const bool CKeyboard::isFocusOnCancel() const
+bool CKeyboard::isFocusOnCancel() const
 {
     return isFocusOnButtonsRow() && focus_x_ == 0;
 }
@@ -561,7 +605,7 @@ bool CKeyboard::pressFocusedKey()
     } else if (keyboard_.isBackspace(focus_x_, focus_y_)) {
         updated = text_edit_.backspace();
     } else {
-        text_edit_.appendText(keyboard_.text(focus_x_, focus_y_));
+        text_edit_.typeText(keyboard_.text(focus_x_, focus_y_));
         updated = true;
     }
     return true;

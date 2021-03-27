@@ -10,6 +10,7 @@
 #include "resourceManager.h"
 #include "screen.h"
 #include "sdl_ttf_multifont.h"
+#include "sdl_ptrs.h"
 
 namespace SDL_utils {
 
@@ -93,6 +94,18 @@ SDL_Surface *renderText(const Fonts &p_fonts, const std::string &p_text, const S
     return result;
 }
 
+std::pair<int, int> measureText(const Fonts &fonts, const std::string &text) {
+    if (text.empty()) return {0, 0};
+    SDLSurfaceUniquePtr surface { TTFMultiFont_RenderUTF8_Shaded(
+        fonts, text, SDL_Color { 0, 0, 0, 0 }, SDL_Color { 0, 0, 0, 0 }) };
+    if (surface == nullptr) {
+        std::cerr << "TTFMultiFont_RenderUTF8_Shaded: " << SDL_GetError() << std::endl;
+        SDL_ClearError();
+        return {0, 0};
+    }
+    return {surface->w, surface->h};
+}
+
 void applyPpuScaledText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align)
 {
     SDL_Surface *l_text = renderText(p_fonts, p_text, p_fg, p_bg);
@@ -141,9 +154,8 @@ void removeBorder(SDL_Rect *rect, int border_width_x, int border_width_y)
     rect->h -= 2 * border_width_y;
 }
 
-void renderRectWithBorder(SDL_Surface *out, SDL_Rect rect,
-    int border_width_x, int border_width_y, Uint32 border_color, Uint32 bg_color)
-{
+void renderBorder(SDL_Surface *out, SDL_Rect rect,
+    int border_width_x, int border_width_y, Uint32 border_color) {
     SDL_Rect line = rect;
     line.w = border_width_x;
     SDL_FillRect(out, &line, border_color);
@@ -155,7 +167,12 @@ void renderRectWithBorder(SDL_Surface *out, SDL_Rect rect,
     SDL_FillRect(out, &line, border_color);
     line.y = rect.y + rect.h - border_width_y;
     SDL_FillRect(out, &line, border_color);
+}
 
+void renderRectWithBorder(SDL_Surface *out, SDL_Rect rect,
+    int border_width_x, int border_width_y, Uint32 border_color, Uint32 bg_color)
+{
+    renderBorder(out, rect, border_width_x, border_width_y, border_color);
     removeBorder(&rect, border_width_x, border_width_y);
     SDL_FillRect(out, &rect, bg_color);
 }

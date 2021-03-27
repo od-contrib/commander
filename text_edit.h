@@ -18,22 +18,36 @@ class TextEdit {
     void blitForeground(SDL_Surface &out, int x, int y) const;
 
     const std::string &text() const { return text_; }
-    void appendText(const std::string &text);
-    void appendText(char c);
+    void typeText(const std::string &text);
+    void typeText(char c);
     bool backspace();
 
+    bool isFocused() const { return focused_; }
+    void setFocused(bool val) { focused_ = val; }
+
+    bool moveCursorPrev();
+    bool moveCursorNext();
+    bool setCursorToStart();
+    bool setCursorToEnd();
+
   private:
+    void blitFocus(SDL_Surface &out, int x, int y) const;
+
     void prepareSurfaces();
+    void prepareColors();
+
     void updateBackground();
     void updateForeground() const;
 
     std::string text_;
+    std::size_t cursor_pos_ = 0;
+    bool focused_ = false;
 
     // Rendering composes background, foreground, and cursor.
     //
     // Cached surfaces:
     mutable SDLSurfaceUniquePtr background_, foreground_;
-    mutable int cursor_x_; // int the foreground rect
+    mutable int cursor_x_, text_x_ = 0;
     mutable bool update_foreground_ = false;
 
     SDL_Rect foreground_rect_;
@@ -44,6 +58,9 @@ class TextEdit {
 
     SDL_Color sdl_border_color_ = SDL_Color { COLOR_BORDER };
     std::uint32_t border_color_;
+
+    SDL_Color sdl_focus_border_color_ = SDL_Color { COLOR_CURSOR_1 };
+    std::uint32_t focus_border_color_;
 
     SDL_Color sdl_bg_color_ = SDL_Color { COLOR_BG_1 };
     std::uint32_t bg_color_;

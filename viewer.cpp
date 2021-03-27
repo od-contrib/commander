@@ -6,12 +6,9 @@
 #include "resourceManager.h"
 #include "def.h"
 #include "sdlutils.h"
+#include "utf8.h"
 
 namespace {
-
-inline int UTF8CodePointLen(const char* src) {
-  return "\1\1\1\1\1\1\1\1\1\1\1\1\2\2\3\4"[static_cast<unsigned char>(*src)>> 4];
-}
 
 void ReplaceTabs(std::string *line) {
     constexpr std::size_t kTabWidth = 8;
@@ -21,7 +18,7 @@ void ReplaceTabs(std::string *line) {
     result.reserve(line->size() + num_tabs * (kTabWidth - 1));
     std::size_t prev_tab_end = 0;
     std::size_t column = 0;
-    for (std::size_t i = 0; i < line->size(); i += UTF8CodePointLen(line->data() + i)) {
+    for (std::size_t i = 0; i < line->size(); i += utf8::codePointLen(line->data() + i)) {
         if ((*line)[i] == '\t') {
             result.append(*line, prev_tab_end, i - prev_tab_end);
             const std::size_t num_spaces = kTabWidth - (column % kTabWidth);

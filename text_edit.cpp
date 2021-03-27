@@ -6,9 +6,12 @@
 #include "resourceManager.h"
 #include "screen.h"
 #include "sdlutils.h"
+#include "utf8.h"
 
 namespace {
+using SDL_utils::makeRect;
 using SDL_utils::mapRGB;
+using SDL_utils::renderBorder;
 using SDL_utils::renderRectWithBorder;
 
 bool is_ascii(unsigned char c) { return c <= 0x7f; }
@@ -31,19 +34,24 @@ void TextEdit::setDimensions(int width, int height)
     foreground_rect_.h = height_ - 2 * border_width_y_;
 
     prepareSurfaces();
+    prepareColors();
+    updateBackground();
     update_foreground_ = true;
 }
 
 void TextEdit::prepareSurfaces()
 {
     background_.reset(SDL_utils::createSurface(width_, height_));
-    const auto *pixel_format = background_->format;
-    border_color_ = mapRGB(pixel_format, sdl_border_color_);
-    bg_color_ = mapRGB(pixel_format, sdl_bg_color_);
-    updateBackground();
-
     foreground_.reset(
         SDL_utils::createSurface(foreground_rect_.w, foreground_rect_.h));
+}
+
+void TextEdit::prepareColors()
+{
+    const auto *pixel_format = background_->format;
+    border_color_ = mapRGB(pixel_format, sdl_border_color_);
+    focus_border_color_ = mapRGB(pixel_format, sdl_focus_border_color_);
+    bg_color_ = mapRGB(pixel_format, sdl_bg_color_);
 }
 
 void TextEdit::updateBackground()
@@ -61,26 +69,30 @@ void TextEdit::updateForeground() const
 {
     update_foreground_ = false;
     SDL_FillRect(foreground_.get(), nullptr, bg_color_);
-    if (text_.empty()) return;
-    SDLSurfaceUniquePtr tmp_surface { SDL_utils::renderText(
-        CResourceManager::instance().getFonts(), text_,
-        Globals::g_colorTextNormal, { COLOR_BG_1 }) };
-    const int max_w = foreground_rect_.w - 2 * padding_x_;
-    if (tmp_surface->w > foreground_rect_.w) {
-        // Text is too big => clip it
-        SDL_Rect rect;
-        rect.x = tmp_surface->w - max_w;
-        rect.y = 0;
-        rect.w = max_w;
-        rect.h = tmp_surface->h;
-        SDL_utils::applyPpuScaledSurface(padding_x_, padding_y_,
-            tmp_surface.get(), foreground_.get(), &rect);
-        cursor_x_ = rect.w + 1;
-    } else {
-        SDL_utils::applyPpuScaledSurface(
-            padding_x_, padding_y_, tmp_surface.get(), foreground_.get());
-        cursor_x_ = tmp_surface->w;
+    if (text_.empty()) {
+        text_x_ = cursor_x_ = 0;
+        return;
     }
+    const int max_w = foreground_rect_.w - 2 * padding_x_;
+
+    const auto &fonts = CResourceManager::instance().getFonts();
+    SDLSurfaceUniquePtr tmp_surface { SDL_utils::renderText(
+        fonts, text_, Globals::g_colorTextNormal, { COLOR_BG_1 }) };
+    const int cursor_x = cursor_pos_ == text_.size()
+        ? tmp_surface->w
+        : SDL_utils::measureText(fonts, text_.substr(0, cursor_pos_)).first;
+    if (cursor_x < text_x_) text_x_ = cursor_x;
+    if (cursor_x > text_x_ + max_w) text_x_ = cursor_x - max_w;
+
+    cursor_x_ = cursor_x - text_x_;
+
+    SDL_Rect rect;
+    rect.x = text_x_;
+    rect.y = 0;
+    rect.w = max_w;
+    rect.h = tmp_surface->h;
+    SDL_utils::applyPpuScaledSurface(
+        padding_x_, padding_y_, tmp_surface.get(), foreground_.get(), &rect);
 }
 
 void TextEdit::blitBackground(SDL_Surface &out, int x, int y) const
@@ -91,8 +103,11 @@ void TextEdit::blitBackground(SDL_Surface &out, int x, int y) const
 void TextEdit::blitForeground(SDL_Surface &out, int x, int y) const
 {
     if (update_foreground_) updateForeground();
+
     SDL_utils::applyPpuScaledSurface(
         x + border_width_x_, y + border_width_y_, foreground_.get(), &out);
+
+    blitFocus(out, x, y);
 
     SDL_Rect cursor_rect;
     cursor_rect.x = x + padding_x_ + border_width_x_ + cursor_x_;
@@ -102,23 +117,69 @@ void TextEdit::blitForeground(SDL_Surface &out, int x, int y) const
     SDL_FillRect(&out, &cursor_rect, border_color_);
 }
 
-void TextEdit::appendText(const std::string &text)
+void TextEdit::blitFocus(SDL_Surface &out, int x, int y) const
 {
-    if (!text.empty()) update_foreground_ = true;
-    text_.append(text);
+    if (!focused_) return;
+    renderBorder(&out, makeRect(x, y, width_, height_), border_width_x_,
+        border_width_y_, focus_border_color_);
 }
 
-void TextEdit::appendText(char c)
+bool TextEdit::moveCursorPrev()
 {
+    if (cursor_pos_ == 0) return false;
+    while (cursor_pos_ > 0 && utf8::isTrailByte(text_[cursor_pos_ - 1]))
+        --cursor_pos_;
+    if (cursor_pos_ > 0) --cursor_pos_;
     update_foreground_ = true;
-    text_ += c;
+    return true;
+}
+
+bool TextEdit::moveCursorNext()
+{
+    if (cursor_pos_ == text_.size()) return false;
+    cursor_pos_ += utf8::codePointLen(text_.data() + cursor_pos_);
+    update_foreground_ = true;
+    return true;
+}
+
+bool TextEdit::setCursorToStart()
+{
+    if (cursor_pos_ == 0) return false;
+    cursor_pos_ = 0;
+    update_foreground_ = true;
+    return true;
+}
+
+bool TextEdit::setCursorToEnd()
+{
+    if (cursor_pos_ == text_.size()) return false;
+    cursor_pos_ = text_.size();
+    update_foreground_ = true;
+    return true;
+}
+
+void TextEdit::typeText(const std::string &text)
+{
+    if (text.empty()) return;
+    text_.insert(cursor_pos_, text);
+    cursor_pos_ += text.size();
+    update_foreground_ = true;
+}
+
+void TextEdit::typeText(char c)
+{
+    text_.insert(cursor_pos_, 1, c);
+    ++cursor_pos_;
+    update_foreground_ = true;
 }
 
 bool TextEdit::backspace()
 {
-    if (text_.empty()) return false;
-    while (!text_.empty() && !is_ascii(text_.back())) text_.pop_back();
-    text_.pop_back();
+    if (cursor_pos_ == 0) return false;
+    std::size_t left = cursor_pos_ - 1;
+    while (left > 0 && utf8::isTrailByte(text_[left])) --left;
+    text_.erase(left, cursor_pos_ - left);
+    cursor_pos_ = left;
     update_foreground_ = true;
     return true;
 }

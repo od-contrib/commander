@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -52,6 +53,18 @@ namespace SDL_utils
     // Render a text and apply on a given surface (actual coordinates)
     void applyPpuScaledText(Sint16 p_x, Sint16 p_y, SDL_Surface* p_destination, const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg, const T_TEXT_ALIGN p_align = T_TEXT_ALIGN_LEFT);
 
+    // Get text dimensions (expensive).
+    std::pair<int, int> measureText(const Fonts &fonts, const std::string &text);
+
+    // Equivalent to SDL_Rect { ... } but avoids -Wnarrowing.
+    inline SDL_Rect makeRect(int x, int y, int w, int h)
+    {
+        using Pos = decltype(SDL_Rect {}.x);
+        using Len = decltype(SDL_Rect {}.w);
+        return SDL_Rect { static_cast<Pos>(x), static_cast<Pos>(y),
+            static_cast<Len>(w), static_cast<Len>(h) };
+    }
+
     inline std::uint32_t mapRGB(const SDL_PixelFormat *fmt, SDL_Color c)
     {
         return SDL_MapRGB(fmt, c.r, c.g, c.b);
@@ -61,6 +74,9 @@ namespace SDL_utils
     inline void removeBorder(SDL_Rect *rect, int border_width) {
         return removeBorder(rect, border_width, border_width);
     }
+
+    void renderBorder(SDL_Surface *out, SDL_Rect rect,
+        int border_width_x, int border_width_y, Uint32 border_color);
 
     void renderRectWithBorder(SDL_Surface *out, SDL_Rect rect,
         int border_width_x, int border_width_y, Uint32 border_color,

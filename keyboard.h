@@ -120,9 +120,11 @@ class CKeyboard : public CWindow
 
     bool pressFocusedKey();
 
-    const bool isFocusOnButtonsRow() const;
-    const bool isFocusOnOk() const;
-    const bool isFocusOnCancel() const;
+    void focusOnTextEdit();
+    bool isFocusOnTextEdit() const;
+    bool isFocusOnButtonsRow() const;
+    bool isFocusOnOk() const;
+    bool isFocusOnCancel() const;
 
     // Colors:
     std::uint32_t border_color_;
