@@ -15,15 +15,30 @@ std::vector<std::uint16_t> DecodeUtf8(const std::string &utf8) {
   for (std::size_t i = 0; i < utf8.size(); ++i) {
     std::uint16_t ch = static_cast<unsigned char>(utf8[i]);
     if (ch >= 0xF0) {
+      if (i + 4 > utf8.size()) {
+        ch = 0xFFFD;
+        ++i;
+        continue;
+      }
       ch = static_cast<std::uint16_t>(utf8[i] & 0x07) << 18;
       ch |= static_cast<std::uint16_t>(utf8[++i] & 0x3F) << 12;
       ch |= static_cast<std::uint16_t>(utf8[++i] & 0x3F) << 6;
       ch |= static_cast<std::uint16_t>(utf8[++i] & 0x3F);
     } else if (ch >= 0xE0) {
+      if (i + 3 > utf8.size()) {
+        ch = 0xFFFD;
+        ++i;
+        continue;
+      }
       ch = static_cast<std::uint16_t>(utf8[i] & 0x0F) << 12;
       ch |= static_cast<std::uint16_t>(utf8[++i] & 0x3F) << 6;
       ch |= static_cast<std::uint16_t>(utf8[++i] & 0x3F);
     } else if (ch >= 0xC0) {
+      if (i + 2 > utf8.size()) {
+        ch = 0xFFFD;
+        ++i;
+        continue;
+      }
       ch = static_cast<std::uint16_t>(utf8[i] & 0x1F) << 6;
       ch |= static_cast<std::uint16_t>(utf8[++i] & 0x3F);
     }

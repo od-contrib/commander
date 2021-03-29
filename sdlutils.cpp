@@ -91,7 +91,7 @@ TTF_Font *loadFont(const std::string &p_font, const int p_size)
 SDL_Surface *renderText(const Fonts &p_fonts, const std::string &p_text, const SDL_Color &p_fg, const SDL_Color &p_bg)
 {
     SDL_Surface *result = TTFMultiFont_RenderUTF8_Shaded(p_fonts, p_text, p_fg, p_bg);
-    if (result == nullptr) {
+    if (result == nullptr && SDL_GetError() != nullptr && SDL_GetError()[0] != '\0') {
         std::cerr << "TTFMultiFont_RenderUTF8_Shaded: " << SDL_GetError() << std::endl;
         SDL_ClearError();
     }
@@ -102,7 +102,7 @@ std::pair<int, int> measureText(const Fonts &fonts, const std::string &text) {
     if (text.empty()) return {0, 0};
     SDLSurfaceUniquePtr surface { TTFMultiFont_RenderUTF8_Shaded(
         fonts, text, SDL_Color { 0, 0, 0, 0 }, SDL_Color { 0, 0, 0, 0 }) };
-    if (surface == nullptr) {
+    if (surface == nullptr && SDL_GetError() != nullptr && SDL_GetError()[0] != '\0') {
         std::cerr << "TTFMultiFont_RenderUTF8_Shaded: " << SDL_GetError() << std::endl;
         SDL_ClearError();
         return {0, 0};
