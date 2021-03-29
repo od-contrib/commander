@@ -9,6 +9,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#include "sdl_ptrs.h"
 #include "sdl_ttf_multifont.h"
 #include "window.h"
 
@@ -31,7 +32,7 @@ namespace SDL_utils
     }
 
     // Load an image to fit the given viewport size.
-    SDL_Surface *loadImageToFit(const std::string &p_filename, int fit_w, int fit_h);
+    SDLSurfaceUniquePtr loadImageToFit(const std::string &p_filename, int fit_w, int fit_h);
 
     bool isSupportedImageExt(const std::string &filename);
 

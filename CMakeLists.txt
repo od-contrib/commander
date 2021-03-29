@@ -38,7 +38,8 @@ set(DinguxCommander_SRCS
   sdlutils.cpp
   text_edit.cpp
   utf8.cpp
-  viewer.cpp
+  text_viewer.cpp
+  image_viewer.cpp
   window.cpp
 )
 

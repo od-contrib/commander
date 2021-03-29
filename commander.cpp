@@ -10,11 +10,12 @@
 #include "error_dialog.h"
 #include "file_info.h"
 #include "fileutils.h"
+#include "image_viewer.h"
 #include "keyboard.h"
 #include "resourceManager.h"
 #include "screen.h"
 #include "sdlutils.h"
-#include "viewer.h"
+#include "text_viewer.h"
 
 #define SPLITTER_LINE_W 1
 #define X_LEFT 1
@@ -465,11 +466,19 @@ OpenFileResult OpenFileDialog(const std::string &path,
 void ViewFile(const std::string &path)
 {
     // Check size
+    constexpr std::size_t kMaxFileSize = 16777216; // = 16 MB
     const auto file_size = File_utils::getFileSize(path);
-    if (file_size > VIEWER_SIZE_MAX)
+    if (file_size > kMaxFileSize) {
         ErrorDialog(path, "Error:", "File too large (>16 MiB)");
-    else
-        CViewer(path).execute();
+    } else {
+        ImageViewer image_viewer(path);
+        if (image_viewer.ok()) {
+            image_viewer.execute();
+            return;
+        }
+
+        TextViewer(path).execute();
+    }
 }
 
 } // namespace

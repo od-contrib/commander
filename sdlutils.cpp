@@ -22,7 +22,8 @@ bool isSupportedImageExt(const std::string &ext) {
     return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "ico" || ext == "bmp" || ext == "xcf";
 }
 
-SDL_Surface *loadImageToFit(const std::string &p_filename, int fit_w, int fit_h)
+SDLSurfaceUniquePtr loadImageToFit(
+    const std::string &p_filename, int fit_w, int fit_h)
 {
     // Load image
     SDL_Surface *l_img = IMG_Load(p_filename.c_str());
@@ -43,13 +44,16 @@ SDL_Surface *loadImageToFit(const std::string &p_filename, int fit_w, int fit_h)
     }
     target_w *= screen.ppu_x;
     target_h *= screen.ppu_y;
-    SDL_Surface *l_img2 = zoomSurface(l_img, static_cast<double>(target_w) / l_img->w, static_cast<double>(target_h) / l_img->h, SMOOTHING_ON);
+    SDLSurfaceUniquePtr l_img2 { zoomSurface(l_img,
+        static_cast<double>(target_w) / l_img->w,
+        static_cast<double>(target_h) / l_img->h, SMOOTHING_ON) };
     SDL_FreeSurface(l_img);
 
     const std::string ext = File_utils::getLowercaseFileExtension(p_filename);
     const bool supports_alpha = ext != "xcf" && ext != "jpg" && ext != "jpeg";
-    SDL_Surface *l_img3 = supports_alpha ? SDL_DisplayFormatAlpha(l_img2) : SDL_DisplayFormat(l_img2);
-    SDL_FreeSurface(l_img2);
+    SDLSurfaceUniquePtr l_img3 { supports_alpha
+            ? SDL_DisplayFormatAlpha(l_img2.get())
+            : SDL_DisplayFormat(l_img2.get()) };
     return l_img3;
 }
 
