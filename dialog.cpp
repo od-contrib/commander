@@ -227,12 +227,15 @@ const bool CDialog::keyPress(const SDL_Event &p_event)
 }
 
 int CDialog::getLineAt(int x, int y) const {
-    const int x0 = (m_x + DIALOG_BORDER) * screen.ppu_x;
-    const int x1 = x0 + width_ - 2 * DIALOG_BORDER * screen.ppu_x;
-    const int y0 = (m_y + DIALOG_BORDER + (m_nbTitle + m_nbLabels) * LINE_HEIGHT) * screen.ppu_y;
-    const int y1 = y0 + m_nbOptions * LINE_HEIGHT * screen.ppu_y;
+    const int border_x = static_cast<int>(DIALOG_BORDER * screen.ppu_x);
+    const int border_y = static_cast<int>(DIALOG_BORDER * screen.ppu_y);
+    const int line_height = static_cast<int>(LINE_HEIGHT * screen.ppu_y);
+    const int x0 = static_cast<int>(m_x * screen.ppu_x) + + border_x;
+    const int x1 = x0 + width_ - 2 * border_x;
+    const int y0 = static_cast<int>(m_y * screen.ppu_y) + border_y + (m_nbTitle + m_nbLabels) * line_height;
+    const int y1 = y0 + m_nbOptions * line_height;
     if (x < x0 || x > x1 || y < y0 || y > y1) return -1;
-    return (y - y0) / (LINE_HEIGHT * screen.ppu_y);
+    return (y - y0) / line_height;
 }
 
 bool CDialog::mouseDown(int button, int x, int y) {

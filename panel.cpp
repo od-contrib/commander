@@ -203,15 +203,16 @@ int CPanel::getNumVisibleListItems() const
 {
     return std::min(
         static_cast<decltype(m_fileLister.getNbTotal())>(NB_VISIBLE_LINES),
-        m_fileLister.getNbTotal());
+        m_fileLister.getNbTotal() - m_camera);
 }
 
 int CPanel::getLineAt(int x, int y) const
 {
-    if (x < 0 || y < Y_LIST * screen.ppu_y
-        || y > (Y_LIST + getNumVisibleListItems() * LINE_HEIGHT) * screen.ppu_y)
-        return -1;
-    return (y - Y_LIST * screen.ppu_y) / (LINE_HEIGHT * screen.ppu_y);
+    if (x < 0 || y < static_cast<int>(Y_LIST * screen.ppu_y)) return -1;
+    const int y0 = static_cast<int>(Y_LIST * screen.ppu_y);
+    const int line_height = static_cast<int>(LINE_HEIGHT * screen.ppu_y);
+    if (y - y0 >= getNumVisibleListItems() * line_height) return -1;
+    return (y - y0) / line_height;
 }
 
 void CPanel::moveCursorToVisibleLineIndex(int index)
