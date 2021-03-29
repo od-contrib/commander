@@ -7,6 +7,8 @@ project(DinguxCommander
 option(ASAN "Enable address sanitizer" ON)
 option(UBSAN "Enable undefined behaviour sanitizer" ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # for clang-tidy
+
 if(CMAKE_BUILD_TYPE MATCHES "Release")
 
   # Enable link-time optimization if supported.
