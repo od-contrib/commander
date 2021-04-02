@@ -10,6 +10,13 @@
 #include "screen.h"
 #include "sdlutils.h"
 
+#ifdef KEYBOARD_SWAP_SYSTEM_AND_PARENT
+#define KEYBOARD_KEY_BACKSPACE MYKEY_SYSTEM
+#define KEYBOARD_KEY_CANCEL MYKEY_PARENT
+#else
+#define KEYBOARD_KEY_BACKSPACE MYKEY_PARENT
+#define KEYBOARD_KEY_CANCEL MYKEY_SYSTEM
+#endif
 namespace {
 
 using SDL_utils::removeBorder;
@@ -380,10 +387,13 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
     CWindow::keyPress(p_event);
     const auto keysym = p_event.key.keysym;
     switch (keysym.sym) {
-        case MYKEY_PARENT:
+        case KEYBOARD_KEY_CANCEL:
             // B => Cancel
             m_retVal = -1;
             return true;
+        case KEYBOARD_KEY_BACKSPACE:
+            // Y => Backspace
+            return text_edit_.backspace();
         case MYKEY_UP: return moveCursorUp(true);
         case MYKEY_DOWN: return moveCursorDown(true);
         case MYKEY_LEFT:
@@ -392,9 +402,6 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
         case MYKEY_RIGHT:
             return isFocusOnTextEdit() ? text_edit_.moveCursorNext()
                                        : moveCursorRight(true);
-        case MYKEY_SYSTEM:
-            // Y => Backspace
-            return text_edit_.backspace();
         case MYKEY_OPERATION:
             // X => Space
             text_edit_.typeText(' ');
