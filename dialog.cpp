@@ -89,7 +89,7 @@ void CDialog::init(void)
     m_linesImg.reserve(num_non_title_lines);
 
     SDL_Color label_bg{COLOR_BG_1};
-    if (m_nbOptions > 0) label_bg = SDL_Color{COLOR_BG_2};
+    if (m_nbOptions > 1) label_bg = SDL_Color{COLOR_BG_2};
     const SDL_Color option_bg{COLOR_BG_1};
 
     for (int i = 0; i < m_nbLabels; ++i, ++l_it) {
