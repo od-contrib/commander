@@ -1,5 +1,6 @@
 set(PATH_DEFAULT \"/media\")
 set(FILE_SYSTEM \"/dev/mmcblk0p2\")
+
 set(PPU_Y 2)
 
 set(MYKEY_UP SDLK_UP) # Up

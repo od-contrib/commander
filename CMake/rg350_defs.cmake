@@ -1,4 +1,3 @@
-
 set(PATH_DEFAULT \"/media/sdcard\")
 
 set(MYKEY_UP SDLK_UP) # Up

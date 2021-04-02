@@ -154,6 +154,7 @@ foreach(
   MYKEY_OPERATION
   MYKEY_SELECT
   MYKEY_TRANSFER
+  KEYBOARD_SWAP_SYSTEM_AND_PARENT
 )
   if(DEFINED ${def_name})
     list(APPEND def_list ${def_name}=${${def_name}})
