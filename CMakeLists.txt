@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10) # CMP0083 NEW
+cmake_minimum_required(VERSION 3.13) # CMP0083 NEW
 
 project(DinguxCommander
   VERSION 0.0.1
@@ -116,7 +116,7 @@ set(WITH_SYSTEM_SDL_TTF OFF CACHE BOOL "Use system sdl_ttf")
 set(WITH_SYSTEM_SDL_GFX OFF CACHE BOOL "Use system sdl_gfx")
 
 set(TARGET_PLATFORM host CACHE STRING "Target platform")
-set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS host retrofw gcw0 rg350 rs90)
+set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS host retrofw gcw0 rg350 rs90 rg99)
 
 if(TARGET_PLATFORM STREQUAL "retrofw")
   include(CMake/retrofw_defs.cmake)
@@ -126,6 +126,8 @@ elseif(TARGET_PLATFORM STREQUAL "rg350")
   include(CMake/rg350_defs.cmake)
 elseif(TARGET_PLATFORM STREQUAL "rs90")
   include(CMake/rs90_defs.cmake)
+elseif(TARGET_PLATFORM STREQUAL "rg99")
+  include(CMake/rg99_defs.cmake)
 endif()
 
 # These variables are passed as C macro definitons if they exist.
