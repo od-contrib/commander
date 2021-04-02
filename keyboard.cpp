@@ -87,9 +87,10 @@ const std::string &CKeyboard::Keyboard::text(std::size_t x, std::size_t y) const
     return str;
 }
 
-CKeyboard::CKeyboard(const std::string &p_inputText)
+CKeyboard::CKeyboard(const std::string &p_inputText, bool support_tabs)
     : CWindow()
     , m_fonts(CResourceManager::instance().getFonts())
+    , text_edit_(support_tabs)
 {
     text_edit_.typeText(p_inputText);
     loadKeyboard();

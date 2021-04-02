@@ -87,10 +87,21 @@ void CDialog::init(void)
     // Render every line
     const std::size_t num_non_title_lines = m_lines.size() - (m_nbTitle ? 1 : 0);
     m_linesImg.reserve(num_non_title_lines);
-    m_linesImgCursor1.reserve(num_non_title_lines);
-    m_linesImgCursor2.reserve(num_non_title_lines);
-    for ( ; l_it != m_lines.end(); ++l_it) {
-        m_linesImg.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, {COLOR_BG_1}));
+
+    SDL_Color label_bg{COLOR_BG_1};
+    if (m_nbOptions > 0) label_bg = SDL_Color{COLOR_BG_2};
+    const SDL_Color option_bg{COLOR_BG_1};
+
+    for (int i = 0; i < m_nbLabels; ++i, ++l_it) {
+        m_linesImg.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, label_bg));
+        if (m_linesImg.back() != nullptr && m_linesImg.back()->w > l_width)
+            l_width = m_linesImg.back()->w;
+    }
+
+    m_linesImgCursor1.reserve(m_nbOptions);
+    m_linesImgCursor2.reserve(m_nbOptions);
+    for (int i = 0; i < m_nbOptions; ++i, ++l_it) {
+        m_linesImg.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, option_bg));
         m_linesImgCursor1.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_1}));
         m_linesImgCursor2.push_back(SDL_utils::renderText(m_fonts, *l_it, Globals::g_colorTextNormal, {COLOR_CURSOR_2}));
         if (m_linesImg.back() != nullptr && m_linesImg.back()->w > l_width)
@@ -123,13 +134,22 @@ void CDialog::init(void)
         l_height * screen.ppu_y,
         SDL_MapRGB(screen.surface->format, m_borderColor.r, m_borderColor.g,
             m_borderColor.b));
+    if (m_nbLabels > 0) {
+        SDL_Rect rect = SDL_utils::makeRect(DIALOG_BORDER * screen.ppu_x,
+            (DIALOG_BORDER + (m_nbTitle ? 1 : 0) * LINE_HEIGHT) * screen.ppu_y,
+            m_image->w - 2 * DIALOG_BORDER * screen.ppu_x,
+            m_nbLabels * LINE_HEIGHT * screen.ppu_y);
+        SDL_FillRect(m_image, &rect, SDL_utils::mapRGB(m_image->format, label_bg));
+    }
     {
-        SDL_Rect l_rect;
-        l_rect.x = DIALOG_BORDER * screen.ppu_x;
-        l_rect.y = (DIALOG_BORDER + m_nbTitle * LINE_HEIGHT) * screen.ppu_y;
-        l_rect.w = m_image->w - 2 * DIALOG_BORDER * screen.ppu_x;
-        l_rect.h = (l_height - 2 * DIALOG_BORDER - m_nbTitle * LINE_HEIGHT) * screen.ppu_y;
-        SDL_FillRect(m_image, &l_rect, SDL_MapRGB(m_image->format, COLOR_BG_1));
+        SDL_Rect rect = SDL_utils::makeRect(DIALOG_BORDER * screen.ppu_x,
+            (DIALOG_BORDER + ((m_nbTitle ? 1 : 0) + m_nbLabels) * LINE_HEIGHT)
+                * screen.ppu_y,
+            m_image->w - 2 * DIALOG_BORDER * screen.ppu_x,
+            (l_height - 2 * DIALOG_BORDER
+                - ((m_nbTitle ? 1 : 0) + m_nbLabels) * LINE_HEIGHT)
+                * screen.ppu_y);
+        SDL_FillRect(m_image, &rect, SDL_MapRGB(m_image->format, COLOR_BG_1));
     }
     // Create cursor image
     m_cursor1 = SDL_utils::createImage(l_cursorWidth * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_CURSOR_1));
@@ -177,7 +197,7 @@ void CDialog::render(const bool p_focus) const
     for (int i = 0; i < m_linesImg.size(); ++i, l_y += LINE_HEIGHT) {
         SDL_Surface *surface;
         if (i == m_nbLabels + m_highlightedLine) {
-            surface = p_focus ? m_linesImgCursor1[i] : m_linesImgCursor2[i];
+            surface = p_focus ? m_linesImgCursor1[i - m_nbLabels] : m_linesImgCursor2[i - m_nbLabels];
         } else {
             surface = m_linesImg[i];
         }

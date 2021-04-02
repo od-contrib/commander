@@ -26,7 +26,7 @@ class CKeyboard : public CWindow
 {
     public:
     // Constructor
-    CKeyboard(const std::string &p_inputText);
+    CKeyboard(const std::string &p_inputText, bool support_tabs = false);
 
     // Destructor
     ~CKeyboard() override = default;

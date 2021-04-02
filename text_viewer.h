@@ -25,11 +25,19 @@ class TextViewer : public CWindow {
     void onResize() override;
     bool isFullScreen() const override { return true; }
 
+    // Returns the viewport line index at the given coordinates or -1.
+    int getLineAt(int x, int y) const;
+    int maxFirstLine() const;
+
     // Scroll:
     bool moveUp(unsigned step);
     bool moveDown(unsigned step);
     bool moveLeft();
     bool moveRight();
+
+    // Open line editing dialog for the currently highlighted line.
+    bool editLine();
+    void saveFile();
 
     const Fonts &fonts_;
     std::string filename_;
@@ -37,9 +45,18 @@ class TextViewer : public CWindow {
     SDLSurfaceUniquePtr image_;
     SDL_Rect clip_;
 
+    // Colors:
+    std::uint32_t border_color_;
+    std::uint32_t bg_color_;
+    SDL_Color sdl_bg_color_;
+    std::uint32_t highlight_color_;
+    SDL_Color sdl_highlight_color_;
+
     // Text mode:
     std::vector<std::string> lines_;
+    std::vector<std::string> lines_for_display_;
     std::size_t first_line_;
+    std::size_t current_line_;
 };
 
 #endif // TEXT_VIEWER_H_
