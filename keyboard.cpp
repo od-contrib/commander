@@ -38,9 +38,9 @@ constexpr std::size_t kTextFieldHeight = 19;
 constexpr std::size_t kTextFieldMarginBottom = 2;
 constexpr std::size_t kTextFieldBorder = 2;
 
-const KeyboardLayout &UsAsciiLayout()
+KeyboardLayout UsAsciiLayout(bool support_tabs)
 {
-    static const auto *const kLayout = new KeyboardLayout {
+    return KeyboardLayout {
         {
             {
                 { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=" },
@@ -54,13 +54,13 @@ const KeyboardLayout &UsAsciiLayout()
                 { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "{", "}" },
                 { "A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "\"", "|" },
                 { "Z", "X", "C", "V", "B", "N", "M", "<", ">", "?",
-                    kKeycapSpace, kKeycapBackspace },
+                    support_tabs ? kKeycapTab : kKeycapSpace,
+                    kKeycapBackspace },
             },
         },
         /*max_keys_per_row=*/12,
         /*max_rows=*/4,
     };
-    return *kLayout;
 }
 
 std::vector<SDLSurfaceUniquePtr> AllocSurfaces(
@@ -97,6 +97,7 @@ const std::string &CKeyboard::Keyboard::text(std::size_t x, std::size_t y) const
 CKeyboard::CKeyboard(const std::string &p_inputText, bool support_tabs)
     : CWindow()
     , m_fonts(CResourceManager::instance().getFonts())
+    , support_tabs_(support_tabs)
     , text_edit_(support_tabs)
 {
     text_edit_.typeText(p_inputText);
@@ -236,7 +237,7 @@ void CKeyboard::renderButton(SDL_Surface &out, SDL_Rect rect,
 
 void CKeyboard::loadKeyboard()
 {
-    keyboard_.layout = UsAsciiLayout();
+    keyboard_.layout = UsAsciiLayout(support_tabs_);
     keyboard_.current_keyset = 0;
 }
 

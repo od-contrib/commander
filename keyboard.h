@@ -126,6 +126,8 @@ class CKeyboard : public CWindow
     bool isFocusOnOk() const;
     bool isFocusOnCancel() const;
 
+    const bool support_tabs_;
+
     // Colors:
     std::uint32_t border_color_;
     std::uint32_t bg_color_;
