@@ -95,98 +95,66 @@ void CCommander::onResize()
 const bool CCommander::keyPress(const SDL_Event &p_event)
 {
     CWindow::keyPress(p_event);
-    bool l_ret(false);
-    switch (p_event.key.keysym.sym)
-    {
-        case MYKEY_SYSTEM:
-            if (openSystemMenu())
-                m_panelSource->refresh();
-            l_ret = true;
-            break;
-        case MYKEY_UP:
-            l_ret = m_panelSource->moveCursorUp(1);
-            break;
-        case MYKEY_DOWN:
-            l_ret = m_panelSource->moveCursorDown(1);
-            break;
-        case MYKEY_PAGEUP:
-            l_ret = m_panelSource->moveCursorUp(NB_VISIBLE_LINES - 1);
-            break;
-        case MYKEY_PAGEDOWN:
-            l_ret = m_panelSource->moveCursorDown(NB_VISIBLE_LINES - 1);
-            break;
-        case MYKEY_LEFT:
-            if (m_panelSource == &m_panelRight)
-            {
-                m_panelSource = &m_panelLeft;
-                m_panelTarget = &m_panelRight;
-                l_ret = true;
-            }
-            break;
-        case MYKEY_RIGHT:
-            if (m_panelSource == &m_panelLeft)
-            {
-                m_panelSource = &m_panelRight;
-                m_panelTarget = &m_panelLeft;
-                l_ret = true;
-            }
-            break;
-        case MYKEY_OPEN:
-            l_ret = itemMenu();
-            break;
-        case MYKEY_PARENT:
-            l_ret = m_panelSource->goToParentDir();
-            break;
-        case MYKEY_OPERATION:
-            // If there's no file in the select list, add current file
-            if (m_panelSource->getSelectList().empty() && m_panelSource->getHighlightedItem() != "..")
-                m_panelSource->addToSelectList(false);
-            l_ret = operationMenu();
-            break;
-        case MYKEY_SELECT:
-            l_ret = m_panelSource->addToSelectList(true);
-            break;
-        case MYKEY_TRANSFER:
-            if (m_panelSource->isDirectoryHighlighted() && m_panelSource->getHighlightedItem() != "..")
-                l_ret = m_panelTarget->open(m_panelSource->getHighlightedItemFull());
-            else
-                l_ret = m_panelTarget->open(m_panelSource->getCurrentPath());
-            break;
-        default:
-            break;
+    const auto sym = p_event.key.keysym.sym;
+    const auto &c = config();
+    if (sym == c.key_system) {
+        if (openSystemMenu()) m_panelSource->refresh();
+        return true;
     }
-    return l_ret;
+    if (sym == c.key_up) return m_panelSource->moveCursorUp(1);
+    if (sym == c.key_down) return m_panelSource->moveCursorDown(1);
+    if (sym == c.key_pageup)
+        return m_panelSource->moveCursorUp(NB_VISIBLE_LINES - 1);
+    if (sym == c.key_pagedown)
+        return m_panelSource->moveCursorDown(NB_VISIBLE_LINES - 1);
+    if (sym == c.key_left) {
+        if (m_panelSource != &m_panelRight) return false;
+        m_panelSource = &m_panelLeft;
+        m_panelTarget = &m_panelRight;
+        return true;
+    }
+    if (sym == c.key_right) {
+        if (m_panelSource != &m_panelLeft) return false;
+        m_panelSource = &m_panelRight;
+        m_panelTarget = &m_panelLeft;
+        return true;
+    }
+    if (sym == c.key_open) return itemMenu();
+    if (sym == c.key_parent) return m_panelSource->goToParentDir();
+    if (sym == c.key_operation) {
+        // If there's no file in the select list, add current file
+        if (m_panelSource->getSelectList().empty()
+            && m_panelSource->getHighlightedItem() != "..")
+            m_panelSource->addToSelectList(false);
+        return operationMenu();
+    }
+    if (sym == c.key_select) return m_panelSource->addToSelectList(true);
+    if (sym == c.key_transfer) {
+        if (m_panelSource->isDirectoryHighlighted()
+            && m_panelSource->getHighlightedItem() != "..") {
+            return m_panelTarget->open(m_panelSource->getHighlightedItemFull());
+        }
+        return m_panelTarget->open(m_panelSource->getCurrentPath());
+    }
+    return false;
 }
 
 const bool CCommander::keyHold(void)
 {
-    bool l_ret(false);
-    switch(m_lastPressed)
-    {
-        case MYKEY_UP:
-            if (tick(MYKEY_UP))
-                l_ret = m_panelSource->moveCursorUp(1);
-            break;
-        case MYKEY_DOWN:
-            if (tick(MYKEY_DOWN))
-                l_ret = m_panelSource->moveCursorDown(1);
-            break;
-        case MYKEY_PAGEUP:
-            if (tick(MYKEY_PAGEUP))
-                l_ret = m_panelSource->moveCursorUp(NB_VISIBLE_LINES - 1);
-            break;
-        case MYKEY_PAGEDOWN:
-            if (tick(MYKEY_PAGEDOWN))
-                l_ret = m_panelSource->moveCursorDown(NB_VISIBLE_LINES - 1);
-            break;
-        case MYKEY_SELECT:
-            if (tick(MYKEY_SELECT))
-                l_ret = m_panelSource->addToSelectList(true);
-            break;
-        default:
-            break;
-    }
-    return l_ret;
+    const auto &c = config();
+    if (m_lastPressed == c.key_up)
+        return tick(c.key_up) && m_panelSource->moveCursorUp(1);
+    if (m_lastPressed == c.key_down)
+        return tick(c.key_down) && m_panelSource->moveCursorDown(1);
+    if (m_lastPressed == c.key_pageup)
+        return tick(c.key_pageup)
+            && m_panelSource->moveCursorUp(NB_VISIBLE_LINES - 1);
+    if (m_lastPressed == c.key_pagedown)
+        return tick(c.key_pagedown)
+            && m_panelSource->moveCursorDown(NB_VISIBLE_LINES - 1);
+    if (m_lastPressed == c.key_select)
+        return tick(c.key_select) && m_panelSource->addToSelectList(true);
+    return false;
 }
 
 CPanel* CCommander::focusPanelAt(int *x, int *y, bool *changed) {

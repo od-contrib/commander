@@ -3,6 +3,12 @@
 
 #include <SDL.h>
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+#define SDLC_Keycode SDL_Keycode
+#else
+#define SDLC_Keycode SDLKey
+#endif
+
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
 typedef struct SDL_Point {
 	int x;

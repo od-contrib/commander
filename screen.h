@@ -1,22 +1,23 @@
 #ifndef _SCREEN_H_
 #define _SCREEN_H_
 
-#include "def.h"
 #include <SDL.h>
+
+#include "config.h"
 
 struct Screen
 {
     // Logical width and height.
-    decltype(SDL_Rect().w) w = SCREEN_WIDTH;
-    decltype(SDL_Rect().h) h = SCREEN_HEIGHT;
+    decltype(SDL_Rect().w) w;
+    decltype(SDL_Rect().h) h;
 
     // Scaling factors.
-    float ppu_x = PPU_X;
-    float ppu_y = PPU_Y;
+    float ppu_x;
+    float ppu_y;
 
     // Actual width and height.
-    decltype(SDL_Rect().w) actual_w = SCREEN_WIDTH * PPU_X;
-    decltype(SDL_Rect().h) actual_h = SCREEN_HEIGHT * PPU_Y;
+    decltype(SDL_Rect().w) actual_w;
+    decltype(SDL_Rect().h) actual_h;
 
     // We target 25 FPS because currently the key repeat timer is tied into the
     // frame limit. :(

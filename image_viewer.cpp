@@ -1,5 +1,6 @@
 #include "image_viewer.h"
 
+#include "config.h"
 #include "def.h"
 #include "resourceManager.h"
 #include "screen.h"
@@ -89,13 +90,11 @@ void ImageViewer::render(const bool focused) const
 const bool ImageViewer::keyPress(const SDL_Event &event)
 {
     CWindow::keyPress(event);
-    switch (event.key.keysym.sym) {
-        case MYKEY_SYSTEM:
-        case MYKEY_PARENT:
-            m_retVal = -1;
-            return true;
-            break;
-        default: break;
+    const auto &c = config();
+    const auto sym = event.key.keysym.sym;
+    if (sym == c.key_system || sym == c.key_parent) {
+        m_retVal = -1;
+        return true;
     }
     return false;
 }

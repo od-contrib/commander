@@ -4,17 +4,6 @@
 //~ #define INHIBIT(X) X
 #define INHIBIT(X) /* X */
 
-#ifndef PPU_Y
-#define PPU_Y 1
-#endif
-#ifndef PPU_X
-#define PPU_X 1
-#endif
-
-#ifndef RES_DIR
-#define RES_DIR "res/"
-#endif
-
 #ifndef FONTS
 #define FONTS {"/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf",10},{"FreeSans.ttf",10},{"DroidSansFallback.ttf",9}
 #endif
@@ -22,36 +11,6 @@
 // Font stack to use on screens with low DPI.
 #ifndef LOW_DPI_FONTS
 #define LOW_DPI_FONTS {"Fiery_Turk.ttf",8},{"/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf",10},{"FreeSans.ttf",10},{"DroidSansFallback.ttf",9}
-#endif
-
-#ifndef SCREEN_WIDTH
-#define SCREEN_WIDTH 320
-#endif
-
-#ifndef SCREEN_HEIGHT
-#define SCREEN_HEIGHT 240
-#endif
-
-#ifndef SCREEN_BPP
-#define SCREEN_BPP 16
-#endif
-
-#ifdef USE_SDL2
-#define SURFACE_FLAGS SDL_SWSURFACE
-#else
-#define SURFACE_FLAGS SDL_SWSURFACE | SDL_RESIZABLE
-#endif
-
-#ifndef PATH_DEFAULT
-#define PATH_DEFAULT getenv("PWD")
-#endif
-
-#ifndef PATH_DEFAULT_RIGHT
-#define PATH_DEFAULT_RIGHT getenv("HOME")
-#endif
-
-#ifndef FILE_SYSTEM
-#define FILE_SYSTEM "/dev/sda4"
 #endif
 
 // Panel
@@ -84,42 +43,5 @@
 #define COLOR_BG_2 232, 228, 224
 #define COLOR_BORDER 102, 85, 74
 #define COLOR_BORDER_ERROR 128, 55, 55
-
-#ifndef MYKEY_UP
-#define MYKEY_UP SDLK_UP
-#endif
-#ifndef MYKEY_RIGHT
-#define MYKEY_RIGHT SDLK_RIGHT
-#endif
-#ifndef MYKEY_DOWN
-#define MYKEY_DOWN SDLK_DOWN
-#endif
-#ifndef MYKEY_LEFT
-#define MYKEY_LEFT SDLK_LEFT
-#endif
-#ifndef MYKEY_SYSTEM
-#define MYKEY_SYSTEM SDLK_ESCAPE
-#endif
-#ifndef MYKEY_PAGEUP
-#define MYKEY_PAGEUP SDLK_PAGEUP
-#endif
-#ifndef MYKEY_PAGEDOWN
-#define MYKEY_PAGEDOWN SDLK_PAGEDOWN
-#endif
-#ifndef MYKEY_OPEN
-#define MYKEY_OPEN SDLK_RETURN
-#endif
-#ifndef MYKEY_PARENT
-#define MYKEY_PARENT SDLK_BACKSPACE
-#endif
-#ifndef MYKEY_OPERATION
-#define MYKEY_OPERATION SDLK_SPACE
-#endif
-#ifndef MYKEY_SELECT
-#define MYKEY_SELECT SDLK_INSERT
-#endif
-#ifndef MYKEY_TRANSFER
-#define MYKEY_TRANSFER SDLK_TAB
-#endif
 
 #endif // _DEF_H_

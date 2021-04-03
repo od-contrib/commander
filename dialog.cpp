@@ -1,4 +1,6 @@
 #include <iostream>
+
+#include "config.h"
 #include "dialog.h"
 #include "screen.h"
 #include "sdlutils.h"
@@ -208,42 +210,31 @@ void CDialog::render(const bool p_focus) const
 const bool CDialog::keyPress(const SDL_Event &p_event)
 {
     CWindow::keyPress(p_event);
-    bool l_ret(false);
-    switch (p_event.key.keysym.sym)
-    {
-        case MYKEY_PARENT:
-        case MYKEY_SYSTEM:
-            m_retVal = -1;
-            l_ret = true;
-            break;
-        case MYKEY_UP:
-            l_ret = moveCursorUp(true);
-            break;
-        case MYKEY_DOWN:
-            l_ret = moveCursorDown(true);
-            break;
-        case MYKEY_PAGEUP:
-            if (m_highlightedLine)
-            {
-                m_highlightedLine = 0;
-                l_ret = true;
-            }
-            break;
-        case MYKEY_PAGEDOWN:
-            if (m_highlightedLine + 1 < m_nbOptions)
-            {
-                m_highlightedLine = m_nbOptions - 1;
-                l_ret = true;
-            }
-            break;
-        case MYKEY_OPEN:
-            m_retVal = m_highlightedLine + 1;
-            l_ret = true;
-            break;
-        default:
-            break;
+    const auto &c = config();
+    const auto sym = p_event.key.keysym.sym;
+    if (sym == c.key_parent || sym == c.key_system) {
+        m_retVal = -1;
+        return true;
     }
-    return l_ret;
+    if (sym == c.key_up) return moveCursorUp(/*p_loop=*/true);
+    if (sym == c.key_down) return moveCursorDown(/*p_loop=*/true);
+    if (sym == c.key_pageup) {
+        if (m_highlightedLine == 0) return false;
+        m_highlightedLine = 0;
+        return true;
+    }
+    if (sym == c.key_pagedown) {
+        if (m_highlightedLine + 1 < m_nbOptions) {
+            m_highlightedLine = m_nbOptions - 1;
+            return true;
+        }
+        return false;
+    }
+    if (sym == c.key_open) {
+        m_retVal = static_cast<int>(m_highlightedLine + 1);
+        return true;
+    }
+    return false;
 }
 
 int CDialog::getLineAt(int x, int y) const {
@@ -322,21 +313,12 @@ const bool CDialog::moveCursorDown(const bool p_loop)
 
 const bool CDialog::keyHold(void)
 {
-    bool l_ret(false);
-    switch(m_lastPressed)
-    {
-        case MYKEY_UP:
-            if (tick(MYKEY_UP))
-                l_ret = moveCursorUp(false);
-            break;
-        case MYKEY_DOWN:
-            if (tick(MYKEY_DOWN))
-                l_ret = moveCursorDown(false);
-            break;
-        default:
-            break;
-    }
-    return l_ret;
+    const auto &c = config();
+    if (m_lastPressed == c.key_up)
+        return tick(c.key_up) && moveCursorUp(/*p_loop=*/false);
+    if (m_lastPressed == c.key_down)
+        return tick(c.key_down) && moveCursorDown(/*p_loop=*/false);
+    return false;
 }
 
 const Sint16 &CDialog::getX(void) const

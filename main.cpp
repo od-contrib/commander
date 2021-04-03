@@ -21,18 +21,52 @@ const SDL_Color Globals::g_colorTextDir = {COLOR_TEXT_DIR};
 const SDL_Color Globals::g_colorTextSelected = {COLOR_TEXT_SELECTED};
 std::vector<CWindow *> Globals::g_windows;
 
-int main(int argc, char** argv)
+namespace {
+
+bool fileExists(const std::string &path)
+{
+    return access(path.c_str(), F_OK) == 0;
+}
+
+} // namespace
+
+int main(int argc, char *argv[])
 {
     std::string exec_error;
+    std::string config_path;
+    std::string res_dir;
     for (int i = 1; i < argc; i++) {
-        if (std::strcmp(argv[i], "--show_exec_error") == 0)
-        {
+        if (std::strcmp(argv[i], "--config") == 0) {
+            if (i == argc - 1) {
+                std::cerr << "--config requires an argument\n";
+                return 1;
+            }
+            config_path = argv[++i];
+        } else if (std::strcmp(argv[i], "--res-dir") == 0) {
+            if (i == argc - 1) {
+                std::cerr << "--res-dir requires an argument\n";
+                return 1;
+            }
+            std::string res_dir = argv[++i];
+        } else if (std::strcmp(argv[i], "--show_exec_error") == 0) {
+            if (i == argc - 1) {
+                std::cerr << "--show_exec_error requires an argument\n";
+                return 1;
+            }
             exec_error = argv[++i];
-        } else if (std::strcmp(argv[i], "--res-dir") == 0)
-        {
-            CResourceManager::SetResDir(argv[++i]);
         }
     }
+
+    auto &cfg = config();
+    if (config_path.empty()) {
+        std::string home_cfg_path
+            = std::getenv("HOME") + std::string("/.commander.cfg");
+        if (fileExists(home_cfg_path)) config_path = std::move(home_cfg_path);
+    }
+    if (!config_path.empty()) cfg.Load(config_path);
+    if (!res_dir.empty()) cfg.res_dir = res_dir;
+
+    CResourceManager::SetResDir(cfg.res_dir.c_str());
 
     // Avoid crash due to the absence of mouse
     char l_s[]="SDL_NOMOUSE=1";
@@ -66,14 +100,13 @@ int main(int argc, char** argv)
     // Create instances
     CResourceManager::instance();
 
-    std::string l_path = PATH_DEFAULT;
-    std::string r_path = PATH_DEFAULT_RIGHT;
-    if (access(l_path.c_str(), F_OK) != 0) l_path = "/";
-#ifdef PATH_DEFAULT_RIGHT_FALLBACK
-    if (l_path == r_path || access(r_path.c_str(), F_OK) != 0) r_path = PATH_DEFAULT_RIGHT_FALLBACK;
-#endif
-    if (access(r_path.c_str(), F_OK) != 0) r_path = "/";
-
+    std::string l_path = cfg.path_default;
+    std::string r_path = cfg.path_default_right;
+    if (!fileExists(l_path)) l_path = "/";
+    if (!cfg.path_default_right_fallback.empty()
+        && (l_path == r_path || !fileExists(r_path)))
+        r_path = cfg.path_default_right_fallback;
+    if (!fileExists(r_path)) r_path = "/";
     CCommander l_commander(l_path, r_path);
 
     if (!exec_error.empty())
