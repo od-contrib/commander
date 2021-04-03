@@ -510,7 +510,7 @@ bool CKeyboard::mouseDown(int button, int x, int y)
             focus_x_ = key.first;
             focus_y_ = key.second;
             return true;
-        case SDL_BUTTON_X2: m_retVal = -1; return true;
+        case SDL_BUTTON_X1: m_retVal = -1; return true;
     }
     return false;
 }

@@ -58,6 +58,7 @@ class CDialog : public CWindow
     const bool keyHold(void) override;
 
     bool mouseDown(int button, int x, int y) override;
+    bool mouseWheel(int dx, int dy) override;
 
     // Draw
     void render(const bool p_focus) const override;

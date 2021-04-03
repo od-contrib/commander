@@ -22,6 +22,8 @@ class TextViewer : public CWindow {
     const bool keyPress(const SDL_Event &event) override;
     const bool keyHold() override;
     bool mouseDown(int button, int x, int y) override;
+    bool mouseWheel(int dx, int dy) override;
+
     void onResize() override;
     bool isFullScreen() const override { return true; }
 

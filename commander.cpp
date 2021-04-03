@@ -189,29 +189,45 @@ const bool CCommander::keyHold(void)
     return l_ret;
 }
 
-bool CCommander::mouseDown(int button, int x, int y)
-{
-    if (x < X_LEFT * screen.ppu_x) return false;
-    bool changed = false;
-
+CPanel* CCommander::focusPanelAt(int *x, int *y, bool *changed) {
+    if (*x < X_LEFT * screen.ppu_x) return nullptr;
     CPanel *target;
-    if (x >= X_RIGHT * screen.ppu_x)
+    if (*x >= X_RIGHT * screen.ppu_x)
     {
         target = &m_panelRight;
-        x -= X_RIGHT * screen.ppu_x;
+        *x -= X_RIGHT * screen.ppu_x;
     }
     else
     {
         target = &m_panelLeft;
-        x -= X_LEFT * screen.ppu_x;
+        *x -= X_LEFT * screen.ppu_x;
     }
     if (m_panelSource != target)
     {
         m_panelTarget = m_panelSource;
         m_panelSource = target;
-        changed = true;
+        *changed = true;
     }
+    return target;
+}
 
+bool CCommander::mouseWheel(int dx, int dy)
+{
+    bool changed = false;
+    int x, y;
+    SDL_GetMouseState(&x, &y);
+    CPanel *target = focusPanelAt(&x, &y, &changed);
+    if (target == nullptr) return changed;
+    if (dy > 0) return target->moveCursorUp(1) || changed;
+    if (dy < 0) return target->moveCursorDown(1) || changed;
+    return changed;
+}
+
+bool CCommander::mouseDown(int button, int x, int y)
+{
+    bool changed = false;
+    CPanel *target = focusPanelAt(&x, &y, &changed);
+    if (target == nullptr) return changed;
     const int line = target->getLineAt(x, y);
     switch (button)
     {
@@ -242,13 +258,11 @@ bool CCommander::mouseDown(int button, int x, int y)
                 changed = true;
             }
             return operationMenu() || changed;
-        case SDL_BUTTON_X2: return target->goToParentDir() || changed;
-#ifndef USE_SDL2
-        case SDL_BUTTON_WHEELUP:
-            return target->moveCursorUp(1) || changed;
-        case SDL_BUTTON_WHEELDOWN:
-            return target->moveCursorDown(1) || changed;
-#endif
+        case SDL_BUTTON_X1: return target->goToParentDir() || changed;
+        case SDL_BUTTON_X2:
+            if (target->isDirectoryHighlighted())
+                return target->open() || changed;
+            break;
     }
     return changed;
 }

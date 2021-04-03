@@ -222,6 +222,22 @@ int TextViewer::maxFirstLine() const
     return lines_.size() >= viewport_lines ? lines_.size() - viewport_lines : 0;
 }
 
+bool TextViewer::mouseWheel(int dx, int dy)
+{
+    bool changed = false;
+    if (dy > 0) {
+        changed = moveUp(/*step=*/1) || changed;
+    } else if (dy < 0) {
+        changed = moveDown(/*step=*/1) || changed;
+    }
+    if (dx < 0) {
+        changed = moveLeft() || changed;
+    } else if (dx > 0) {
+        changed = moveRight() || changed;
+    }
+    return changed;
+}
+
 bool TextViewer::mouseDown(int button, int x, int y)
 {
     switch (button) {
@@ -241,11 +257,7 @@ bool TextViewer::mouseDown(int button, int x, int y)
             return false;
         }
         case SDL_BUTTON_RIGHT:
-        case SDL_BUTTON_X2: m_retVal = -1; return true;
-#ifndef USE_SDL2
-        case SDL_BUTTON_WHEELUP: return moveUp(/*step=*/1);
-        case SDL_BUTTON_WHEELDOWN: return moveDown(/*step=*/1);
-#endif
+        case SDL_BUTTON_X1: m_retVal = -1; return true;
     }
     return false;
 }

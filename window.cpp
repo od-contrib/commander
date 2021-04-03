@@ -70,7 +70,20 @@ const int CWindow::execute(void)
                     break;
                 case SDL_MOUSEBUTTONDOWN:
                     SDL_utils::setMouseCursorEnabled(true);
-                    l_render = this->mouseDown(event.button.button, event.button.x, event.button.y) || l_render;
+                    switch (event.button.button) {
+#ifndef USE_SDL2
+                        case SDL_BUTTON_WHEELUP:
+                            l_render = mouseWheel(0, 1) || l_render;
+                            break;
+                        case SDL_BUTTON_WHEELDOWN:
+                            l_render = mouseWheel(0, -1) || l_render;
+                            break;
+#endif
+                        default:
+                            l_render = this->mouseDown(event.button.button,
+                                           event.button.x, event.button.y)
+                                || l_render;
+                    }
                     if (m_retVal) l_loop = false;
                     break;
                 case SDL_KEYDOWN:
@@ -80,6 +93,11 @@ const int CWindow::execute(void)
                     break;
                 case SDL_QUIT: return m_retVal;
 #ifdef USE_SDL2
+                case SDL_MOUSEWHEEL:
+                    SDL_utils::setMouseCursorEnabled(true);
+                    l_render
+                        = mouseWheel(event.wheel.x, event.wheel.y) || l_render;
+                    break;
                 case SDL_WINDOWEVENT:
                     switch (event.window.event) {
                         case SDL_WINDOWEVENT_EXPOSED:
@@ -182,6 +200,7 @@ bool CWindow::tick(SDLKey keycode)
 }
 
 bool CWindow::mouseDown(int button, int x, int y) { return false; }
+bool CWindow::mouseWheel(int dx, int dy) { return false; }
 
 const int CWindow::getReturnValue(void) const
 {

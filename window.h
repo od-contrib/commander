@@ -34,6 +34,12 @@ class CWindow
     // Return true if re-render is needed after handling this.
     virtual bool mouseDown(int button, int x, int y);
 
+    // Mouse wheel event.
+    // `dx` - the amount scrolled horizontally, positive to the right and negative to the left.
+    // `dy` - the amount scrolled vertically, positive away from the user and negative towards the user.
+    // Return true if re-render is needed after handling this.
+    virtual bool mouseWheel(int dx, int dy);
+
     // Key press management
     virtual const bool keyPress(const SDL_Event &p_event);
 

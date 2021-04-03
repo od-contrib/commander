@@ -33,6 +33,9 @@ class CCommander : public CWindow
     const bool keyHold(void) override;
 
     bool mouseDown(int button, int x, int y) override;
+    bool mouseWheel(int dx, int dy) override;
+
+    CPanel* focusPanelAt(int *x, int *y, bool *changed);
 
     // Draw
     virtual void render(const bool p_focus) const;

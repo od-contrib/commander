@@ -258,6 +258,12 @@ int CDialog::getLineAt(int x, int y) const {
     return (y - y0) / line_height;
 }
 
+bool CDialog::mouseWheel(int dx, int dy) {
+    if (dy > 0) return moveCursorUp(/*p_loop=*/false);
+    if (dy < 0) return moveCursorDown(/*p_loop=*/false);
+    return false;
+}
+
 bool CDialog::mouseDown(int button, int x, int y) {
     if (x < m_x * screen.ppu_x || x > m_x * screen.ppu_x + width_
         || y < m_y * screen.ppu_y || y > m_y * screen.ppu_y + height_)
@@ -277,13 +283,7 @@ bool CDialog::mouseDown(int button, int x, int y) {
         case SDL_BUTTON_RIGHT:
             m_highlightedLine = line;
             return true;
-        case SDL_BUTTON_X2: m_retVal = -1; return true;
-#ifndef USE_SDL2
-        case SDL_BUTTON_WHEELUP:
-            return moveCursorUp(/*p_loop=*/false);
-        case SDL_BUTTON_WHEELDOWN:
-            return moveCursorDown(/*p_loop=*/false);
-#endif
+        case SDL_BUTTON_X1: m_retVal = -1; return true;
     }
     return false;
 }
