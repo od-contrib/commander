@@ -278,10 +278,12 @@ bool CDialog::mouseDown(int button, int x, int y) {
             m_highlightedLine = line;
             return true;
         case SDL_BUTTON_X2: m_retVal = -1; return true;
+#ifndef USE_SDL2
         case SDL_BUTTON_WHEELUP:
             return moveCursorUp(/*p_loop=*/false);
         case SDL_BUTTON_WHEELDOWN:
             return moveCursorDown(/*p_loop=*/false);
+#endif
     }
     return false;
 }
@@ -324,11 +326,11 @@ const bool CDialog::keyHold(void)
     switch(m_lastPressed)
     {
         case MYKEY_UP:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_UP]))
+            if (tick(MYKEY_UP))
                 l_ret = moveCursorUp(false);
             break;
         case MYKEY_DOWN:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_DOWN]))
+            if (tick(MYKEY_DOWN))
                 l_ret = moveCursorDown(false);
             break;
         default:

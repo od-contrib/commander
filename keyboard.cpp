@@ -434,6 +434,7 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
                 case SDLK_END:
                     return text_edit_.setCursorToEnd();
                 default:
+#ifndef USE_SDL2
                     if ((keysym.unicode & 0xFF80) == 0) {
                         const unsigned char c = keysym.unicode & 0x7F;
                         if (std::isprint(c)) {
@@ -441,6 +442,7 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
                             return true;
                         }
                     }
+#endif
                     return false;
             }
     }
@@ -450,36 +452,36 @@ const bool CKeyboard::keyHold(void)
 {
     switch (m_lastPressed) {
         case MYKEY_UP:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_UP]))
+            if (tick(MYKEY_UP))
                 return moveCursorUp(false);
             return false;
         case MYKEY_DOWN:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_DOWN]))
+            if (tick(MYKEY_DOWN))
                 return moveCursorDown(false);
             return false;
         case MYKEY_LEFT:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_LEFT]))
+            if (tick(MYKEY_LEFT))
                 return isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
                                            : moveCursorLeft(false);
             return false;
         case MYKEY_RIGHT:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_RIGHT]))
+            if (tick(MYKEY_RIGHT))
                 return isFocusOnTextEdit() ? text_edit_.moveCursorNext()
                                            : moveCursorRight(false);
             return false;
         case MYKEY_OPEN:
             // A => Add letter
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_OPEN]))
+            if (tick(MYKEY_OPEN))
                 return pressFocusedKey();
             return false;
         case MYKEY_SYSTEM:
             // Y => Backspace
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_SYSTEM]))
+            if (tick(MYKEY_SYSTEM))
                 return text_edit_.backspace();
             return false;
         case MYKEY_OPERATION:
             // X => Space
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_OPERATION])) {
+            if (tick(MYKEY_OPERATION)) {
                 text_edit_.typeText(' ');
                 return true;
             }

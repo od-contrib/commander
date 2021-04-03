@@ -1,7 +1,11 @@
 #include <iostream>
 
 #include <SDL_image.h>
+#ifdef USE_SDL2
+#include <SDL2_rotozoom.h>
+#else
 #include <SDL_rotozoom.h>
+#endif
 #include "resourceManager.h"
 #include "def.h"
 #include "screen.h"
@@ -23,9 +27,13 @@ SDL_Surface *LoadIcon(const std::string &path) {
         scaled = zoomSurface(img, screen.ppu_x / 2, screen.ppu_y / 2, SMOOTHING_ON);
     }
     SDL_FreeSurface(img);
+#ifdef USE_SDL2
+    return scaled;
+#else
     SDL_Surface *display = SDL_DisplayFormatAlpha(scaled);
     SDL_FreeSurface(scaled);
     return display;
+#endif
 }
 
 struct FontSpec {

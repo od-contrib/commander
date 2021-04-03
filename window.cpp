@@ -79,6 +79,24 @@ const int CWindow::execute(void)
                     if (m_retVal) l_loop = false;
                     break;
                 case SDL_QUIT: return m_retVal;
+#ifdef USE_SDL2
+                case SDL_WINDOWEVENT:
+                    switch (event.window.event) {
+                        case SDL_WINDOWEVENT_EXPOSED:
+                            l_render = true;
+                            break;
+                        case SDL_WINDOWEVENT_SIZE_CHANGED:
+                            l_render = true;
+                            ResetFrameDeadline();
+                            screen.onResize(
+                                event.window.data1, event.window.data2);
+                            CResourceManager::instance().onResize();
+                            for (auto *window : Globals::g_windows)
+                                window->onResize();
+                            break;
+                    }
+                    break;
+#else
                 case SDL_VIDEORESIZE:
                     l_render = true;
                     ResetFrameDeadline();
@@ -86,6 +104,7 @@ const int CWindow::execute(void)
                     CResourceManager::instance().onResize();
                     for (auto *window : Globals::g_windows) window->onResize();
                     break;
+#endif
             }
         }
         // Handle key hold
@@ -123,20 +142,28 @@ const bool CWindow::keyHold(void)
 
 void CWindow::onResize() { }
 
-const bool CWindow::tick(const Uint8 p_held)
+#ifdef USE_SDL2
+bool CWindow::tick(SDL_Keycode keycode)
+#else
+bool CWindow::tick(SDLKey keycode)
+#endif
 {
-    bool l_ret(false);
-    if (p_held)
+#ifdef USE_SDL2
+    const bool held = SDL_GetKeyboardState(NULL)[SDL_GetScancodeFromKey(keycode)];
+#else
+    const bool held = SDL_GetKeyState(NULL)[keycode];
+#endif
+    if (held)
     {
         if (m_timer)
         {
             --m_timer;
             if (!m_timer)
             {
-                // Trigger!
-                l_ret = true;
                 // Timer continues
                 m_timer = KEYHOLD_TIMER;
+                // Trigger!
+                return true;
             }
         }
         else
@@ -151,7 +178,7 @@ const bool CWindow::tick(const Uint8 p_held)
         if (m_timer)
             m_timer = 0;
     }
-    return l_ret;
+    return false;
 }
 
 bool CWindow::mouseDown(int button, int x, int y) { return false; }

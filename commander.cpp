@@ -164,23 +164,23 @@ const bool CCommander::keyHold(void)
     switch(m_lastPressed)
     {
         case MYKEY_UP:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_UP]))
+            if (tick(MYKEY_UP))
                 l_ret = m_panelSource->moveCursorUp(1);
             break;
         case MYKEY_DOWN:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_DOWN]))
+            if (tick(MYKEY_DOWN))
                 l_ret = m_panelSource->moveCursorDown(1);
             break;
         case MYKEY_PAGEUP:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_PAGEUP]))
+            if (tick(MYKEY_PAGEUP))
                 l_ret = m_panelSource->moveCursorUp(NB_VISIBLE_LINES - 1);
             break;
         case MYKEY_PAGEDOWN:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_PAGEDOWN]))
+            if (tick(MYKEY_PAGEDOWN))
                 l_ret = m_panelSource->moveCursorDown(NB_VISIBLE_LINES - 1);
             break;
         case MYKEY_SELECT:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_SELECT]))
+            if (tick(MYKEY_SELECT))
                 l_ret = m_panelSource->addToSelectList(true);
             break;
         default:
@@ -243,10 +243,12 @@ bool CCommander::mouseDown(int button, int x, int y)
             }
             return operationMenu() || changed;
         case SDL_BUTTON_X2: return target->goToParentDir() || changed;
+#ifndef USE_SDL2
         case SDL_BUTTON_WHEELUP:
             return target->moveCursorUp(1) || changed;
         case SDL_BUTTON_WHEELDOWN:
             return target->moveCursorDown(1) || changed;
+#endif
     }
     return changed;
 }

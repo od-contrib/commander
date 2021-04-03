@@ -36,7 +36,11 @@
 #define SCREEN_BPP 16
 #endif
 
+#ifdef USE_SDL2
+#define SURFACE_FLAGS SDL_SWSURFACE
+#else
 #define SURFACE_FLAGS SDL_SWSURFACE | SDL_RESIZABLE
+#endif
 
 #ifndef PATH_DEFAULT
 #define PATH_DEFAULT getenv("PWD")
