@@ -228,8 +228,13 @@ bool TextViewer::mouseDown(int button, int x, int y)
         case SDL_BUTTON_LEFT: {
             const int line = getLineAt(x, y);
             if (line != -1) {
-                current_line_ = first_line_ + line;
-                if (first_line_ + numTotalViewportLines() < current_line_)
+                const std::size_t new_current_line = first_line_ + line;
+                if (current_line_ == new_current_line) {
+                    editLine();
+                    return true;
+                }
+                current_line_ = new_current_line;
+                if (first_line_ + numFullViewportLines() < current_line_)
                     ++first_line_;
                 return true;
             }
