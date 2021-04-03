@@ -44,7 +44,7 @@ struct Config {
     SDLC_Keycode key_up = MYKEY_UP;
 
     // On-screen keyboard settings.
-#ifdef KEYBOARD_SWAP_SYSTEM_AND_PARENT
+#ifdef OSK_KEY_SYSTEM_IS_BACKSPACE
     // `key_system` is backspace, `key_parent` is cancel
     bool osk_key_system_is_backspace = true;
 #else
