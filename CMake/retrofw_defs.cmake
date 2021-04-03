@@ -1,3 +1,4 @@
+set(USE_SDL2 OFF)
 set(PPU_Y 2)
 
 set(FILE_SYSTEM \"/dev/mmcblk1p1\")

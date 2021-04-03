@@ -1,3 +1,4 @@
+set(USE_SDL2 OFF)
 set(PATH_DEFAULT \"/media\")
 set(FILE_SYSTEM \"/dev/mmcblk0p2\")
 
