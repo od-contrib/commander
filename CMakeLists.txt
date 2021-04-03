@@ -46,48 +46,80 @@ set(DinguxCommander_SRCS
 set(BIN_TARGET commander)
 add_executable(${BIN_TARGET} ${DinguxCommander_SRCS})
 
-find_package(SDL REQUIRED)
-find_package(SDL_image REQUIRED)
-
+option(USE_SDL2 "Use SDL2 instead of SDL1" ON)
 option(WITH_SYSTEM_SDL_GFX "Use system SDL_gfx library" OFF)
 option(WITH_SYSTEM_SDL_TTF "Use system SDL_ttf library" OFF)
 
-if (WITH_SYSTEM_SDL_GFX)
-	find_library(SDL_gfx SDL_gfx)
-	if (NOT SDL_gfx)
-		message(SEND_ERROR "Could not find SDL_gfx library.")
-	endif ()
-else ()
-	# SDL_gfx: rotozoom only.
-	add_library(SDL_gfx STATIC third_party/SDL_gfx-2.0.25/SDL_rotozoom.c)
-	target_link_libraries(SDL_gfx PUBLIC ${SDL_LIBRARY})
-	target_include_directories(SDL_gfx PRIVATE ${SDL_INCLUDE_DIR})
+if (USE_SDL2)
+  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake/sdl2)
+  if (WITH_SYSTEM_SDL_TTF)
+    find_package(SDL2 REQUIRED)
+  else()
+    find_package(SDL2 2.0.10 REQUIRED) # for SDL_SIMD_ALIGNED
+  endif()
+  find_package(SDL2_image REQUIRED)
+else()
+  find_package(SDL REQUIRED)
+  find_package(SDL_image REQUIRED)
+endif()
 
-	target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL_gfx-2.0.25/)
+if (WITH_SYSTEM_SDL_GFX)
+  if (USE_SDL2)
+    find_package(SDL2_gfx REQUIRED)
+  else()
+    find_library(SDL_gfx SDL_gfx)
+    if (NOT SDL_gfx)
+      message(SEND_ERROR "Could not find SDL_gfx library.")
+    endif()
+  endif()
+else ()
+  # SDL_gfx: rotozoom only.
+  if (USE_SDL2)
+    add_library(SDL2_gfx STATIC third_party/SDL2_gfx-1.0.4/SDL2_rotozoom.c)
+    target_link_libraries(SDL2_gfx PUBLIC SDL2::Core)
+    target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL2_gfx-1.0.4/)
+    set(SDL2_GFX_LIBRARIES SDL2_gfx)
+  else()
+    add_library(SDL_gfx STATIC third_party/SDL_gfx-2.0.25/SDL_rotozoom.c)
+    target_link_libraries(SDL_gfx PUBLIC ${SDL_LIBRARY})
+    target_include_directories(SDL_gfx PRIVATE ${SDL_INCLUDE_DIR})
+    target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL_gfx-2.0.25/)
+  endif()
 endif ()
 
 if (WITH_SYSTEM_SDL_TTF)
-	find_library(SDL_ttf SDL_ttf)
-	if (NOT SDL_ttf)
-		message(SEND_ERROR "Could not find SDL_ttf library.")
-	endif (NOT SDL_ttf)
-
-	list(APPEND CMAKE_REQUIRED_INCLUDES ${SDL_INCLUDE_DIR})
-	include(CheckSymbolExists)
-	check_symbol_exists(TTF_OpenFontDPI "SDL_ttf.h" HAS_TTF_OPENFONT_DPI)
+  if (USE_SDL2)
+    find_package(SDL2_ttf REQUIRED)
+    list(APPEND CMAKE_REQUIRED_INCLUDES ${SDL2_TTF_INCLUDE_DIRS})
+  else()
+    find_library(SDL_ttf SDL_ttf)
+    if (NOT SDL_ttf)
+      message(SEND_ERROR "Could not find SDL_ttf library.")
+    endif (NOT SDL_ttf)
+    list(APPEND CMAKE_REQUIRED_INCLUDES ${SDL_INCLUDE_DIR})
+  endif()
+  include(CheckSymbolExists)
+  check_symbol_exists(TTF_OpenFontDPI "SDL_ttf.h" HAS_TTF_OPENFONT_DPI)
 else (WITH_SYSTEM_SDL_TTF)
-	# SDL_ttf: version from HEAD for independent X/Y DPI scaling.
-	add_library(SDL_ttf STATIC third_party/SDL_ttf/SDL_ttf.c)
-	find_package(Freetype REQUIRED)
-	target_include_directories(SDL_ttf PRIVATE ${SDL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS})
-	target_link_libraries(SDL_ttf ${SDL_LIBRARY} ${FREETYPE_LIBRARIES})
-
-	target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL_ttf/)
-	set(HAS_TTF_OPENFONT_DPI ON)
+  # SDL_ttf: version from HEAD for independent X/Y DPI scaling.
+  find_package(Freetype REQUIRED)
+  if (USE_SDL2)
+    add_library(SDL2_ttf STATIC third_party/SDL2_ttf/SDL_ttf.c)
+    target_link_libraries(SDL2_ttf SDL2::Core ${FREETYPE_LIBRARIES})
+    target_include_directories(SDL2_ttf PRIVATE ${FREETYPE_INCLUDE_DIRS})
+    target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL2_ttf/)
+    set(SDL2_TTF_LIBRARIES SDL2_ttf)
+  else()
+    add_library(SDL_ttf STATIC third_party/SDL_ttf/SDL_ttf.c)
+    target_link_libraries(SDL_ttf ${SDL_LIBRARY} ${FREETYPE_LIBRARIES})
+    target_include_directories(SDL_ttf PRIVATE ${SDL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS})
+    target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL_ttf/)
+  endif()
+  set(HAS_TTF_OPENFONT_DPI ON)
 endif (WITH_SYSTEM_SDL_TTF)
 
 if (HAS_TTF_OPENFONT_DPI)
-	target_compile_definitions(${BIN_TARGET} PRIVATE USE_TTF_OPENFONT_DPI)
+  target_compile_definitions(${BIN_TARGET} PRIVATE USE_TTF_OPENFONT_DPI)
 endif (HAS_TTF_OPENFONT_DPI)
 
 set_target_properties(${BIN_TARGET} PROPERTIES
@@ -95,17 +127,27 @@ set_target_properties(${BIN_TARGET} PROPERTIES
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO)
 
-target_include_directories(${BIN_TARGET} PUBLIC
-  ${SDL_INCLUDE_DIR}
-  ${SDL_IMAGE_INCLUDE_DIRS}
-)
-target_link_libraries(${BIN_TARGET} PRIVATE
-  ${SDL_LIBRARY}
-  ${SDL_IMAGE_LIBRARIES}
-  SDL_ttf
-  SDL_gfx
-  m
-)
+if (USE_SDL2)
+  target_link_libraries(${BIN_TARGET} PRIVATE
+    SDL2::Core
+    SDL2::Image
+    ${SDL2_TTF_LIBRARIES}
+    ${SDL2_GFX_LIBRARIES}
+  )
+else ()
+  target_include_directories(${BIN_TARGET} PUBLIC
+    ${SDL_INCLUDE_DIR}
+    ${SDL_IMAGE_INCLUDE_DIRS}
+  )
+  target_link_libraries(${BIN_TARGET} PRIVATE
+    ${SDL_LIBRARY}
+    ${SDL_IMAGE_LIBRARIES}
+    SDL_ttf
+    SDL_gfx
+  )
+endif()
+target_link_libraries(${BIN_TARGET} PRIVATE m)
+
 
 set(RES_DIR \"res/\" CACHE STRING "Resources directory")
 set(FILE_SYSTEM \"/dev/mmcblk1p1\" CACHE STRING "Default filesystem (for Disk info)")
@@ -129,6 +171,18 @@ elseif(TARGET_PLATFORM STREQUAL "rs90")
 elseif(TARGET_PLATFORM STREQUAL "rg99")
   include(CMake/rg99_defs.cmake)
 endif()
+
+# These variables are defined as C macros if they are tru
+foreach(
+  def_name
+  USE_SDL2
+  KEYBOARD_SWAP_SYSTEM_AND_PARENT
+)
+  if (${def_name})
+    list(APPEND def_list ${def_name})
+  endif()
+endforeach(def_name)
+
 
 # These variables are passed as C macro definitons if they exist.
 foreach(
@@ -154,7 +208,6 @@ foreach(
   MYKEY_OPERATION
   MYKEY_SELECT
   MYKEY_TRANSFER
-  KEYBOARD_SWAP_SYSTEM_AND_PARENT
 )
   if(DEFINED ${def_name})
     list(APPEND def_list ${def_name}=${${def_name}})
