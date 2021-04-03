@@ -11,6 +11,7 @@ Screen screen;
 namespace
 {
 
+#ifndef USE_SDL2
 SDL_Surface *SetVideoMode(int width, int height, int bpp, std::uint32_t flags)
 {
     std::fprintf(stderr, "Setting video mode %dx%d bpp=%u flags=0x%08X\n",
@@ -24,12 +25,14 @@ SDL_Surface *SetVideoMode(int width, int height, int bpp, std::uint32_t flags)
     std::fflush(stderr);
     return result;
 }
+#endif
 
 }
 
 int Screen::init()
 {
     // Screen
+#ifndef USE_SDL2
     const auto &best = *SDL_GetVideoInfo();
     std::fprintf(stderr,
         "Best video mode reported as: %dx%d bpp=%d hw_available=%u\n",
@@ -58,22 +61,69 @@ int Screen::init()
         screen.actual_h = screen.h = best.current_h;
         screen.ppu_x = screen.ppu_y = 1;
     }
+#endif // AUTOSCALE == 1
 #endif
+
+#ifdef USE_SDL2
+    int window_flags = SDL_WINDOW_RESIZABLE;
+#if AUTOSCALE == 1
+    window_flags |= SDL_WINDOW_MAXIMIZED;
+#endif
+    int window_w = screen.actual_w;
+    int window_h = screen.actual_h;
+    window = SDL_CreateWindow("Commander", SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED, window_h, window_h, window_flags);
+    if (window == nullptr) {
+        SDL_Log("Failed to create window: %s", SDL_GetError());
+        return 1;
+    }
+#if AUTOSCALE == 1
+    const int disp_index = SDL_GetWindowDisplayIndex(window);
+    if (disp_index != -1) {
+        float hdpi, vdpi;
+        if (SDL_GetDisplayDPI(disp_index, /*ddpi=*/nullptr, &hdpi, &vdpi) != -1) {
+            if (hdpi != 0 && vdpi != 0) {
+                screen.ppu_x = hdpi / 72.0;
+                screen.ppu_y = vdpi / 72.0;
+            }
+            SDL_Log("Display DPI: %f %f. Scaling factors: %f %f", hdpi, vdpi,
+                screen.ppu_x, screen.ppu_y);
+        } else {
+            SDL_Log("SDL_GetDisplayDPI failed: %s", SDL_GetError());
+        }
+    } else {
+        SDL_Log("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
+    }
+#endif // AUTOSCALE == 1
+    SDL_GetWindowSize(window, &window_w, &window_h);
+    screen.actual_w = window_w;
+    screen.w = screen.actual_w / screen.ppu_x;
+    screen.actual_h = window_h;
+    screen.h = screen.actual_h / screen.ppu_y;
+    screen.surface = SDL_GetWindowSurface(window);
+#else
     surface = SetVideoMode(
         screen.actual_w, screen.actual_h, SCREEN_BPP, SURFACE_FLAGS);
-    if (surface == nullptr)
-    {
+    if (surface == nullptr) {
         std::fprintf(stderr, "SDL_SetVideoMode failed: %s\n", SDL_GetError());
         return 1;
     }
+#endif
     return 0;
 }
 
 int Screen::onResize(int w, int h)
 {
-    this->surface = SDL_SetVideoMode(w, h, SCREEN_BPP, SURFACE_FLAGS);
+#ifdef USE_SDL2
+    this->surface = SDL_GetWindowSurface(this->window);
     this->actual_w = surface->w;
     this->actual_h = surface->h;
+#else
+    // this->surface = SDL_SetVideoMode(w, h, SCREEN_BPP, SURFACE_FLAGS);
+    this->surface = SDL_GetVideoSurface();
+    this->actual_w = w;
+    this->actual_h = h;
+#endif
     this->w = this->actual_w / ppu_x;
     this->h = this->actual_h / ppu_y;
     return 0;

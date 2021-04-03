@@ -41,11 +41,20 @@ class CWindow
     virtual const bool keyHold(void);
 
     // Timer tick
-    const bool tick(const Uint8 p_held);
+#ifdef USE_SDL2
+    bool tick(SDL_Keycode p_held);
+#else
+    bool tick(SDLKey p_held);
+#endif
 
     // Timer for key hold
     unsigned int m_timer;
+
+#ifdef USE_SDL2
+    SDL_Keycode m_lastPressed;
+#else
     SDLKey m_lastPressed;
+#endif
 
     // Return value
     int m_retVal;

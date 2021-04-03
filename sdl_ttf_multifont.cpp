@@ -134,11 +134,16 @@ SDL_Surface *TTFMultiFont_RenderUTF8_Shaded(
     height = std::max(surface->h, height);
   }
 
-  SDL_Surface *result =
-      SDL_AllocSurface(SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
+  SDL_Surface *result = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
   if (result == nullptr) return nullptr;
+#ifdef USE_SDL2
+  SDL_SetPaletteColors(result->format->palette,
+      surfaces[0]->format->palette->colors, 0,
+      surfaces[0]->format->palette->ncolors);
+#else
   SDL_SetPalette(result, SDL_LOGPAL, surfaces[0]->format->palette->colors, 0,
                  surfaces[0]->format->palette->ncolors);
+#endif
   decltype(SDL_Rect().x) x = 0;
   for (std::size_t i = surfaces.size(); i > 0; --i) {
     auto *surface = surfaces[i - 1];

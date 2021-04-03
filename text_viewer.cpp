@@ -182,24 +182,24 @@ const bool TextViewer::keyHold()
 {
     switch (m_lastPressed) {
         case MYKEY_UP:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_UP])) return moveUp(1);
+            if (tick(MYKEY_UP)) return moveUp(1);
             break;
         case MYKEY_DOWN:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_DOWN])) return moveDown(1);
+            if (tick(MYKEY_DOWN)) return moveDown(1);
             break;
         case MYKEY_PAGEUP:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_PAGEUP]))
+            if (tick(MYKEY_PAGEUP))
                 return moveUp(numFullViewportLines() - 1);
             break;
         case MYKEY_PAGEDOWN:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_PAGEDOWN]))
+            if (tick(MYKEY_PAGEDOWN))
                 return moveDown(numFullViewportLines() - 1);
             break;
         case MYKEY_LEFT:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_LEFT])) return moveLeft();
+            if (tick(MYKEY_LEFT)) return moveLeft();
             break;
         case MYKEY_RIGHT:
-            if (tick(SDL_GetKeyState(NULL)[MYKEY_RIGHT])) return moveRight();
+            if (tick(MYKEY_RIGHT)) return moveRight();
             break;
         default: break;
     }
@@ -225,8 +225,6 @@ int TextViewer::maxFirstLine() const
 bool TextViewer::mouseDown(int button, int x, int y)
 {
     switch (button) {
-        case SDL_BUTTON_WHEELUP: return moveUp(/*step=*/1);
-        case SDL_BUTTON_WHEELDOWN: return moveDown(/*step=*/1);
         case SDL_BUTTON_LEFT: {
             const int line = getLineAt(x, y);
             if (line != -1) {
@@ -239,6 +237,10 @@ bool TextViewer::mouseDown(int button, int x, int y)
         }
         case SDL_BUTTON_RIGHT:
         case SDL_BUTTON_X2: m_retVal = -1; return true;
+#ifndef USE_SDL2
+        case SDL_BUTTON_WHEELUP: return moveUp(/*step=*/1);
+        case SDL_BUTTON_WHEELDOWN: return moveDown(/*step=*/1);
+#endif
     }
     return false;
 }

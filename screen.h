@@ -24,9 +24,20 @@ struct Screen
 
     SDL_Surface *surface;
 
+#ifdef USE_SDL2
+    SDL_Window *window;
+#endif
+
     void flip() {
+#ifdef USE_SDL2
+		if (SDL_UpdateWindowSurface(window) <= -1) {
+			SDL_Log("%s", SDL_GetError());
+		}
+		surface = SDL_GetWindowSurface(window);
+#else
       SDL_Flip(surface);
       surface = SDL_GetVideoSurface();
+#endif
     }
 
     // Called once at startup.
