@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     auto &cfg = config();
     if (config_path.empty()) {
         std::string home_cfg_path
-            = std::getenv("HOME") + std::string("/.commander.cfg");
+            = std::getenv("HOME") + std::string("/.config/commander.cfg");
         if (fileExists(home_cfg_path)) config_path = std::move(home_cfg_path);
     }
     if (!config_path.empty()) cfg.Load(config_path);
