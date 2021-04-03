@@ -176,7 +176,7 @@ target_link_libraries(${BIN_TARGET} PRIVATE m)
 foreach(
   def_name
   USE_SDL2
-  KEYBOARD_SWAP_SYSTEM_AND_PARENT
+  OSK_KEY_SYSTEM_IS_BACKSPACE
 )
   if (${def_name})
     list(APPEND def_list ${def_name})
