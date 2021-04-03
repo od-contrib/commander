@@ -53,6 +53,7 @@ endif()
 
 set(DinguxCommander_SRCS
   commander.cpp
+  config.cpp
   dialog.cpp
   fileLister.cpp
   fileutils.cpp

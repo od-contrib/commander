@@ -8,8 +8,7 @@
 
 Screen screen;
 
-namespace
-{
+namespace {
 
 #ifndef USE_SDL2
 SDL_Surface *SetVideoMode(int width, int height, int bpp, std::uint32_t flags)
@@ -31,7 +30,14 @@ SDL_Surface *SetVideoMode(int width, int height, int bpp, std::uint32_t flags)
 
 int Screen::init()
 {
-    // Screen
+    const auto &cfg = config();
+    screen.w = cfg.disp_width;
+    screen.h = cfg.disp_height;
+    screen.ppu_x = cfg.disp_ppu_x;
+    screen.ppu_y = cfg.disp_ppu_y;
+    screen.actual_w = cfg.disp_width * cfg.disp_ppu_x;
+    screen.actual_h = cfg.disp_height * cfg.disp_ppu_y;
+
 #ifndef USE_SDL2
     const auto &best = *SDL_GetVideoInfo();
     std::fprintf(stderr,
@@ -40,35 +46,31 @@ int Screen::init()
         best.hw_available);
 
     // Detect non 320x240/480 screens.
-#if AUTOSCALE == 1
-    if (best.current_w >= SCREEN_WIDTH * 2)
-    {
-        // E.g. 640x480. Upscale to the smaller of the two.
-        double scale
-            = std::min(best.current_w / static_cast<double>(SCREEN_WIDTH),
-                best.current_h / static_cast<double>(SCREEN_HEIGHT));
-        scale = std::min(scale, 2.0);
-        screen.ppu_x = screen.ppu_y = scale;
-        screen.w = best.current_w / scale;
-        screen.h = best.current_h / scale;
-        screen.actual_w = best.current_w;
-        screen.actual_h = best.current_h;
+    if (config().disp_autoscale) {
+        if (best.current_w >= SCREEN_WIDTH * 2) {
+            // E.g. 640x480. Upscale to the smaller of the two.
+            double scale
+                = std::min(best.current_w / static_cast<double>(SCREEN_WIDTH),
+                    best.current_h / static_cast<double>(SCREEN_HEIGHT));
+            scale = std::min(scale, 2.0);
+            screen.ppu_x = screen.ppu_y = scale;
+            screen.w = best.current_w / scale;
+            screen.h = best.current_h / scale;
+            screen.actual_w = best.current_w;
+            screen.actual_h = best.current_h;
+        } else if (best.current_w != SCREEN_WIDTH) {
+            // E.g. RS07 with 480x272 screen.
+            screen.actual_w = screen.w = best.current_w;
+            screen.actual_h = screen.h = best.current_h;
+            screen.ppu_x = screen.ppu_y = 1;
+        }
     }
-    else if (best.current_w != SCREEN_WIDTH)
-    {
-        // E.g. RS07 with 480x272 screen.
-        screen.actual_w = screen.w = best.current_w;
-        screen.actual_h = screen.h = best.current_h;
-        screen.ppu_x = screen.ppu_y = 1;
-    }
-#endif // AUTOSCALE == 1
 #endif
 
 #ifdef USE_SDL2
     int window_flags = SDL_WINDOW_RESIZABLE;
-#if AUTOSCALE == 1
-    window_flags |= SDL_WINDOW_MAXIMIZED;
-#endif
+    if (config().disp_autoscale) window_flags |= SDL_WINDOW_MAXIMIZED;
+
     int window_w = screen.actual_w;
     int window_h = screen.actual_h;
     window = SDL_CreateWindow("Commander", SDL_WINDOWPOS_UNDEFINED,
@@ -77,24 +79,25 @@ int Screen::init()
         SDL_Log("Failed to create window: %s", SDL_GetError());
         return 1;
     }
-#if AUTOSCALE == 1
-    const int disp_index = SDL_GetWindowDisplayIndex(window);
-    if (disp_index != -1) {
-        float hdpi, vdpi;
-        if (SDL_GetDisplayDPI(disp_index, /*ddpi=*/nullptr, &hdpi, &vdpi) != -1) {
-            if (hdpi != 0 && vdpi != 0) {
-                screen.ppu_x = hdpi / 72.0;
-                screen.ppu_y = vdpi / 72.0;
+    if (config().disp_autoscale) {
+        const int disp_index = SDL_GetWindowDisplayIndex(window);
+        if (disp_index != -1) {
+            float hdpi, vdpi;
+            if (SDL_GetDisplayDPI(disp_index, /*ddpi=*/nullptr, &hdpi, &vdpi)
+                != -1) {
+                if (hdpi != 0 && vdpi != 0) {
+                    screen.ppu_x = hdpi / 72.0;
+                    screen.ppu_y = vdpi / 72.0;
+                }
+                SDL_Log("Display DPI: %f %f. Scaling factors: %f %f", hdpi,
+                    vdpi, screen.ppu_x, screen.ppu_y);
+            } else {
+                SDL_Log("SDL_GetDisplayDPI failed: %s", SDL_GetError());
             }
-            SDL_Log("Display DPI: %f %f. Scaling factors: %f %f", hdpi, vdpi,
-                screen.ppu_x, screen.ppu_y);
         } else {
-            SDL_Log("SDL_GetDisplayDPI failed: %s", SDL_GetError());
+            SDL_Log("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
         }
-    } else {
-        SDL_Log("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
     }
-#endif // AUTOSCALE == 1
     SDL_GetWindowSize(window, &window_w, &window_h);
     screen.actual_w = window_w;
     screen.w = screen.actual_w / screen.ppu_x;
@@ -103,7 +106,7 @@ int Screen::init()
     screen.surface = SDL_GetWindowSurface(window);
 #else
     surface = SetVideoMode(
-        screen.actual_w, screen.actual_h, SCREEN_BPP, SURFACE_FLAGS);
+        screen.actual_w, screen.actual_h, SCREEN_BPP, SDL_SWSURFACE | SDL_RESIZABLE);
     if (surface == nullptr) {
         std::fprintf(stderr, "SDL_SetVideoMode failed: %s\n", SDL_GetError());
         return 1;
@@ -119,7 +122,6 @@ int Screen::onResize(int w, int h)
     this->actual_w = surface->w;
     this->actual_h = surface->h;
 #else
-    // this->surface = SDL_SetVideoMode(w, h, SCREEN_BPP, SURFACE_FLAGS);
     this->surface = SDL_GetVideoSurface();
     this->actual_w = w;
     this->actual_h = h;

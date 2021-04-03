@@ -194,7 +194,7 @@ void renderRectWithBorder(SDL_Surface *out, SDL_Rect rect,
 
 SDL_Surface *createSurface(int width, int height)
 {
-    return SDL_CreateRGBSurface(SURFACE_FLAGS, width, height, screen.surface->format->BitsPerPixel, screen.surface->format->Rmask, screen.surface->format->Gmask, screen.surface->format->Bmask, screen.surface->format->Amask);
+    return SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, screen.surface->format->BitsPerPixel, screen.surface->format->Rmask, screen.surface->format->Gmask, screen.surface->format->Bmask, screen.surface->format->Amask);
 }
 
 SDL_Surface *createImage(const int p_width, const int p_height, const Uint32 p_color)

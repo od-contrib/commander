@@ -163,6 +163,10 @@ class CKeyboard : public CWindow
     // Foreground layer surfaces:
     SDLSurfaceUniquePtr cancel_highlighted_;
     SDLSurfaceUniquePtr ok_highlighted_;
+
+    // Input config:
+    SDLC_Keycode osk_backspace_;
+    SDLC_Keycode osk_cancel_;
 };
 
 #endif

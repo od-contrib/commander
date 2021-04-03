@@ -4,6 +4,7 @@
 #include <cstring>
 #include <fstream>
 
+#include "config.h"
 #include "def.h"
 #include "error_dialog.h"
 #include "keyboard.h"
@@ -160,49 +161,33 @@ void TextViewer::render(const bool focused) const
 const bool TextViewer::keyPress(const SDL_Event &event)
 {
     CWindow::keyPress(event);
-    switch (event.key.keysym.sym) {
-        case MYKEY_SYSTEM:
-        case MYKEY_PARENT:
-            m_retVal = -1;
-            return true;
-            break;
-        case MYKEY_OPEN: return editLine();
-        case MYKEY_UP: return moveUp(1); break;
-        case MYKEY_DOWN: return moveDown(1); break;
-        case MYKEY_PAGEUP: return moveUp(numFullViewportLines() - 1); break;
-        case MYKEY_PAGEDOWN: return moveDown(numFullViewportLines() - 1); break;
-        case MYKEY_LEFT: return moveLeft(); break;
-        case MYKEY_RIGHT: return moveRight(); break;
-        default: break;
+    const auto &c = config();
+    const auto sym = event.key.keysym.sym;
+    if (sym == c.key_system || sym == c.key_parent) {
+        m_retVal = -1;
+        return true;
     }
+    if (sym == c.key_open) return editLine();
+    if (sym == c.key_up) return moveUp(1);
+    if (sym == c.key_down) return moveDown(1);
+    if (sym == c.key_pageup) return moveUp(numFullViewportLines() - 1);
+    if (sym == c.key_pagedown) return moveDown(numFullViewportLines() - 1);
+    if (sym == c.key_left) return moveLeft();
+    if (sym == c.key_right) return moveRight();
     return false;
 }
 
 const bool TextViewer::keyHold()
 {
-    switch (m_lastPressed) {
-        case MYKEY_UP:
-            if (tick(MYKEY_UP)) return moveUp(1);
-            break;
-        case MYKEY_DOWN:
-            if (tick(MYKEY_DOWN)) return moveDown(1);
-            break;
-        case MYKEY_PAGEUP:
-            if (tick(MYKEY_PAGEUP))
-                return moveUp(numFullViewportLines() - 1);
-            break;
-        case MYKEY_PAGEDOWN:
-            if (tick(MYKEY_PAGEDOWN))
-                return moveDown(numFullViewportLines() - 1);
-            break;
-        case MYKEY_LEFT:
-            if (tick(MYKEY_LEFT)) return moveLeft();
-            break;
-        case MYKEY_RIGHT:
-            if (tick(MYKEY_RIGHT)) return moveRight();
-            break;
-        default: break;
-    }
+    const auto &c = config();
+    if (m_lastPressed == c.key_up) return tick(c.key_up) && moveUp(1);
+    if (m_lastPressed == c.key_down) return tick(c.key_down) && moveDown(1);
+    if (m_lastPressed == c.key_pageup)
+        return tick(c.key_pageup) && moveUp(numFullViewportLines() - 1);
+    if (m_lastPressed == c.key_pagedown)
+        return tick(c.key_pagedown) && moveDown(numFullViewportLines() - 1);
+    if (m_lastPressed == c.key_left) return tick(c.key_left) && moveLeft();
+    if (m_lastPressed == c.key_right) return tick(c.key_right) && moveRight();
     return false;
 }
 

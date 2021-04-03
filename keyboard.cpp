@@ -5,18 +5,12 @@
 #include <iostream>
 #include <tuple>
 
+#include "config.h"
 #include "def.h"
 #include "resourceManager.h"
 #include "screen.h"
 #include "sdlutils.h"
 
-#ifdef KEYBOARD_SWAP_SYSTEM_AND_PARENT
-#define KEYBOARD_KEY_BACKSPACE MYKEY_SYSTEM
-#define KEYBOARD_KEY_CANCEL MYKEY_PARENT
-#else
-#define KEYBOARD_KEY_BACKSPACE MYKEY_PARENT
-#define KEYBOARD_KEY_CANCEL MYKEY_SYSTEM
-#endif
 namespace {
 
 using SDL_utils::removeBorder;
@@ -100,6 +94,15 @@ CKeyboard::CKeyboard(const std::string &p_inputText, bool support_tabs)
     , support_tabs_(support_tabs)
     , text_edit_(support_tabs)
 {
+    const auto &c = config();
+    if (c.osk_key_system_is_backspace) {
+        osk_backspace_ = c.key_system;
+        osk_cancel_ = c.key_parent;
+    } else {
+        osk_backspace_ = c.key_parent;
+        osk_cancel_ = c.key_system;
+    }
+
     text_edit_.typeText(p_inputText);
     loadKeyboard();
     init();
@@ -386,109 +389,89 @@ void CKeyboard::render(const bool p_focus) const
 const bool CKeyboard::keyPress(const SDL_Event &p_event)
 {
     CWindow::keyPress(p_event);
+    const auto &c = config();
     const auto keysym = p_event.key.keysym;
-    switch (keysym.sym) {
-        case KEYBOARD_KEY_CANCEL:
-            // B => Cancel
-            m_retVal = -1;
-            return true;
-        case KEYBOARD_KEY_BACKSPACE:
-            // Y => Backspace
-            return text_edit_.backspace();
-        case MYKEY_UP: return moveCursorUp(true);
-        case MYKEY_DOWN: return moveCursorDown(true);
-        case MYKEY_LEFT:
-            return isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
-                                       : moveCursorLeft(true);
-        case MYKEY_RIGHT:
-            return isFocusOnTextEdit() ? text_edit_.moveCursorNext()
-                                       : moveCursorRight(true);
-        case MYKEY_OPERATION:
-            // X => Space
-            text_edit_.typeText(' ');
-            return true;
-        case MYKEY_OPEN:
-            // A => press button
-            return pressFocusedKey();
-        case MYKEY_PAGEDOWN:
-            // R => Change keys forward
-            keyboard_.current_keyset
-                = (keyboard_.current_keyset + 1) % keyboard_.num_keysets();
-            return true;
-        case MYKEY_PAGEUP:
-            // L => Change keys backward
-            keyboard_.current_keyset
-                = (keyboard_.num_keysets() + keyboard_.current_keyset - 1)
-                % keyboard_.num_keysets();
-            return true;
-        case MYKEY_TRANSFER:
-            // START => OK
-            m_retVal = 1;
-            return true;
+    const auto sym = keysym.sym;
+    if (sym == osk_cancel_) {
+        m_retVal = -1;
+        return true;
+    }
+    if (sym == osk_backspace_) return text_edit_.backspace();
+    if (sym == c.key_up) return moveCursorUp(/*p_loop=*/true);
+    if (sym == c.key_down) return moveCursorDown(/*p_loop=*/true);
+    if (sym == c.key_left)
+        return isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
+                                   : moveCursorLeft(true);
+    if (sym == c.key_right)
+        return isFocusOnTextEdit() ? text_edit_.moveCursorNext()
+                                   : moveCursorRight(true);
+    if (sym == c.key_operation) { // X => Space
+        text_edit_.typeText(' ');
+        return true;
+    }
+    if (sym == c.key_open) return pressFocusedKey(); // A => press button
+    if (sym == c.key_pagedown) {
+        // R => Change keys forward
+        keyboard_.current_keyset
+            = (keyboard_.current_keyset + 1) % keyboard_.num_keysets();
+        return true;
+    }
+    if (sym == c.key_pageup) {
+        // L => Change keys backward
+        keyboard_.current_keyset
+            = (keyboard_.num_keysets() + keyboard_.current_keyset - 1)
+            % keyboard_.num_keysets();
+        return true;
+    }
+    if (sym == c.key_transfer) {
+        // START => OK
+        m_retVal = 1;
+        return true;
+    }
+    switch (sym) {
+        case SDLK_BACKSPACE:
+        case SDLK_DELETE: return text_edit_.backspace();
+        case SDLK_HOME: return text_edit_.setCursorToStart();
+        case SDLK_END: return text_edit_.setCursorToEnd();
         default:
-            switch (keysym.sym) {
-                case SDLK_BACKSPACE:
-                case SDLK_DELETE: return text_edit_.backspace();
-                case SDLK_HOME:
-                    return text_edit_.setCursorToStart();
-                case SDLK_END:
-                    return text_edit_.setCursorToEnd();
-                default:
 #ifndef USE_SDL2
-                    if ((keysym.unicode & 0xFF80) == 0) {
-                        const unsigned char c = keysym.unicode & 0x7F;
-                        if (std::isprint(c)) {
-                            text_edit_.typeText(c);
-                            return true;
-                        }
-                    }
-#endif
-                    return false;
+            if ((keysym.unicode & 0xFF80) == 0) {
+                const unsigned char c = keysym.unicode & 0x7F;
+                if (std::isprint(c)) {
+                    text_edit_.typeText(c);
+                    return true;
+                }
             }
+#endif
+            return false;
     }
 }
 
 const bool CKeyboard::keyHold(void)
 {
-    switch (m_lastPressed) {
-        case MYKEY_UP:
-            if (tick(MYKEY_UP))
-                return moveCursorUp(false);
-            return false;
-        case MYKEY_DOWN:
-            if (tick(MYKEY_DOWN))
-                return moveCursorDown(false);
-            return false;
-        case MYKEY_LEFT:
-            if (tick(MYKEY_LEFT))
-                return isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
-                                           : moveCursorLeft(false);
-            return false;
-        case MYKEY_RIGHT:
-            if (tick(MYKEY_RIGHT))
-                return isFocusOnTextEdit() ? text_edit_.moveCursorNext()
-                                           : moveCursorRight(false);
-            return false;
-        case MYKEY_OPEN:
-            // A => Add letter
-            if (tick(MYKEY_OPEN))
-                return pressFocusedKey();
-            return false;
-        case MYKEY_SYSTEM:
-            // Y => Backspace
-            if (tick(MYKEY_SYSTEM))
-                return text_edit_.backspace();
-            return false;
-        case MYKEY_OPERATION:
-            // X => Space
-            if (tick(MYKEY_OPERATION)) {
-                text_edit_.typeText(' ');
-                return true;
-            }
-            return false;
-        default: return false;
+    const auto &c = config();
+    if (m_lastPressed == c.key_up)
+        return tick(c.key_up) && moveCursorUp(/*p_loop=*/false);
+    if (m_lastPressed == c.key_down)
+        return tick(c.key_down) && moveCursorDown(/*p_loop=*/false);
+    if (m_lastPressed == c.key_left)
+        return tick(c.key_left)
+            && (isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
+                                    : moveCursorLeft(/*p_loop=*/false));
+    if (m_lastPressed == c.key_right)
+        return tick(c.key_right)
+            && (isFocusOnTextEdit() ? text_edit_.moveCursorNext()
+                                    : moveCursorRight(/*p_loop=*/false));
+    if (m_lastPressed == c.key_open) // A => Add letter
+        return tick(c.key_open) && pressFocusedKey();
+    if (m_lastPressed == osk_backspace_)
+        return tick(osk_backspace_) && text_edit_.backspace();
+    if (m_lastPressed == c.key_operation) { // X => Space
+        if (!tick(c.key_operation)) return false;
+        text_edit_.typeText(' ');
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool CKeyboard::mouseDown(int button, int x, int y)
