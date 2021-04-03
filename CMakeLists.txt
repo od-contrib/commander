@@ -4,6 +4,33 @@ project(DinguxCommander
   VERSION 0.0.1
   LANGUAGES C CXX)
 
+set(TARGET_PLATFORM host CACHE STRING "Target platform")
+set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS host retrofw gcw0 rg350 rs90 rg99)
+
+if(TARGET_PLATFORM STREQUAL "retrofw")
+  include(CMake/retrofw_defs.cmake)
+elseif(TARGET_PLATFORM STREQUAL "gcw0")
+  include(CMake/rg350_defs.cmake)
+elseif(TARGET_PLATFORM STREQUAL "rg350")
+  include(CMake/rg350_defs.cmake)
+elseif(TARGET_PLATFORM STREQUAL "rs90")
+  include(CMake/rs90_defs.cmake)
+elseif(TARGET_PLATFORM STREQUAL "rg99")
+  include(CMake/rg99_defs.cmake)
+endif()
+
+option(USE_SDL2 "Use SDL2 instead of SDL1" ON)
+option(WITH_SYSTEM_SDL_GFX "Use system SDL_gfx library" OFF)
+option(WITH_SYSTEM_SDL_TTF "Use system SDL_ttf library" OFF)
+
+set(RES_DIR \"res/\" CACHE STRING "Resources directory")
+set(FILE_SYSTEM \"/dev/mmcblk1p1\" CACHE STRING "Default filesystem (for Disk info)")
+set(PATH_DEFAULT "" CACHE STRING "Default path for the left pane (default: getenv(\"PWD\")")
+set(PATH_DEFAULT_RIGHT "" CACHE STRING "Default path for the right pane (default: getenv(\"HOME\")")
+set(AUTOSCALE 1 CACHE STRING "Auto-detect resolution and DPI scaling factors")
+set(WITH_SYSTEM_SDL_TTF OFF CACHE BOOL "Use system sdl_ttf")
+set(WITH_SYSTEM_SDL_GFX OFF CACHE BOOL "Use system sdl_gfx")
+
 option(ASAN "Enable address sanitizer" ON)
 option(UBSAN "Enable undefined behaviour sanitizer" ON)
 
@@ -45,10 +72,6 @@ set(DinguxCommander_SRCS
 
 set(BIN_TARGET commander)
 add_executable(${BIN_TARGET} ${DinguxCommander_SRCS})
-
-option(USE_SDL2 "Use SDL2 instead of SDL1" ON)
-option(WITH_SYSTEM_SDL_GFX "Use system SDL_gfx library" OFF)
-option(WITH_SYSTEM_SDL_TTF "Use system SDL_ttf library" OFF)
 
 if (USE_SDL2)
   list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake/sdl2)
@@ -147,30 +170,6 @@ else ()
   )
 endif()
 target_link_libraries(${BIN_TARGET} PRIVATE m)
-
-
-set(RES_DIR \"res/\" CACHE STRING "Resources directory")
-set(FILE_SYSTEM \"/dev/mmcblk1p1\" CACHE STRING "Default filesystem (for Disk info)")
-set(PATH_DEFAULT "" CACHE STRING "Default path for the left pane (default: getenv(\"PWD\")")
-set(PATH_DEFAULT_RIGHT "" CACHE STRING "Default path for the right pane (default: getenv(\"HOME\")")
-set(AUTOSCALE 1 CACHE STRING "Auto-detect resolution and DPI scaling factors")
-set(WITH_SYSTEM_SDL_TTF OFF CACHE BOOL "Use system sdl_ttf")
-set(WITH_SYSTEM_SDL_GFX OFF CACHE BOOL "Use system sdl_gfx")
-
-set(TARGET_PLATFORM host CACHE STRING "Target platform")
-set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS host retrofw gcw0 rg350 rs90 rg99)
-
-if(TARGET_PLATFORM STREQUAL "retrofw")
-  include(CMake/retrofw_defs.cmake)
-elseif(TARGET_PLATFORM STREQUAL "gcw0")
-  include(CMake/rg350_defs.cmake)
-elseif(TARGET_PLATFORM STREQUAL "rg350")
-  include(CMake/rg350_defs.cmake)
-elseif(TARGET_PLATFORM STREQUAL "rs90")
-  include(CMake/rs90_defs.cmake)
-elseif(TARGET_PLATFORM STREQUAL "rg99")
-  include(CMake/rg99_defs.cmake)
-endif()
 
 # These variables are defined as C macros if they are tru
 foreach(
