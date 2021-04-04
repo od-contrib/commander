@@ -29,11 +29,14 @@ main() {
     res/*.png
     res/*.ttf
     "$BUILD_DIR/commander"
-    "$OUT"
   )
+  if [[ $TARGET == rs90 ]]; then
+    # rg99 uses the same binary as the rs90 but a different config
+    files+=(opkg/default.rg99.desktop opkg/readme.retrofw.txt)
+  fi
 
   set -x
-  mksquashfs "${files[@]}" \
+  mksquashfs "${files[@]}" "$OUT" \
     -all-root -no-xattrs -noappend -no-exports
 }
 

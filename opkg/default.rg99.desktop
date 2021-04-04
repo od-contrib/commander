@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Commander
+Comment=Two-pane file manager
+Exec=commander --config-prelude commander.rg99.cfg
+Icon=commander
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=applications;
+X-OD-Manual=readme.retrofw.txt
