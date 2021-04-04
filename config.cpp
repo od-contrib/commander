@@ -83,6 +83,11 @@ void processEnvValue(std::string *value)
         value->assign(std::getenv(value->c_str() + 1));
 }
 
+bool parseBool(const std::string &value)
+{
+    return value == "1" || value == "true";
+}
+
 SDLC_Keycode parseKeycode(const std::string &value)
 {
     // We support a few common SDLK codes as config values.
@@ -134,7 +139,7 @@ Config &config()
     }
 #define CFG_BOOL(KEY)                                                          \
     if ((it = m.find(#KEY)) != m.end()) {                                      \
-        this->KEY = std::stoi(it->second) != 0;                                \
+        this->KEY = parseBool(it->second);                                     \
         m.erase(it);                                                           \
     }
 #define CFG_SDLK(KEY)                                                          \
