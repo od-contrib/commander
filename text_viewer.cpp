@@ -167,7 +167,7 @@ const bool TextViewer::keyPress(const SDL_Event &event)
         m_retVal = -1;
         return true;
     }
-    if (sym == c.key_open) return editLine();
+    if (sym == c.key_open || sym == c.key_operation) return editLine();
     if (sym == c.key_up) return moveUp(1);
     if (sym == c.key_down) return moveDown(1);
     if (sym == c.key_pageup) return moveUp(numFullViewportLines() - 1);

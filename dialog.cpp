@@ -230,7 +230,7 @@ const bool CDialog::keyPress(const SDL_Event &p_event)
         }
         return false;
     }
-    if (sym == c.key_open) {
+    if (sym == c.key_open || sym == c.key_operation) {
         m_retVal = static_cast<int>(m_highlightedLine + 1);
         return true;
     }
