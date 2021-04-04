@@ -51,8 +51,13 @@ void ResetFrameDeadline() {
 
 } // namespace
 
-const int CWindow::execute(void)
+int CWindow::execute()
 {
+#ifdef USE_SDL2
+    const bool text_input_was_active = SDL_IsTextInputActive();
+    SDL_StopTextInput();
+    if (handlesTextInput()) SDL_StartTextInput();
+#endif
     m_retVal = 0;
     SDL_Event event;
     bool l_loop(true);
@@ -93,6 +98,10 @@ const int CWindow::execute(void)
                     break;
                 case SDL_QUIT: return m_retVal;
 #ifdef USE_SDL2
+                case SDL_TEXTINPUT:
+                case SDL_TEXTEDITING:
+                    l_render = textInput(event) || l_render;
+                    break;
                 case SDL_MOUSEWHEEL:
                     SDL_utils::setMouseCursorEnabled(true);
                     l_render
@@ -138,6 +147,11 @@ const int CWindow::execute(void)
         LimitFrameRate();
     }
 
+#ifdef USE_SDL2
+    SDL_StopTextInput();
+    if (text_input_was_active) SDL_StartTextInput();
+#endif
+
     // -1 is used to signal cancellation but we must return 0 in that case.
     if (m_retVal == -1) m_retVal = 0;
     return m_retVal;
@@ -157,6 +171,8 @@ const bool CWindow::keyHold(void)
     // Default behavior
     return false;
 }
+
+bool CWindow::textInput(const SDL_Event &event) { return false; }
 
 void CWindow::onResize() { }
 
@@ -208,6 +224,12 @@ const int CWindow::getReturnValue(void) const
 }
 
 bool CWindow::isFullScreen(void) const
+{
+    // Default behavior
+    return false;
+}
+
+bool CWindow::handlesTextInput() const
 {
     // Default behavior
     return false;

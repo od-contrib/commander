@@ -194,3 +194,11 @@ bool TextEdit::backspace()
     update_foreground_ = true;
     return true;
 }
+
+bool TextEdit::del()
+{
+    if (cursor_pos_ == text_.size()) return false;
+    text_.erase(cursor_pos_, utf8::codePointLen(text_.data() + cursor_pos_));
+    update_foreground_ = true;
+    return true;
+}

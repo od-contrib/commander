@@ -3,6 +3,8 @@
 
 #include <SDL.h>
 
+#include "sdl_backports.h"
+
 class CWindow
 {
     public:
@@ -11,7 +13,7 @@ class CWindow
     virtual ~CWindow(void);
 
     // Execute main loop of the window
-    const int execute(void);
+    int execute();
 
     // Return value
     const int getReturnValue(void) const;
@@ -21,6 +23,9 @@ class CWindow
 
     // Is window full screen?
     virtual bool isFullScreen(void) const;
+
+    // Call SDL_Start/StopTextInput accordingly.
+    virtual bool handlesTextInput() const;
 
     protected:
 
@@ -46,21 +51,16 @@ class CWindow
     // Key hold management
     virtual const bool keyHold(void);
 
+    // SDL2 text input events: SDL_TEXTINPUT and SDL_TEXTEDITING
+    virtual bool textInput(const SDL_Event &event);
+
     // Timer tick
-#ifdef USE_SDL2
-    bool tick(SDL_Keycode p_held);
-#else
-    bool tick(SDLKey p_held);
-#endif
+    bool tick(SDLC_Keycode p_held);
 
     // Timer for key hold
     unsigned int m_timer;
 
-#ifdef USE_SDL2
-    SDL_Keycode m_lastPressed;
-#else
-    SDLKey m_lastPressed;
-#endif
+    SDLC_Keycode m_lastPressed;
 
     // Return value
     int m_retVal;

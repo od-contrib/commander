@@ -26,6 +26,7 @@ class TextEdit {
     void typeText(const std::string &text);
     void typeText(char c);
     bool backspace();
+    bool del();
 
     bool isFocused() const { return focused_; }
     void setFocused(bool val) { focused_ = val; }

@@ -105,6 +105,7 @@ CKeyboard::CKeyboard(const std::string &p_inputText, bool support_tabs)
 
     text_edit_.typeText(p_inputText);
     loadKeyboard();
+    focusOnTextEdit();
     init();
 }
 
@@ -115,7 +116,6 @@ void CKeyboard::init()
     frame_padding_x_ = (2 + kFrameBorder) * screen.ppu_x;
     frame_padding_y_ = (2 + kFrameBorder) * screen.ppu_y;
 
-    focusOnTextEdit();
     calculateKeyboardDimensions(screen.actual_w - 2);
 
     const int ok_cancel_height = keyboard_.key_h;
@@ -143,6 +143,9 @@ void CKeyboard::init()
     text_field_rect_.w = keyboard_.width;
     text_field_rect_.h = kTextFieldHeight * screen.ppu_y;
     text_edit_.setDimensions(text_field_rect_.w, text_field_rect_.h);
+#ifdef USE_SDL2
+    SDL_SetTextInputRect(&text_field_rect_);
+#endif
 
     kb_buttons_rect_.x = frame_padding_x_;
     kb_buttons_rect_.y = text_field_rect_.y + text_field_rect_.h
@@ -428,9 +431,18 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
         m_retVal = 1;
         return true;
     }
+
+#ifdef USE_SDL2
+    // Paste on CTRL + V
+    if (sym == SDLK_v && SDL_GetModState() & KMOD_CTRL) {
+        text_edit_.typeText(SDL_GetClipboardText());
+        return true;
+    }
+#endif
+
     switch (sym) {
-        case SDLK_BACKSPACE:
-        case SDLK_DELETE: return text_edit_.backspace();
+        case SDLK_BACKSPACE: return text_edit_.backspace();
+        case SDLK_DELETE: return text_edit_.del();
         case SDLK_HOME: return text_edit_.setCursorToStart();
         case SDLK_END: return text_edit_.setCursorToEnd();
         default:
@@ -445,6 +457,25 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
 #endif
             return false;
     }
+}
+
+bool CKeyboard::textInput(const SDL_Event &event)
+{
+#ifdef USE_SDL2
+    switch (event.type) {
+        case SDL_TEXTINPUT:
+            // Pasting is handled in `keyPress`.
+            if (SDL_GetModState() & KMOD_CTRL
+                && (event.text.text[0] == 'v' || event.text.text[0] == 'V'))
+                return false;
+            text_edit_.typeText(event.text.text);
+            return true;
+        case SDL_TEXTEDITING:
+            // TODO: Render IME preview.
+            return false;
+    }
+#endif
+    return false;
 }
 
 const bool CKeyboard::keyHold(void)
@@ -593,15 +624,18 @@ bool CKeyboard::isFocusOnCancel() const
 
 bool CKeyboard::pressFocusedKey()
 {
-    bool updated = false;
+    if (isFocusOnTextEdit()) {
+        m_retVal = 1;
+        return true;
+    }
     if (isFocusOnButtonsRow()) {
         m_retVal = isFocusOnCancel() ? -1 : 1;
-    } else if (keyboard_.isBackspace(focus_x_, focus_y_)) {
-        updated = text_edit_.backspace();
-    } else {
-        text_edit_.typeText(keyboard_.text(focus_x_, focus_y_));
-        updated = true;
+        return true;
     }
+    if (keyboard_.isBackspace(focus_x_, focus_y_)) {
+        return text_edit_.backspace();
+    }
+    text_edit_.typeText(keyboard_.text(focus_x_, focus_y_));
     return true;
 }
 

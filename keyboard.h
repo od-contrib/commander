@@ -34,6 +34,8 @@ class CKeyboard : public CWindow
     // Get input text
     const std::string &getInputText(void) const;
 
+    bool handlesTextInput() const override { return true; }
+
     private:
 
     struct Keyboard
@@ -107,7 +109,9 @@ class CKeyboard : public CWindow
     // Key hold management
     const bool keyHold(void) override;
 
-    bool mouseDown(int button, int x, int y);
+    bool mouseDown(int button, int x, int y) override;
+
+    bool textInput(const SDL_Event &event) override;
 
     // Draw
     void render(const bool p_focus) const override;
