@@ -15,6 +15,7 @@ struct Config {
     float disp_ppu_x = PPU_X;
     float disp_ppu_y = PPU_Y;
     bool disp_autoscale = static_cast<bool>(AUTOSCALE);
+    bool disp_autoscale_dpi = static_cast<bool>(AUTOSCALE_DPI);
 
     // Default paths to the left and right panels
     std::string path_default = std::getenv("PWD");        // $PWD in the config

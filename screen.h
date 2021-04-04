@@ -46,6 +46,8 @@ struct Screen
 
     // Called on every SDL_RESIZE event.
     int onResize(int w, int h);
+
+    void setPhysicalResolution(int actual_w, int actual_h);
 };
 
 extern Screen screen;

@@ -164,6 +164,7 @@ void Config::Load(const std::string &path)
     CFG_FLOAT(disp_ppu_x)
     CFG_FLOAT(disp_ppu_y)
     CFG_BOOL(disp_autoscale)
+    CFG_BOOL(disp_autoscale_dpi)
 
     CFG_STR(path_default)
     processEnvValue(&path_default);

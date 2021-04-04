@@ -45,31 +45,31 @@ int Screen::init()
         best.current_w, best.current_h, best.vfmt->BitsPerPixel,
         best.hw_available);
 
-    // Detect non 320x240/480 screens.
-    if (config().disp_autoscale) {
-        if (best.current_w >= SCREEN_WIDTH * 2) {
-            // E.g. 640x480. Upscale to the smaller of the two.
-            double scale
-                = std::min(best.current_w / static_cast<double>(SCREEN_WIDTH),
-                    best.current_h / static_cast<double>(SCREEN_HEIGHT));
-            scale = std::min(scale, 2.0);
-            screen.ppu_x = screen.ppu_y = scale;
-            screen.w = best.current_w / scale;
-            screen.h = best.current_h / scale;
-            screen.actual_w = best.current_w;
-            screen.actual_h = best.current_h;
-        } else if (best.current_w != SCREEN_WIDTH) {
-            // E.g. RS07 with 480x272 screen.
-            screen.actual_w = screen.w = best.current_w;
-            screen.actual_h = screen.h = best.current_h;
-            screen.ppu_x = screen.ppu_y = 1;
+    // If the display resolution doesn't match the configured one:
+    // 1. Increase the resolution.
+    // 2. Use 2x DPI if the horizontal resolution is >2x the configured one.
+    if (cfg.disp_autoscale
+        && (best.current_w != screen.actual_w
+            || best.current_h != screen.actual_h)) {
+        if (cfg.disp_autoscale_dpi) {
+            if (best.current_w >= screen.w * 2) {
+                // E.g. 640x480. Upscale to the smaller of the two.
+                const float scale
+                    = std::min(best.current_w / static_cast<float>(screen.w),
+                        best.current_h / static_cast<float>(screen.h));
+                screen.ppu_x = screen.ppu_y = std::min(scale, 2.0f);
+            } else if (best.current_w != screen.w) {
+                // E.g. RS07 with 480x272 screen.
+                screen.ppu_x = screen.ppu_y = 1;
+            }
         }
+        setPhysicalResolution(best.current_w, best.current_h);
     }
 #endif
 
 #ifdef USE_SDL2
     int window_flags = SDL_WINDOW_RESIZABLE;
-    if (config().disp_autoscale) window_flags |= SDL_WINDOW_MAXIMIZED;
+    if (cfg.disp_autoscale) window_flags |= SDL_WINDOW_MAXIMIZED;
 
     int window_w = screen.actual_w;
     int window_h = screen.actual_h;
@@ -79,7 +79,7 @@ int Screen::init()
         SDL_Log("Failed to create window: %s", SDL_GetError());
         return 1;
     }
-    if (config().disp_autoscale) {
+    if (cfg.disp_autoscale && cfg.disp_autoscale_dpi) {
         const int disp_index = SDL_GetWindowDisplayIndex(window);
         if (disp_index != -1) {
             float hdpi, vdpi;
@@ -99,14 +99,11 @@ int Screen::init()
         }
     }
     SDL_GetWindowSize(window, &window_w, &window_h);
-    screen.actual_w = window_w;
-    screen.w = screen.actual_w / screen.ppu_x;
-    screen.actual_h = window_h;
-    screen.h = screen.actual_h / screen.ppu_y;
+    setPhysicalResolution(window_w, window_h);
     screen.surface = SDL_GetWindowSurface(window);
 #else
-    surface = SetVideoMode(
-        screen.actual_w, screen.actual_h, SCREEN_BPP, SDL_SWSURFACE | SDL_RESIZABLE);
+    surface = SetVideoMode(screen.actual_w, screen.actual_h, SCREEN_BPP,
+        SDL_SWSURFACE | SDL_RESIZABLE);
     if (surface == nullptr) {
         std::fprintf(stderr, "SDL_SetVideoMode failed: %s\n", SDL_GetError());
         return 1;
@@ -119,14 +116,18 @@ int Screen::onResize(int w, int h)
 {
 #ifdef USE_SDL2
     this->surface = SDL_GetWindowSurface(this->window);
-    this->actual_w = surface->w;
-    this->actual_h = surface->h;
+    setPhysicalResolution(surface->w, surface->h);
 #else
     this->surface = SDL_GetVideoSurface();
-    this->actual_w = w;
-    this->actual_h = h;
+    setPhysicalResolution(w, h);
 #endif
-    this->w = this->actual_w / ppu_x;
-    this->h = this->actual_h / ppu_y;
     return 0;
+}
+
+void Screen::setPhysicalResolution(int actual_w, int actual_h)
+{
+    this->actual_w = actual_w;
+    this->actual_h = actual_h;
+    this->w = actual_w / ppu_x;
+    this->h = actual_h / ppu_y;
 }

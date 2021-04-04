@@ -27,6 +27,13 @@
 #define PPU_X 1
 #endif
 
+#ifndef AUTOSCALE
+#define AUTOSCALE 1
+#endif
+#ifndef AUTOSCALE_DPI
+#define AUTOSCALE_DPI 1
+#endif
+
 #ifndef PATH_DEFAULT
 #define PATH_DEFAULT getenv("PWD")
 #endif
