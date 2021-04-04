@@ -28,20 +28,39 @@ bool fileExists(const std::string &path)
     return access(path.c_str(), F_OK) == 0;
 }
 
+constexpr char kUsage[] =
+    R"(commander [--config <path>] [--config-prelude <path>] [--res-dir <path>]
+
+    --config <path>             Config file path. Default: ~/.config/commander.cfg.
+    --config-prelude <path>     If provided, this config is loaded before the main config.
+    --res-dir <path>            Resource directory. Overrides the configured one.
+)";
+
 } // namespace
 
 int main(int argc, char *argv[])
 {
-    std::string exec_error;
+    std::string config_prelude_path;
     std::string config_path;
     std::string res_dir;
+    std::string exec_error;
     for (int i = 1; i < argc; i++) {
+        if (std::strcmp(argv[i], "--help") == 0) {
+            std::cout << kUsage;
+            return 0;
+        }
         if (std::strcmp(argv[i], "--config") == 0) {
             if (i == argc - 1) {
                 std::cerr << "--config requires an argument\n";
                 return 1;
             }
             config_path = argv[++i];
+        } else if (std::strcmp(argv[i], "--config-prelude") == 0) {
+            if (i == argc - 1) {
+                std::cerr << "--config-prelude requires an argument\n";
+                return 1;
+            }
+            config_prelude_path = argv[++i];
         } else if (std::strcmp(argv[i], "--res-dir") == 0) {
             if (i == argc - 1) {
                 std::cerr << "--res-dir requires an argument\n";
@@ -63,6 +82,7 @@ int main(int argc, char *argv[])
             = std::getenv("HOME") + std::string("/.config/commander.cfg");
         if (fileExists(home_cfg_path)) config_path = std::move(home_cfg_path);
     }
+    if (!config_prelude_path.empty()) cfg.Load(config_prelude_path);
     if (!config_path.empty()) cfg.Load(config_path);
     if (!res_dir.empty()) cfg.res_dir = res_dir;
 
