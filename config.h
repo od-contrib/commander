@@ -27,7 +27,7 @@ struct Config {
     std::string file_system = FILE_SYSTEM;
 
     // Resources directory (e.g. icons).
-    std::string res_dir = RES_DIR;
+    std::string res_dir { RES_DIR };
 
     // Keyboard key code mappings
     SDLC_Keycode key_down = MYKEY_DOWN;
