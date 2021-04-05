@@ -91,7 +91,7 @@ void TextViewer::init()
         screen.actual_w, screen.actual_h, bg_color_) };
     {
         SDL_Rect rect = SDL_utils::Rect(
-            0, 0, screen.w * screen.ppu_x, HEADER_H * screen.ppu_y);
+            0, 0, screen.actual_w, HEADER_H * screen.ppu_y);
         SDL_FillRect(background_.get(), &rect, border_color_);
     }
     // Print title

@@ -29,7 +29,7 @@ void ImageViewer::init()
         screen.actual_h, SDL_MapRGB(screen.surface->format, COLOR_BG_1)) };
     {
         SDL_Rect rect = SDL_utils::Rect(
-            0, 0, screen.w * screen.ppu_x, HEADER_H * screen.ppu_y);
+            0, 0, screen.actual_w, HEADER_H * screen.ppu_y);
         SDL_FillRect(background_.get(), &rect,
             SDL_MapRGB(background_->format, COLOR_BORDER));
     }

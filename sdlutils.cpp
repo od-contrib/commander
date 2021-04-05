@@ -235,20 +235,22 @@ void hastalavista(void)
 
 void pleaseWait(void)
 {
-    SDL_Surface *l_surfaceTmp = renderText(CResourceManager::instance().getFonts(), "Please wait...", Globals::g_colorTextNormal, {COLOR_BG_1});
-    SDL_Rect l_rect = Rect(
-        (screen.w * screen.ppu_x - (l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * screen.ppu_x)) / 2,
-        (screen.h * screen.ppu_y - (l_surfaceTmp->h + 9)) / 2,
-        l_surfaceTmp->w + (2 * DIALOG_MARGIN + 2 * DIALOG_BORDER) * screen.ppu_x,
-        l_surfaceTmp->h + 4 * screen.ppu_y);
-    SDL_FillRect(screen.surface, &l_rect, SDL_MapRGB(screen.surface->format, COLOR_BORDER));
-    l_rect.x += DIALOG_BORDER * screen.ppu_x;
-    l_rect.y += DIALOG_BORDER * screen.ppu_y;
-    l_rect.w -= 2 * DIALOG_BORDER * screen.ppu_x;
-    l_rect.h -= 2 * DIALOG_BORDER * screen.ppu_y;
-    SDL_FillRect(screen.surface, &l_rect, SDL_MapRGB(screen.surface->format, COLOR_BG_1));
-    applySurface((screen.w - l_surfaceTmp->w / screen.ppu_x) / 2, (screen.h - l_surfaceTmp->h / screen.ppu_y) / 2, l_surfaceTmp, screen.surface);
-    SDL_FreeSurface(l_surfaceTmp);
+    SDLSurfaceUniquePtr text_surface { renderText(
+        CResourceManager::instance().getFonts(), "Please wait...",
+        Globals::g_colorTextNormal, { COLOR_BG_2 }) };
+    const int border_x = static_cast<int>(DIALOG_BORDER * screen.ppu_x);
+    const int border_y = static_cast<int>(DIALOG_BORDER * screen.ppu_y);
+    const int padding_x = static_cast<int>(DIALOG_PADDING * screen.ppu_y);
+    const int padding_y = static_cast<int>(4 * screen.ppu_y);
+    const int dialog_w = text_surface->w + 2 * (border_x + padding_x);
+    const int dialog_h = text_surface->h + 2 * (border_y + padding_y);
+    SDL_Rect l_rect = Rect((screen.actual_w - dialog_w) / 2,
+        (screen.actual_h - dialog_h) / 2, dialog_w, dialog_h);
+    SDL_FillRect(screen.surface, &l_rect, SDL_MapRGB(screen.surface->format, COLOR_BG_2));
+    renderBorder(screen.surface, l_rect, border_x, border_y,
+        SDL_MapRGB(screen.surface->format, COLOR_BORDER));
+    applyPpuScaledSurface(l_rect.x + border_x + padding_x,
+        l_rect.y + border_y + padding_y, text_surface.get(), screen.surface);
     screen.flip();
 }
 

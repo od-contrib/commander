@@ -29,7 +29,7 @@
 
 // Dialogs
 #define DIALOG_BORDER 2
-#define DIALOG_MARGIN 8
+#define DIALOG_PADDING 8
 // Colors
 #define COLOR_TITLE_BG 102, 85, 74
 #define COLOR_KEY 255, 0, 255

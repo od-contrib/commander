@@ -37,10 +37,15 @@ class CDialog : public CWindow
     void init(void);
 
     // Accessors
-    const Sint16 &getX(void) const;
-    const Sint16 &getY(void) const;
-    const SDL_Surface * const getImage(void) const;
+    int getX() const { return m_x; }
+    int getY() const { return m_y; }
     const unsigned int &getHighlightedIndex(void) const;
+
+    int border_x() const { return border_x_; };
+    int border_y() const { return border_y_; };
+    int width() const { return width_; };
+    int height() const { return height_; };
+    int line_height() const { return line_height_; };
 
     private:
 
@@ -72,6 +77,12 @@ class CDialog : public CWindow
     // Returns the line index at the given coordinates or -1.
     int getLineAt(int x, int y) const;
 
+    // Dimensions in physical pixels.
+    int border_x_, border_y_;
+    int padding_x_;
+    int line_height_;
+    int width_, height_;
+
     SDL_Color m_borderColor;
 
     // Number of titles (0 or 1), labels, and options
@@ -99,13 +110,8 @@ class CDialog : public CWindow
     // Coordinates
     std::function<Sint16()> m_x_fn;
     std::function<Sint16()> m_y_fn;
-    Sint16 m_x;
-    Sint16 m_y;
-    Sint16 m_cursorX;
-    Sint16 m_cursorY;
-
-    // Dimensions in actual pixels.
-    int width_, height_;
+    int m_x, m_y;
+    int m_cursorX, m_cursorY;
 
     // Relative coordinates, for better resize handling.
     float relative_x;

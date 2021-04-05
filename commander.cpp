@@ -24,11 +24,11 @@
 namespace {
 
 SDL_Surface *DrawBackground() {
-    SDL_Surface *bg = SDL_utils::createSurface(screen.w * screen.ppu_x, screen.h * screen.ppu_y);
+    SDL_Surface *bg = SDL_utils::createSurface(screen.actual_w, screen.actual_h);
 
     // Stripes
     const int stripes_h = screen.h - HEADER_H - FOOTER_H;
-    SDL_Rect rect = SDL_utils::Rect(0, 0, screen.w * screen.ppu_x, screen.h * screen.ppu_y);
+    SDL_Rect rect = SDL_utils::Rect(0, 0, screen.actual_w, screen.actual_h);
     const Uint32 bg_colors[2] = {SDL_MapRGB(bg->format, COLOR_BG_1), SDL_MapRGB(bg->format, COLOR_BG_2)};
     const std::size_t num_lines = (stripes_h - 1) / LINE_HEIGHT + 1;
     for (std::size_t i = 0; i < num_lines; ++i) {
@@ -275,10 +275,10 @@ const bool CCommander::openCopyMenu(void) const
         std::ostringstream l_stream;
         l_stream << l_list.size() << " selected:";
         // File operation dialog
-        CDialog l_dialog { l_stream.str(), {}, [this]() {
-                              return Y_LIST
+        CDialog l_dialog { l_stream.str(), {}, [this, &l_dialog]() {
+                              return static_cast<int>(Y_LIST * screen.ppu_y)
                                   + m_panelSource->getHighlightedIndexRelative()
-                                  * LINE_HEIGHT;
+                                  * l_dialog.line_height();
                           } };
 
         l_dialog.addOption(m_panelSource == &m_panelLeft ? "Copy >" : "< Copy");
@@ -332,18 +332,16 @@ const bool CCommander::openCopyMenu(void) const
         {
             l_loop = false;
             l_dialogRetVal = l_dialog.execute();
-            if (l_dialogRetVal == delete_option)
-            {
+            if (l_dialogRetVal == delete_option) {
                 CDialog l_dialog2 { "",
                     [&]() {
-                        return l_dialog.getX()
-                            + l_dialog.getImage()->w / screen.ppu_x
-                            - DIALOG_BORDER;
+                        return l_dialog.getX() + l_dialog.width()
+                            - l_dialog.border_x();
                     },
                     [&]() {
-                        return l_dialog.getY() / screen.ppu_y + DIALOG_BORDER
+                        return l_dialog.getY() + l_dialog.border_y()
                             + (l_dialog.getHighlightedIndex() + 1)
-                            * LINE_HEIGHT;
+                            * l_dialog.line_height();
                     } };
                 l_dialog2.addOption("Yes");
                 l_dialog2.addOption("No");
@@ -367,10 +365,10 @@ const bool CCommander::openSystemMenu(void)
     int l_dialogRetVal(0);
     // Selection dialog
     {
-        CDialog l_dialog { "System:", {}, [this]() {
-                              return Y_LIST
+        CDialog l_dialog { "System:", {}, [this, &l_dialog]() {
+                              return static_cast<int>(Y_LIST * screen.ppu_y)
                                   + m_panelSource->getHighlightedIndexRelative()
-                                  * LINE_HEIGHT;
+                                  * l_dialog.line_height();
                           } };
         l_dialog.addOption("Select all");
         l_dialog.addOption("Select none");
