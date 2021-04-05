@@ -67,6 +67,9 @@ class CWindow
 
     private:
 
+    bool handleZoomTrigger(const SDL_Event &event);
+    void triggerOnResize();
+
     // Forbidden
     CWindow(const CWindow &p_source);
     const CWindow &operator =(const CWindow &p_source);

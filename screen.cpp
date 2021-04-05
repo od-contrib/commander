@@ -135,3 +135,10 @@ void Screen::setPhysicalResolution(int actual_w, int actual_h)
     this->w = static_cast<int>(actual_w / ppu_x);
     this->h = static_cast<int>(actual_h / ppu_y);
 }
+
+void Screen::zoom(float factor) {
+    ppu_x *= factor;
+    ppu_y *= factor;
+    this->w = static_cast<int>(actual_w / ppu_x);
+    this->h = static_cast<int>(actual_h / ppu_y);
+}

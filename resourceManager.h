@@ -1,13 +1,14 @@
 #ifndef _RESOURCEMANAGER_H_
 #define _RESOURCEMANAGER_H_
 
+#include <array>
 #include <vector>
 
 #include <SDL.h>
 #include <SDL_ttf.h>
-#include "sdl_ttf_multifont.h"
 
-#define NB_SURFACES 9
+#include "sdl_ptrs.h"
+#include "sdl_ttf_multifont.h"
 
 class CResourceManager
 {
@@ -54,11 +55,14 @@ class CResourceManager
     const CResourceManager &operator =(const CResourceManager &p_source) = delete;
 
     // Images
-    SDL_Surface *m_surfaces[NB_SURFACES];
+    std::array<SDLSurfaceUniquePtr, 9> m_surfaces {};
 
     // Fonts
     bool m_low_dpi_fonts;
     Fonts m_fonts;
+
+    // PPU values when the resources were loaded.
+    float m_ppu_x, m_ppu_y;
 };
 
 #endif

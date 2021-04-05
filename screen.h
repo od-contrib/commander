@@ -48,6 +48,8 @@ struct Screen
     int onResize(int w, int h);
 
     void setPhysicalResolution(int actual_w, int actual_h);
+
+    void zoom(float factor);
 };
 
 extern Screen screen;

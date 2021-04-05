@@ -5,8 +5,10 @@
 #include <set>
 #include <SDL.h>
 #include <SDL_ttf.h>
-#include "fileLister.h"
+
 #include "def.h"
+#include "fileLister.h"
+#include "resourceManager.h"
 #include "sdl_ttf_multifont.h"
 
 class CPanel
@@ -81,6 +83,14 @@ class CPanel
     // Adjust camera
     void adjustCamera(void);
 
+    // Resources:
+    SDL_Surface *icon_dir() const;
+    SDL_Surface *icon_file() const;
+    SDL_Surface *icon_img() const;
+    SDL_Surface *icon_ipk() const;
+    SDL_Surface *icon_opk() const;
+    SDL_Surface *icon_symlink() const;
+    SDL_Surface *icon_up() const;
     SDL_Surface *cursor1() const;
     SDL_Surface *cursor2() const;
 
@@ -113,15 +123,8 @@ class CPanel
     std::set<unsigned int> m_selectList;
 
     // Pointers to resources
-    SDL_Surface *m_iconDir;
-    SDL_Surface *m_iconFile;
-    SDL_Surface *m_iconImg;
-    SDL_Surface *m_iconIpk;
-    SDL_Surface *m_iconOpk;
-    SDL_Surface *m_iconIsSymlink;
-    SDL_Surface *m_iconUp;
-    SDL_Surface *m_cursor1;
-    SDL_Surface *m_cursor2;
+    const CResourceManager &resources_;
+
     const Fonts &m_fonts;
 };
 

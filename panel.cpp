@@ -11,14 +11,8 @@ CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
     m_camera(0),
     m_x(p_x),
     m_highlightedLine(0),
-    m_iconDir(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FOLDER)),
-    m_iconFile(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE)),
-    m_iconImg(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_IMAGE)),
-    m_iconIpk(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_INSTALLABLE_PACKAGE)),
-    m_iconOpk(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_PACKAGE)),
-    m_iconIsSymlink(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_FILE_IS_SYMLINK)),
-    m_iconUp(CResourceManager::instance().getSurface(CResourceManager::T_SURFACE_UP)),
-    m_fonts(CResourceManager::instance().getFonts())
+    resources_(CResourceManager::instance()),
+    m_fonts(resources_.getFonts())
 {
     // List the given path
     if (m_fileLister.list(p_path))
@@ -36,16 +30,50 @@ CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
 
 CPanel::~CPanel(void) { }
 
+SDL_Surface *CPanel::icon_dir() const
+{
+    return resources_.getSurface(CResourceManager::T_SURFACE_FOLDER);
+}
+
+SDL_Surface *CPanel::icon_file() const
+{
+    return resources_.getSurface(CResourceManager::T_SURFACE_FILE);
+}
+
+SDL_Surface *CPanel::icon_img() const
+{
+    return resources_.getSurface(CResourceManager::T_SURFACE_FILE_IMAGE);
+}
+
+SDL_Surface *CPanel::icon_ipk() const
+{
+    return resources_.getSurface(
+        CResourceManager::T_SURFACE_FILE_INSTALLABLE_PACKAGE);
+}
+
+SDL_Surface *CPanel::icon_opk() const
+{
+    return resources_.getSurface(CResourceManager::T_SURFACE_FILE_PACKAGE);
+}
+
+SDL_Surface *CPanel::icon_symlink() const
+{
+    return resources_.getSurface(CResourceManager::T_SURFACE_FILE_IS_SYMLINK);
+}
+
+SDL_Surface *CPanel::icon_up() const
+{
+    return resources_.getSurface(CResourceManager::T_SURFACE_UP);
+}
+
 SDL_Surface *CPanel::cursor1() const
 {
-    return CResourceManager::instance().getSurface(
-        CResourceManager::T_SURFACE_CURSOR1);
+    return resources_.getSurface(CResourceManager::T_SURFACE_CURSOR1);
 }
 
 SDL_Surface *CPanel::cursor2() const
 {
-    return CResourceManager::instance().getSurface(
-        CResourceManager::T_SURFACE_CURSOR2);
+    return resources_.getSurface(CResourceManager::T_SURFACE_CURSOR2);
 }
 
 int CPanel::list_y() const { return Y_LIST_PHYS; }
@@ -90,7 +118,7 @@ int CPanel::list_height() const
 void CPanel::render(const bool p_active) const
 {
     // Draw panel
-    const int l_x = m_x + m_iconDir->w + 2 * screen.ppu_x;
+    const int l_x = m_x + icon_dir()->w + 2 * screen.ppu_x;
     const unsigned int l_nbTotal = m_fileLister.getNbTotal();
     int l_y = list_y();
     SDL_Surface *l_surfaceTmp = NULL;
@@ -126,9 +154,9 @@ void CPanel::render(const bool p_active) const
         {
             // Icon
             if (m_fileLister[l_i].m_name == "..")
-                l_surfaceTmp = m_iconUp;
+                l_surfaceTmp = icon_up();
             else
-                l_surfaceTmp = m_iconDir;
+                l_surfaceTmp = icon_dir();
             // Color
             if (m_selectList.find(l_i) != m_selectList.end())
                 l_color = &Globals::g_colorTextSelected;
@@ -140,13 +168,13 @@ void CPanel::render(const bool p_active) const
             // Icon
             const std::string &ext = m_fileLister[l_i].m_ext;
             if (SDL_utils::isSupportedImageExt(ext))
-                l_surfaceTmp = m_iconImg;
+                l_surfaceTmp = icon_img();
             else if (ext == "ipk")
-                l_surfaceTmp = m_iconIpk;
+                l_surfaceTmp = icon_ipk();
             else if (ext == "opk")
-                l_surfaceTmp = m_iconOpk;
+                l_surfaceTmp = icon_opk();
             else
-                l_surfaceTmp = m_iconFile;
+                l_surfaceTmp = icon_file();
             // Color
             if (m_selectList.find(l_i) != m_selectList.end())
                 l_color = &Globals::g_colorTextSelected;
@@ -155,7 +183,7 @@ void CPanel::render(const bool p_active) const
         }
         SDL_utils::applyPpuScaledSurface(m_x, l_y, l_surfaceTmp, screen.surface);
         if (m_fileLister[l_i].is_symlink)
-            SDL_utils::applyPpuScaledSurface(m_x, l_y, m_iconIsSymlink, screen.surface);
+            SDL_utils::applyPpuScaledSurface(m_x, l_y, icon_symlink(), screen.surface);
         // Text
         SDL_Color l_bg;
         if (l_i == m_highlightedLine) {

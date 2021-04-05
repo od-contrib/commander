@@ -91,11 +91,16 @@ int CWindow::execute()
                     }
                     if (m_retVal) l_loop = false;
                     break;
-                case SDL_KEYDOWN:
+                case SDL_KEYDOWN: {
                     SDL_utils::setMouseCursorEnabled(false);
+                    if (handleZoomTrigger(event)) {
+                        l_render = true;
+                        break;
+                    }
                     l_render = this->keyPress(event) || l_render;
                     if (m_retVal) l_loop = false;
                     break;
+                }
                 case SDL_QUIT: return m_retVal;
 #ifdef USE_SDL2
                 case SDL_TEXTINPUT:
@@ -117,9 +122,7 @@ int CWindow::execute()
                             ResetFrameDeadline();
                             screen.onResize(
                                 event.window.data1, event.window.data2);
-                            CResourceManager::instance().onResize();
-                            for (auto *window : Globals::g_windows)
-                                window->onResize();
+                            triggerOnResize();
                             break;
                     }
                     break;
@@ -128,8 +131,7 @@ int CWindow::execute()
                     l_render = true;
                     ResetFrameDeadline();
                     screen.onResize(event.resize.w, event.resize.h);
-                    CResourceManager::instance().onResize();
-                    for (auto *window : Globals::g_windows) window->onResize();
+                    triggerOnResize();
                     break;
 #endif
             }
@@ -155,6 +157,30 @@ int CWindow::execute()
     // -1 is used to signal cancellation but we must return 0 in that case.
     if (m_retVal == -1) m_retVal = 0;
     return m_retVal;
+}
+
+bool CWindow::handleZoomTrigger(const SDL_Event &event)
+{
+    if (event.type != SDL_KEYDOWN) return false;
+    const auto sym = event.key.keysym.sym;
+    // Zoom on CTRL +/-
+    if ((SDL_GetModState() & KMOD_CTRL) == 0) return false;
+    float factor;
+    switch (sym) {
+        case SDLK_PLUS:
+        case SDLK_KP_PLUS: factor = 1.1f; break;
+        case SDLK_MINUS:
+        case SDLK_KP_MINUS: factor = 1 / 1.1f; break;
+        default: return false;
+    }
+    screen.zoom(factor);
+    triggerOnResize();
+    return true;
+}
+
+void CWindow::triggerOnResize() {
+    CResourceManager::instance().onResize();
+    for (auto *window : Globals::g_windows) window->onResize();
 }
 
 const bool CWindow::keyPress(const SDL_Event &p_event)

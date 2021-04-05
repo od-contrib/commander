@@ -13,25 +13,24 @@
 
 namespace {
 
-SDL_Surface *LoadIcon(const std::string &path) {
+SDLSurfaceUniquePtr LoadIcon(const std::string &path) {
     SDL_Surface *img = IMG_Load(path.c_str());
     if(img == nullptr)
     {
         std::cerr << "LoadIcon(\"" << path << "\"): " << IMG_GetError() << std::endl;
         return nullptr;
     }
-    SDL_Surface *scaled = nullptr;
+    SDLSurfaceUniquePtr scaled;
     if ((screen.ppu_x == 1 || screen.ppu_x == 2) && (screen.ppu_y == 1 || screen.ppu_y == 2)) {
-        scaled = shrinkSurface(img, 2 / screen.ppu_x, 2 / screen.ppu_y);
+        scaled = SDLSurfaceUniquePtr { shrinkSurface(img, 2 / screen.ppu_x, 2 / screen.ppu_y) };
     } else {
-        scaled = zoomSurface(img, screen.ppu_x / 2, screen.ppu_y / 2, SMOOTHING_ON);
+        scaled = SDLSurfaceUniquePtr { zoomSurface(img, screen.ppu_x / 2, screen.ppu_y / 2, SMOOTHING_ON) };
     }
     SDL_FreeSurface(img);
 #ifdef USE_SDL2
     return scaled;
 #else
-    SDL_Surface *display = SDL_DisplayFormatAlpha(scaled);
-    SDL_FreeSurface(scaled);
+    SDLSurfaceUniquePtr display { SDL_DisplayFormatAlpha(scaled.get()) };
     return display;
 #endif
 }
@@ -90,44 +89,48 @@ CResourceManager& CResourceManager::instance()
 CResourceManager::CResourceManager()
     : m_low_dpi_fonts(ShouldUseLowDpiFonts())
     , m_fonts(LoadFonts(m_low_dpi_fonts))
+    , m_ppu_x(0)
+    , m_ppu_y(0)
 {
-    // Load images
-    m_surfaces[T_SURFACE_FOLDER] = LoadIcon(ResPath("folder.png"));
-    m_surfaces[T_SURFACE_FILE] = LoadIcon(ResPath("file-text.png"));
-    m_surfaces[T_SURFACE_FILE_IMAGE] = LoadIcon(ResPath("file-image.png"));
-    m_surfaces[T_SURFACE_FILE_INSTALLABLE_PACKAGE] = LoadIcon(ResPath("file-ipk.png"));
-    m_surfaces[T_SURFACE_FILE_PACKAGE] = LoadIcon(ResPath("file-opk.png"));
-    m_surfaces[T_SURFACE_FILE_IS_SYMLINK] = LoadIcon(ResPath("file-is-symlink.png"));
-    m_surfaces[T_SURFACE_UP] = LoadIcon(ResPath("up.png"));
-    m_surfaces[T_SURFACE_CURSOR1] = nullptr;
-    m_surfaces[T_SURFACE_CURSOR2] = nullptr;
     onResize();
 }
 
-void CResourceManager::onResize() {
-    if (m_surfaces[T_SURFACE_CURSOR1] != nullptr)
-        SDL_FreeSurface(m_surfaces[T_SURFACE_CURSOR1]);
-    if (m_surfaces[T_SURFACE_CURSOR2] != nullptr)
-        SDL_FreeSurface(m_surfaces[T_SURFACE_CURSOR2]);
-    m_surfaces[T_SURFACE_CURSOR1] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_CURSOR_1));
-    m_surfaces[T_SURFACE_CURSOR2] = SDL_utils::createImage(screen.w / 2 * screen.ppu_x, LINE_HEIGHT * screen.ppu_y, SDL_MapRGB(screen.surface->format, COLOR_CURSOR_2));
-    if (m_low_dpi_fonts != ShouldUseLowDpiFonts()) {
-        m_low_dpi_fonts = !m_low_dpi_fonts;
-        closeFonts();
-        m_fonts = Fonts{LoadFonts(m_low_dpi_fonts)};
+void CResourceManager::onResize()
+{
+    if (screen.ppu_x != m_ppu_x || screen.ppu_y != m_ppu_y) {
+        m_surfaces[T_SURFACE_FOLDER] = LoadIcon(ResPath("folder.png"));
+        m_surfaces[T_SURFACE_FILE] = LoadIcon(ResPath("file-text.png"));
+        m_surfaces[T_SURFACE_FILE_IMAGE] = LoadIcon(ResPath("file-image.png"));
+        m_surfaces[T_SURFACE_FILE_INSTALLABLE_PACKAGE]
+            = LoadIcon(ResPath("file-ipk.png"));
+        m_surfaces[T_SURFACE_FILE_PACKAGE] = LoadIcon(ResPath("file-opk.png"));
+        m_surfaces[T_SURFACE_FILE_IS_SYMLINK]
+            = LoadIcon(ResPath("file-is-symlink.png"));
+        m_surfaces[T_SURFACE_UP] = LoadIcon(ResPath("up.png"));
     }
+
+    m_surfaces[T_SURFACE_CURSOR1] = SDLSurfaceUniquePtr {
+        SDL_utils::createImage(screen.actual_w / 2, LINE_HEIGHT_PHYS,
+            SDL_MapRGB(screen.surface->format, COLOR_CURSOR_1))
+    };
+    m_surfaces[T_SURFACE_CURSOR2] = SDLSurfaceUniquePtr {
+        SDL_utils::createImage(screen.actual_w / 2, LINE_HEIGHT_PHYS,
+            SDL_MapRGB(screen.surface->format, COLOR_CURSOR_2))
+    };
+
+    const bool low_dpi_fonts = ShouldUseLowDpiFonts();
+    if (m_low_dpi_fonts != low_dpi_fonts || screen.ppu_x != m_ppu_x
+        || screen.ppu_y != m_ppu_y) {
+        m_low_dpi_fonts = low_dpi_fonts;
+        closeFonts();
+        m_fonts = Fonts { LoadFonts(m_low_dpi_fonts) };
+    }
+    m_ppu_x = screen.ppu_x;
+    m_ppu_y = screen.ppu_y;
 }
 
 void CResourceManager::sdlCleanup() {
-    // Free surfaces
-    for (std::size_t l_i = 0; l_i < NB_SURFACES; ++l_i)
-    {
-        if (m_surfaces[l_i] != NULL)
-        {
-            SDL_FreeSurface(m_surfaces[l_i]);
-            m_surfaces[l_i] = NULL;
-        }
-    }
+    for (auto &surface : m_surfaces) surface = nullptr;
     closeFonts();
 }
 
@@ -142,7 +145,7 @@ void CResourceManager::closeFonts() {
 
 SDL_Surface *CResourceManager::getSurface(const T_SURFACE p_surface) const
 {
-    return m_surfaces[p_surface];
+    return m_surfaces[p_surface].get();
 }
 
 const Fonts &CResourceManager::getFonts() const
