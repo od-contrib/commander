@@ -32,7 +32,11 @@ main() {
   )
   if [[ $TARGET == rs90 ]]; then
     # rg99 uses the same binary as the rs90 but a different config
-    files+=(opkg/default.rg99.desktop opkg/readme.retrofw.txt)
+    files+=(
+      opkg/default.rg99.desktop
+      opkg/commander.rg99.cfg
+      opkg/readme.retrofw.txt
+    )
   fi
 
   set -x
