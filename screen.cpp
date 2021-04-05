@@ -119,6 +119,10 @@ int Screen::onResize(int w, int h)
     setPhysicalResolution(surface->w, surface->h);
 #else
     this->surface = SDL_GetVideoSurface();
+    if (this->surface->w < w || this->surface->h < h) {
+        this->surface = SDL_SetVideoMode(
+            w, h, this->surface->format->BitsPerPixel, this->surface->flags);
+    }
     setPhysicalResolution(w, h);
 #endif
     return 0;
