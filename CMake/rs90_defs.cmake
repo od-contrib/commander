@@ -1,5 +1,6 @@
 set(USE_SDL2 OFF)
-set(PATH_DEFAULT \"/media/sdcard\")
+set(PATH_DEFAULT \"/media\")
+set(FILE_SYSTEM \"/dev/mmcblk0p1\")
 
 set(MYKEY_UP SDLK_UP) # Up
 set(MYKEY_RIGHT SDLK_RIGHT) # Right
