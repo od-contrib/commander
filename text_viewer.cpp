@@ -13,23 +13,29 @@
 #include "sdlutils.h"
 #include "utf8.h"
 
-#define VIEWER_MARGIN 1
+#define VIEWER_PADDING_X 1
+#define VIEWER_PADDING_X_PHYS static_cast<int>(VIEWER_PADDING_X * screen.ppu_x)
 #define VIEWER_LINE_HEIGHT 13
+#define VIEWER_LINE_HEIGHT_PHYS                                                \
+    static_cast<int>(VIEWER_LINE_HEIGHT * screen.ppu_y)
 #define VIEWER_Y_LIST 17
+#define VIEWER_Y_LIST_PHYS static_cast<int>(VIEWER_Y_LIST * screen.ppu_y)
 #define VIEWER_X_STEP 32
+#define VIEWER_X_STEP_PHYS static_cast<int>(VIEWER_X_STEP * screen.ppu_x)
 
 namespace {
 
 // The number of lines that fully fit into the viewport.
 int numFullViewportLines()
 {
-    return (screen.h - VIEWER_Y_LIST) / VIEWER_LINE_HEIGHT;
+    return (screen.actual_h - VIEWER_Y_LIST_PHYS) / VIEWER_LINE_HEIGHT_PHYS;
 }
 
 // The number of lines that are visible (even if partially) in the viewport.
 int numTotalViewportLines()
 {
-    return (screen.h - VIEWER_Y_LIST - 1) / VIEWER_LINE_HEIGHT + 1;
+    return (screen.actual_h - VIEWER_Y_LIST_PHYS - 1) / VIEWER_LINE_HEIGHT_PHYS
+        + 1;
 }
 
 void adjustLineForDisplay(std::string *line)
@@ -90,30 +96,26 @@ void TextViewer::init()
     background_ = SDLSurfaceUniquePtr { SDL_utils::createImage(
         screen.actual_w, screen.actual_h, bg_color_) };
     {
-        SDL_Rect rect = SDL_utils::Rect(
-            0, 0, screen.actual_w, HEADER_H * screen.ppu_y);
+        SDL_Rect rect = SDL_utils::Rect(0, 0, screen.actual_w, HEADER_H_PHYS);
         SDL_FillRect(background_.get(), &rect, border_color_);
     }
     // Print title
     {
         SDLSurfaceUniquePtr tmp { SDL_utils::renderText(
             fonts, filename_, Globals::g_colorTextTitle, { COLOR_TITLE_BG }) };
-        if (tmp->w > background_->w - 2 * VIEWER_MARGIN) {
-            SDL_Rect rect;
-            rect.x = tmp->w - (background_->w - 2 * VIEWER_MARGIN);
+        SDL_Rect rect;
+        SDL_Rect *clip_rect = nullptr;
+        if (tmp->w > background_->w - 2 * VIEWER_PADDING_X_PHYS) {
+            rect.x = tmp->w - (background_->w - 2 * VIEWER_PADDING_X_PHYS);
             rect.y = 0;
-            rect.w = background_->w - 2 * VIEWER_MARGIN;
+            rect.w = background_->w - 2 * VIEWER_PADDING_X_PHYS;
             rect.h = tmp->h;
-            SDL_utils::applyPpuScaledSurface(VIEWER_MARGIN * screen.ppu_x,
-                HEADER_PADDING_TOP * screen.ppu_y, tmp.get(), background_.get(),
-                &rect);
-        } else {
-            SDL_utils::applyPpuScaledSurface(VIEWER_MARGIN * screen.ppu_x,
-                HEADER_PADDING_TOP * screen.ppu_y, tmp.get(),
-                background_.get());
+            clip_rect = &rect;
         }
+        SDL_utils::applyPpuScaledSurface(VIEWER_PADDING_X_PHYS,
+            HEADER_PADDING_TOP_PHYS, tmp.get(), background_.get(), clip_rect);
     }
-    clip_.w = screen.actual_w - 2 * VIEWER_MARGIN * screen.ppu_x;
+    clip_.w = screen.actual_w - 2 * VIEWER_PADDING_X_PHYS;
 }
 
 void TextViewer::onResize()
@@ -134,8 +136,8 @@ void TextViewer::render(const bool focused) const
     std::size_t i = std::min(
         first_line_ + numTotalViewportLines() + 1, lines_for_display_.size());
     SDL_Rect clip = clip_;
-    const int y0 = VIEWER_Y_LIST * screen.ppu_y;
-    const int line_height = VIEWER_LINE_HEIGHT * screen.ppu_y;
+    const int y0 = VIEWER_Y_LIST_PHYS;
+    const int line_height = VIEWER_LINE_HEIGHT_PHYS;
     while (i-- > first_line_) {
         const std::string &line = lines_for_display_[i];
         const int viewport_line_i = static_cast<int>(i - first_line_);
@@ -154,7 +156,7 @@ void TextViewer::render(const bool focused) const
         if (tmp == nullptr) continue;
         clip.h = tmp->h;
         SDL_utils::applyPpuScaledSurface(
-            VIEWER_MARGIN * screen.ppu_x, y, tmp.get(), screen.surface, &clip);
+            VIEWER_PADDING_X_PHYS, y, tmp.get(), screen.surface, &clip);
     }
 }
 
@@ -193,9 +195,9 @@ const bool TextViewer::keyHold()
 
 int TextViewer::getLineAt(int x, int y) const
 {
-    const int y0 = VIEWER_Y_LIST * screen.ppu_y;
+    const int y0 = VIEWER_Y_LIST_PHYS;
     if (y < y0) return -1;
-    const int line_height = VIEWER_LINE_HEIGHT * screen.ppu_y;
+    const int line_height = VIEWER_LINE_HEIGHT_PHYS;
     const int line = (y - y0) / line_height;
     if (first_line_ + line >= lines_.size()) return -1;
     return line;
@@ -278,8 +280,8 @@ bool TextViewer::moveDown(unsigned step)
 bool TextViewer::moveLeft()
 {
     if (clip_.x > 0) {
-        if (clip_.x > VIEWER_X_STEP * screen.ppu_x) {
-            clip_.x -= VIEWER_X_STEP * screen.ppu_x;
+        if (clip_.x > VIEWER_X_STEP_PHYS) {
+            clip_.x -= VIEWER_X_STEP_PHYS;
         } else {
             clip_.x = 0;
         }
@@ -290,7 +292,7 @@ bool TextViewer::moveLeft()
 
 bool TextViewer::moveRight()
 {
-    clip_.x += VIEWER_X_STEP * screen.ppu_x;
+    clip_.x += VIEWER_X_STEP_PHYS;
     return true;
 }
 
