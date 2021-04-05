@@ -76,7 +76,7 @@ void CDialog::init(void)
     border_x_ = static_cast<int>(DIALOG_BORDER * screen.ppu_x);
     border_y_ = static_cast<int>(DIALOG_BORDER * screen.ppu_y);
     padding_x_ = static_cast<int>(DIALOG_PADDING * screen.ppu_x);
-    line_height_ = static_cast<int>(LINE_HEIGHT * screen.ppu_y);
+    line_height_ = LINE_HEIGHT_PHYS;
     width_ = 0;
 
     // The width of the window depends on the width of the largest line
@@ -164,8 +164,8 @@ void CDialog::init(void)
 
         // Ensure the dialog fits vertically regardless of the requested
         // coordinates.
-        m_y = std::max(m_y - (height_ + line_height_) / 2, static_cast<int>(Y_LIST * screen.ppu_y));
-        m_y = std::min(m_y, static_cast<int>(FOOTER_Y * screen.ppu_y) + 1 - height_);
+        m_y = std::max(m_y - (height_ + line_height_) / 2, Y_LIST_PHYS);
+        m_y = std::min(m_y, screen.actual_h - FOOTER_H_PHYS + 1 - height_);
     }
     // Cursor coordinates
     m_cursorX = m_x + border_x_;

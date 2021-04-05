@@ -17,40 +17,46 @@
 #include "sdlutils.h"
 #include "text_viewer.h"
 
-#define SPLITTER_LINE_W 1
-#define X_LEFT 1
-#define X_RIGHT (screen.w / 2 + SPLITTER_LINE_W + 1)
+#define SPLITTER_LINE_W static_cast<int>(1 * screen.ppu_x)
+#define X_LEFT static_cast<int>(1 * screen.ppu_x)
+#define X_RIGHT                                                                \
+    (screen.actual_w / 2 + SPLITTER_LINE_W + static_cast<int>(1 * screen.ppu_x))
 
 namespace {
 
 SDL_Surface *DrawBackground() {
     SDL_Surface *bg = SDL_utils::createSurface(screen.actual_w, screen.actual_h);
 
+    const int header_h = HEADER_H_PHYS;
+    const int footer_h = FOOTER_H_PHYS;
+    const int line_h = LINE_HEIGHT_PHYS;
+    const int list_y = Y_LIST_PHYS;
+
     // Stripes
-    const int stripes_h = screen.h - HEADER_H - FOOTER_H;
-    SDL_Rect rect = SDL_utils::Rect(0, 0, screen.actual_w, screen.actual_h);
+    const int stripes_h = screen.actual_h - header_h - footer_h;
+    SDL_Rect rect = SDL_utils::makeRect(0, 0, screen.actual_w, screen.actual_h);
     const Uint32 bg_colors[2] = {SDL_MapRGB(bg->format, COLOR_BG_1), SDL_MapRGB(bg->format, COLOR_BG_2)};
-    const std::size_t num_lines = (stripes_h - 1) / LINE_HEIGHT + 1;
+    const std::size_t num_lines = (stripes_h - 1) / line_h + 1;
     for (std::size_t i = 0; i < num_lines; ++i) {
-        rect.y = (Y_LIST + i * LINE_HEIGHT) * screen.ppu_y;
+        rect.y = list_y + i * line_h;
         SDL_FillRect(bg, &rect, bg_colors[i % 2]);
     }
 
     // Top and bottom bars
     const auto bar_color = SDL_MapRGB(bg->format, COLOR_TITLE_BG);
-    rect = SDL_utils::Rect(0, 0, static_cast<decltype(SDL_Rect().w)>(bg->w), Y_LIST * screen.ppu_y);
+    rect = SDL_utils::makeRect(0, 0, bg->w, list_y);
     SDL_FillRect(bg, &rect, bar_color);
-    rect.y = bg->h - FOOTER_H * screen.ppu_y;
+    rect.y = bg->h - footer_h;
     SDL_FillRect(bg, &rect, bar_color);
 
     // Line in the middle
-    rect = SDL_utils::Rect(screen.w / 2 * screen.ppu_x, 0, SPLITTER_LINE_W * screen.ppu_x, Y_LIST * screen.ppu_y);
+    rect = SDL_utils::Rect(screen.actual_w / 2, 0, SPLITTER_LINE_W, list_y);
     SDL_FillRect(bg, &rect, bg_colors[0]);
     rect.y = rect.h;
-    rect.h = stripes_h * screen.ppu_y;
+    rect.h = stripes_h;
     SDL_FillRect(bg, &rect, bar_color);
     rect.y += rect.h;
-    rect.h = FOOTER_H * screen.ppu_y;
+    rect.h = footer_h;
     SDL_FillRect(bg, &rect, bg_colors[0]);
 
     return bg;
@@ -157,21 +163,18 @@ const bool CCommander::keyHold(void)
     return false;
 }
 
-CPanel* CCommander::focusPanelAt(int *x, int *y, bool *changed) {
-    if (*x < X_LEFT * screen.ppu_x) return nullptr;
+CPanel *CCommander::focusPanelAt(int *x, int *y, bool *changed)
+{
+    if (*x < X_LEFT) return nullptr;
     CPanel *target;
-    if (*x >= X_RIGHT * screen.ppu_x)
-    {
+    if (*x >= X_RIGHT) {
         target = &m_panelRight;
-        *x -= X_RIGHT * screen.ppu_x;
-    }
-    else
-    {
+        *x -= X_RIGHT;
+    } else {
         target = &m_panelLeft;
-        *x -= X_LEFT * screen.ppu_x;
+        *x -= X_LEFT;
     }
-    if (m_panelSource != target)
-    {
+    if (m_panelSource != target) {
         m_panelTarget = m_panelSource;
         m_panelSource = target;
         *changed = true;
@@ -276,7 +279,7 @@ const bool CCommander::openCopyMenu(void) const
         l_stream << l_list.size() << " selected:";
         // File operation dialog
         CDialog l_dialog { l_stream.str(), {}, [this, &l_dialog]() {
-                              return static_cast<int>(Y_LIST * screen.ppu_y)
+                              return Y_LIST_PHYS
                                   + m_panelSource->getHighlightedIndexRelative()
                                   * l_dialog.line_height();
                           } };
@@ -366,7 +369,7 @@ const bool CCommander::openSystemMenu(void)
     // Selection dialog
     {
         CDialog l_dialog { "System:", {}, [this, &l_dialog]() {
-                              return static_cast<int>(Y_LIST * screen.ppu_y)
+                              return Y_LIST_PHYS
                                   + m_panelSource->getHighlightedIndexRelative()
                                   * l_dialog.line_height();
                           } };

@@ -6,12 +6,6 @@
 #include "sdlutils.h"
 #include "fileutils.h"
 
-namespace {
-#define PANEL_SIZE (screen.w / 2 - 2)
-#define NAME_SIZE (PANEL_SIZE - 18)
-#define CONTENTS_H (screen.h - HEADER_H - FOOTER_H)
-} // namespace
-
 CPanel::CPanel(const std::string &p_path, const Sint16 p_x):
     m_currentPath(""),
     m_camera(0),
@@ -54,38 +48,79 @@ SDL_Surface *CPanel::cursor2() const
         CResourceManager::T_SURFACE_CURSOR2);
 }
 
+int CPanel::list_y() const { return Y_LIST_PHYS; }
+
+int CPanel::line_height() const
+{
+    return LINE_HEIGHT_PHYS;
+}
+
+int CPanel::header_height() const
+{
+    return HEADER_H_PHYS;
+}
+
+int CPanel::header_padding_top() const
+{
+    return HEADER_PADDING_TOP_PHYS;
+}
+
+int CPanel::footer_height() const
+{
+    return FOOTER_H_PHYS;
+}
+
+int CPanel::footer_y() const { return screen.actual_h - footer_height(); }
+
+int CPanel::footer_padding_top() const
+{
+    return FOOTER_PADDING_TOP_PHYS;
+}
+
+int CPanel::width() const
+{
+    return (screen.actual_w - static_cast<int>(2 * screen.ppu_x)) / 2;
+}
+
+int CPanel::list_height() const
+{
+    return screen.actual_h - header_height() - footer_height();
+}
+
 void CPanel::render(const bool p_active) const
 {
     // Draw panel
-    const Sint16 l_x = m_x + m_iconDir->w / screen.ppu_x + 2;
+    const int l_x = m_x + m_iconDir->w + 2 * screen.ppu_x;
     const unsigned int l_nbTotal = m_fileLister.getNbTotal();
-    Sint16 l_y = Y_LIST;
+    int l_y = list_y();
     SDL_Surface *l_surfaceTmp = NULL;
     const SDL_Color *l_color = NULL;
     SDL_Rect l_rect;
     // Current dir
-    l_surfaceTmp = SDL_utils::renderText(m_fonts, m_currentPath, Globals::g_colorTextTitle, {COLOR_TITLE_BG});
-    if (l_surfaceTmp->w > PANEL_SIZE * screen.ppu_x)
-    {
-        l_rect.x = l_surfaceTmp->w - PANEL_SIZE * screen.ppu_x;
+    l_surfaceTmp = SDL_utils::renderText(
+        m_fonts, m_currentPath, Globals::g_colorTextTitle, { COLOR_TITLE_BG });
+    if (l_surfaceTmp->w > width()) {
+        l_rect.x = l_surfaceTmp->w - width();
         l_rect.y = 0;
-        l_rect.w = PANEL_SIZE * screen.ppu_x;
+        l_rect.w = width();
         l_rect.h = l_surfaceTmp->h;
-        SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, screen.surface, &l_rect);
-    }
-    else
-    {
-        SDL_utils::applySurface(m_x, HEADER_PADDING_TOP, l_surfaceTmp, screen.surface);
+        SDL_utils::applyPpuScaledSurface(
+            m_x, header_padding_top(), l_surfaceTmp, screen.surface, &l_rect);
+    } else {
+        SDL_utils::applyPpuScaledSurface(
+            m_x, header_padding_top(), l_surfaceTmp, screen.surface);
     }
 
     SDL_FreeSurface(l_surfaceTmp);
-    SDL_Rect clip_contents_rect = SDL_utils::Rect(0, Y_LIST * screen.ppu_y, screen.actual_w, CONTENTS_H * screen.ppu_y);
+    SDL_Rect clip_contents_rect = SDL_utils::Rect(0, list_y(), screen.actual_w, list_height());
     // Content
     SDL_SetClipRect(screen.surface, &clip_contents_rect);
     // Draw cursor
-    SDL_utils::applySurface(m_x - 1, Y_LIST + (m_highlightedLine - m_camera) * LINE_HEIGHT, p_active ? cursor1() : cursor2(), screen.surface);
-    for (unsigned int l_i = m_camera; l_i < m_camera + NB_VISIBLE_LINES && l_i < l_nbTotal; ++l_i)
-    {
+    SDL_utils::applyPpuScaledSurface(m_x - static_cast<int>(1 * screen.ppu_x),
+        list_y() + (m_highlightedLine - m_camera) * line_height(),
+        p_active ? cursor1() : cursor2(), screen.surface);
+    for (unsigned int l_i = m_camera;
+         l_i < m_camera + NB_VISIBLE_LINES && l_i < l_nbTotal; ++l_i) {
         // Icon and color
         if (m_fileLister.isDirectory(l_i))
         {
@@ -118,9 +153,9 @@ void CPanel::render(const bool p_active) const
             else
                 l_color = &Globals::g_colorTextNormal;
         }
-        SDL_utils::applySurface(m_x, l_y, l_surfaceTmp, screen.surface);
+        SDL_utils::applyPpuScaledSurface(m_x, l_y, l_surfaceTmp, screen.surface);
         if (m_fileLister[l_i].is_symlink)
-            SDL_utils::applySurface(m_x, l_y, m_iconIsSymlink, screen.surface);
+            SDL_utils::applyPpuScaledSurface(m_x, l_y, m_iconIsSymlink, screen.surface);
         // Text
         SDL_Color l_bg;
         if (l_i == m_highlightedLine) {
@@ -133,21 +168,22 @@ void CPanel::render(const bool p_active) const
             l_bg = kLineBg[(l_i - m_camera) % 2];
         }
         l_surfaceTmp = SDL_utils::renderText(m_fonts, m_fileLister[l_i].m_name, *l_color, l_bg);
-        if (l_surfaceTmp->w > NAME_SIZE * screen.ppu_x)
+        const int max_name_width = width() - static_cast<int>(18 * screen.ppu_x);
+        SDL_Rect *text_clip_rect = nullptr;
+        if (l_surfaceTmp->w > max_name_width)
         {
             l_rect.x = 0;
             l_rect.y = 0;
-            l_rect.w = NAME_SIZE * screen.ppu_x;
+            l_rect.w = max_name_width;
             l_rect.h = l_surfaceTmp->h;
-            SDL_utils::applySurface(l_x, l_y + 2, l_surfaceTmp, screen.surface, &l_rect);
+            text_clip_rect = &l_rect;
         }
-        else
-        {
-            SDL_utils::applySurface(l_x, l_y + 2, l_surfaceTmp, screen.surface);
-        }
+        SDL_utils::applyPpuScaledSurface(l_x,
+            l_y + static_cast<int>(2 * screen.ppu_y), l_surfaceTmp,
+            screen.surface, text_clip_rect);
         SDL_FreeSurface(l_surfaceTmp);
         // Next line
-        l_y += LINE_HEIGHT;
+        l_y += line_height();
     }
     SDL_SetClipRect(screen.surface, nullptr);
 
@@ -160,8 +196,14 @@ void CPanel::render(const bool p_active) const
         l_footer = l_s.str();
         File_utils::formatSize(l_footer);
     }
-    SDL_utils::applyText(m_x + 2, FOOTER_Y + FOOTER_PADDING_TOP, screen.surface, m_fonts, "Size:", Globals::g_colorTextTitle, {COLOR_TITLE_BG});
-    SDL_utils::applyText(m_x + PANEL_SIZE - 2, FOOTER_Y + FOOTER_PADDING_TOP, screen.surface, m_fonts, l_footer, Globals::g_colorTextTitle, {COLOR_TITLE_BG}, SDL_utils::T_TEXT_ALIGN_RIGHT);
+    SDL_utils::applyPpuScaledText(m_x + static_cast<int>(2 * screen.ppu_x),
+        footer_y() + footer_padding_top(), screen.surface, m_fonts,
+        "Size:", Globals::g_colorTextTitle, { COLOR_TITLE_BG });
+    SDL_utils::applyPpuScaledText(
+        m_x + width() - static_cast<int>(2 * screen.ppu_x),
+        footer_y() + footer_padding_top(), screen.surface, m_fonts, l_footer,
+        Globals::g_colorTextTitle, { COLOR_TITLE_BG },
+        SDL_utils::T_TEXT_ALIGN_RIGHT);
 }
 
 const bool CPanel::moveCursorUp(unsigned char p_step)
@@ -208,11 +250,11 @@ int CPanel::getNumVisibleListItems() const
 
 int CPanel::getLineAt(int x, int y) const
 {
-    if (x < 0 || y < static_cast<int>(Y_LIST * screen.ppu_y)) return -1;
-    const int y0 = static_cast<int>(Y_LIST * screen.ppu_y);
-    const int line_height = static_cast<int>(LINE_HEIGHT * screen.ppu_y);
-    if (y - y0 >= getNumVisibleListItems() * line_height) return -1;
-    return (y - y0) / line_height;
+    if (x < 0 || y < list_y()) return -1;
+    const int y0 = list_y();
+    const int line_h = line_height();
+    if (y - y0 >= getNumVisibleListItems() * line_h) return -1;
+    return (y - y0) / line_h;
 }
 
 void CPanel::moveCursorToVisibleLineIndex(int index)

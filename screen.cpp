@@ -132,6 +132,6 @@ void Screen::setPhysicalResolution(int actual_w, int actual_h)
 {
     this->actual_w = actual_w;
     this->actual_h = actual_h;
-    this->w = actual_w / ppu_x;
-    this->h = actual_h / ppu_y;
+    this->w = static_cast<int>(actual_w / ppu_x);
+    this->h = static_cast<int>(actual_h / ppu_y);
 }
