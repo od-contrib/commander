@@ -18,8 +18,8 @@ struct Config {
     bool disp_autoscale_dpi = static_cast<bool>(AUTOSCALE_DPI);
 
     // Default paths to the left and right panels
-    std::string path_default = std::getenv("PWD");        // $PWD in the config
-    std::string path_default_right = std::getenv("HOME"); // $HOME in the config
+    std::string path_default = PATH_DEFAULT;
+    std::string path_default_right = PATH_DEFAULT_RIGHT;
 
     // Used if `path_default_right` does not exist or left path == right path.
     std::string path_default_right_fallback;
