@@ -31,18 +31,18 @@ struct Config {
     std::string res_dir { RES_DIR };
 
     // Keyboard key code mappings
-    SDLC_Keycode key_down = MYKEY_DOWN;
-    SDLC_Keycode key_left = MYKEY_LEFT;
-    SDLC_Keycode key_open = MYKEY_OPEN;
-    SDLC_Keycode key_operation = MYKEY_OPERATION;
-    SDLC_Keycode key_pagedown = MYKEY_PAGEDOWN;
-    SDLC_Keycode key_pageup = MYKEY_PAGEUP;
-    SDLC_Keycode key_parent = MYKEY_PARENT;
-    SDLC_Keycode key_right = MYKEY_RIGHT;
-    SDLC_Keycode key_select = MYKEY_SELECT;
-    SDLC_Keycode key_system = MYKEY_SYSTEM;
-    SDLC_Keycode key_transfer = MYKEY_TRANSFER;
-    SDLC_Keycode key_up = MYKEY_UP;
+    SDLC_Keycode key_down = CMDR_KEY_DOWN;
+    SDLC_Keycode key_left = CMDR_KEY_LEFT;
+    SDLC_Keycode key_open = CMDR_KEY_OPEN;
+    SDLC_Keycode key_operation = CMDR_KEY_OPERATION;
+    SDLC_Keycode key_pagedown = CMDR_KEY_PAGEDOWN;
+    SDLC_Keycode key_pageup = CMDR_KEY_PAGEUP;
+    SDLC_Keycode key_parent = CMDR_KEY_PARENT;
+    SDLC_Keycode key_right = CMDR_KEY_RIGHT;
+    SDLC_Keycode key_select = CMDR_KEY_SELECT;
+    SDLC_Keycode key_system = CMDR_KEY_SYSTEM;
+    SDLC_Keycode key_transfer = CMDR_KEY_TRANSFER;
+    SDLC_Keycode key_up = CMDR_KEY_UP;
 
     // On-screen keyboard settings.
 #ifdef OSK_KEY_SYSTEM_IS_BACKSPACE
