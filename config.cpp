@@ -119,6 +119,32 @@ SDLC_Keycode parseKeycode(const std::string &value)
     return static_cast<SDLC_Keycode>(std::stoi(value));
 }
 
+ControllerButton parseControllerButton(const std::string &value)
+{
+    static const std::unordered_map<std::string, ControllerButton>
+        kStrToControllerButton {
+            { "UP", ControllerButton::UP },
+            { "DOWN", ControllerButton::DOWN },
+            { "LEFT", ControllerButton::LEFT },
+            { "RIGHT", ControllerButton::RIGHT },
+            { "A", ControllerButton::A },
+            { "B", ControllerButton::B },
+            { "X", ControllerButton::X },
+            { "Y", ControllerButton::Y },
+            { "LEFTSHOULDER", ControllerButton::LEFTSHOULDER },
+            { "RIGHTSHOULDER", ControllerButton::RIGHTSHOULDER },
+            { "TRIGGERLEFT", ControllerButton::TRIGGERLEFT },
+            { "TRIGGERRIGHT", ControllerButton::TRIGGERRIGHT },
+            { "LEFTSTICK", ControllerButton::LEFTSTICK },
+            { "RIGHTSTICK", ControllerButton::RIGHTSTICK },
+            { "START", ControllerButton::START },
+            { "SELECT", ControllerButton::SELECT },
+        };
+    const auto it = kStrToControllerButton.find(value);
+    if (it != kStrToControllerButton.end()) return it->second;
+    return ControllerButton::NONE;
+}
+
 } // namespace
 
 Config &config()
@@ -145,6 +171,11 @@ Config &config()
 #define CFG_SDLK(KEY)                                                          \
     if ((it = m.find(#KEY)) != m.end()) {                                      \
         this->KEY = parseKeycode(it->second);                                  \
+        m.erase(it);                                                           \
+    }
+#define CFG_GAMEPAD(KEY)                                                       \
+    if ((it = m.find(#KEY)) != m.end()) {                                      \
+        this->KEY = parseControllerButton(it->second);                         \
         m.erase(it);                                                           \
     }
 #define CFG_STR(KEY)                                                           \
@@ -191,6 +222,19 @@ void Config::Load(const std::string &path)
     CFG_SDLK(key_system)
     CFG_SDLK(key_transfer)
     CFG_SDLK(key_up)
+
+    CFG_GAMEPAD(gamepad_down)
+    CFG_GAMEPAD(gamepad_left)
+    CFG_GAMEPAD(gamepad_open)
+    CFG_GAMEPAD(gamepad_operation)
+    CFG_GAMEPAD(gamepad_pagedown)
+    CFG_GAMEPAD(gamepad_pageup)
+    CFG_GAMEPAD(gamepad_parent)
+    CFG_GAMEPAD(gamepad_right)
+    CFG_GAMEPAD(gamepad_select)
+    CFG_GAMEPAD(gamepad_system)
+    CFG_GAMEPAD(gamepad_transfer)
+    CFG_GAMEPAD(gamepad_up)
 
     if (!m.empty()) {
         std::cerr << "  Unknown settings:\n";

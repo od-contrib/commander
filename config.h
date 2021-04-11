@@ -5,6 +5,7 @@
 #include <string>
 
 #include "config_def.h"
+#include "controller_buttons.h"
 #include "sdl_backports.h"
 
 struct Config {
@@ -43,6 +44,21 @@ struct Config {
     SDLC_Keycode key_system = CMDR_KEY_SYSTEM;
     SDLC_Keycode key_transfer = CMDR_KEY_TRANSFER;
     SDLC_Keycode key_up = CMDR_KEY_UP;
+
+
+    // Gamepad mappings (only used with SDL2)
+    ControllerButton gamepad_down = CMDR_GAMEPAD_DOWN;
+    ControllerButton gamepad_left = CMDR_GAMEPAD_LEFT;
+    ControllerButton gamepad_open = CMDR_GAMEPAD_OPEN;
+    ControllerButton gamepad_operation = CMDR_GAMEPAD_OPERATION;
+    ControllerButton gamepad_pagedown = CMDR_GAMEPAD_PAGEDOWN;
+    ControllerButton gamepad_pageup = CMDR_GAMEPAD_PAGEUP;
+    ControllerButton gamepad_parent = CMDR_GAMEPAD_PARENT;
+    ControllerButton gamepad_right = CMDR_GAMEPAD_RIGHT;
+    ControllerButton gamepad_select = CMDR_GAMEPAD_SELECT;
+    ControllerButton gamepad_system = CMDR_GAMEPAD_SYSTEM;
+    ControllerButton gamepad_transfer = CMDR_GAMEPAD_TRANSFER;
+    ControllerButton gamepad_up = CMDR_GAMEPAD_UP;
 
     // On-screen keyboard settings.
 #ifdef OSK_KEY_SYSTEM_IS_BACKSPACE
