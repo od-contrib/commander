@@ -83,4 +83,41 @@
 #define CMDR_KEY_TRANSFER SDLK_TAB
 #endif
 
+#ifndef CMDR_GAMEPAD_UP
+#define CMDR_GAMEPAD_UP ControllerButton::UP
+#endif
+#ifndef CMDR_GAMEPAD_DOWN
+#define CMDR_GAMEPAD_DOWN ControllerButton::DOWN
+#endif
+#ifndef CMDR_GAMEPAD_LEFT
+#define CMDR_GAMEPAD_LEFT ControllerButton::LEFT
+#endif
+#ifndef CMDR_GAMEPAD_RIGHT
+#define CMDR_GAMEPAD_RIGHT ControllerButton::RIGHT
+#endif
+#ifndef CMDR_GAMEPAD_SYSTEM
+#define CMDR_GAMEPAD_SYSTEM ControllerButton::X
+#endif
+#ifndef CMDR_GAMEPAD_PAGEUP
+#define CMDR_GAMEPAD_PAGEUP ControllerButton::LEFTSHOULDER
+#endif
+#ifndef CMDR_GAMEPAD_PAGEDOWN
+#define CMDR_GAMEPAD_PAGEDOWN ControllerButton::RIGHTSHOULDER
+#endif
+#ifndef CMDR_GAMEPAD_OPEN
+#define CMDR_GAMEPAD_OPEN ControllerButton::B
+#endif
+#ifndef CMDR_GAMEPAD_PARENT
+#define CMDR_GAMEPAD_PARENT ControllerButton::A
+#endif
+#ifndef CMDR_GAMEPAD_OPERATION
+#define CMDR_GAMEPAD_OPERATION ControllerButton::Y
+#endif
+#ifndef CMDR_GAMEPAD_SELECT
+#define CMDR_GAMEPAD_SELECT ControllerButton::SELECT
+#endif
+#ifndef CMDR_GAMEPAD_TRANSFER
+#define CMDR_GAMEPAD_TRANSFER ControllerButton::START
+#endif
+
 #endif // CONFIG_DEF_H_

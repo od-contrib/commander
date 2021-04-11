@@ -55,6 +55,7 @@ endif()
 set(DinguxCommander_SRCS
   commander.cpp
   config.cpp
+  controller_buttons.cpp
   dialog.cpp
   fileLister.cpp
   fileutils.cpp
