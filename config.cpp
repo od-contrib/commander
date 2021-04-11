@@ -93,21 +93,21 @@ SDLC_Keycode parseKeycode(const std::string &value)
     // We support a few common SDLK codes as config values.
     // We then allow single-char keys and ints for the rest.
     static const std::unordered_map<std::string, SDLC_Keycode> kSdlkToInt {
-        { "SDLK_BACKSPACE", SDLK_BACKSPACE },
-        { "SDLK_DOWN", SDLK_DOWN },
-        { "SDLK_ESCAPE", SDLK_ESCAPE },
-        { "SDLK_INSERT", SDLK_INSERT },
-        { "SDLK_LALT", SDLK_LALT },
-        { "SDLK_LCTRL", SDLK_LCTRL },
-        { "SDLK_LEFT", SDLK_LEFT },
-        { "SDLK_LSHIFT", SDLK_LSHIFT },
-        { "SDLK_PAGEDOWN", SDLK_PAGEDOWN },
-        { "SDLK_PAGEUP", SDLK_PAGEUP },
-        { "SDLK_RETURN", SDLK_RETURN },
-        { "SDLK_RIGHT", SDLK_RIGHT },
-        { "SDLK_SPACE", SDLK_SPACE },
-        { "SDLK_TAB", SDLK_TAB },
-        { "SDLK_UP", SDLK_UP },
+        { "BACKSPACE", SDLK_BACKSPACE },
+        { "DOWN", SDLK_DOWN },
+        { "ESCAPE", SDLK_ESCAPE },
+        { "INSERT", SDLK_INSERT },
+        { "LALT", SDLK_LALT },
+        { "LCTRL", SDLK_LCTRL },
+        { "LEFT", SDLK_LEFT },
+        { "LSHIFT", SDLK_LSHIFT },
+        { "PAGEDOWN", SDLK_PAGEDOWN },
+        { "PAGEUP", SDLK_PAGEUP },
+        { "RETURN", SDLK_RETURN },
+        { "RIGHT", SDLK_RIGHT },
+        { "SPACE", SDLK_SPACE },
+        { "TAB", SDLK_TAB },
+        { "UP", SDLK_UP },
     };
 
     const auto sdlk_it = kSdlkToInt.find(value);
