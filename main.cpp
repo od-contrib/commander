@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
                 std::cerr << "--res-dir requires an argument\n";
                 return 1;
             }
-            std::string res_dir = argv[++i];
+            res_dir = argv[++i];
         } else if (std::strcmp(argv[i], "--show_exec_error") == 0) {
             if (i == argc - 1) {
                 std::cerr << "--show_exec_error requires an argument\n";
