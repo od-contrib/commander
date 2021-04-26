@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <iostream>
 
+#include "axis_direction.h"
 #include "def.h"
 #include "resourceManager.h"
 #include "screen.h"
@@ -63,6 +64,8 @@ int CWindow::execute()
     SDL_Event event;
     bool l_loop(true);
     bool l_render(true);
+    static AxisDirectionRepeater axisDirectionRepeater;
+    static AxisDirection axisDirection;
     // Main loop
     while (l_loop)
     {
@@ -111,12 +114,46 @@ int CWindow::execute()
                     break;
                 case SDL_CONTROLLERAXISMOTION:
                 case SDL_CONTROLLERBUTTONDOWN: {
-                    const ControllerButton button
-                        = ControllerButtonFromSdlEvent(event);
-                    SDL_utils::setMouseCursorEnabled(false);
-                    l_render = this->keyPress(event, SDLK_UNKNOWN, button)
-                        || l_render;
-                    if (m_retVal) l_loop = false;
+                    bool thumbStickEvent = false;
+                    if (event.type == SDL_CONTROLLERAXISMOTION) {
+                        constexpr int AxisDeadzoneX = 16000;
+                        constexpr int AxisDeadzoneY = 4000;
+                        switch (event.caxis.axis) {
+                            case SDL_CONTROLLER_AXIS_LEFTX:
+                            case SDL_CONTROLLER_AXIS_RIGHTX: {
+                                thumbStickEvent = true;
+                                if (event.caxis.value < -AxisDeadzoneX
+                                    || event.caxis.value > AxisDeadzoneX) {
+                                    axisDirection.x = event.caxis.value > 0
+                                        ? AxisDirectionX::RIGHT
+                                        : AxisDirectionX::LEFT;
+                                } else {
+                                    axisDirection.x = AxisDirectionX::NONE;
+                                }
+                            } break;
+                            case SDL_CONTROLLER_AXIS_LEFTY:
+                            case SDL_CONTROLLER_AXIS_RIGHTY: {
+                                thumbStickEvent = true;
+                                if (event.caxis.value < -AxisDeadzoneY
+                                    || event.caxis.value > AxisDeadzoneY) {
+                                    axisDirection.y = event.caxis.value > 0
+                                        ? AxisDirectionY::DOWN
+                                        : AxisDirectionY::UP;
+                                } else {
+                                    axisDirection.y = AxisDirectionY::NONE;
+                                }
+                            } break;
+                            default: break;
+                        }
+                    }
+                    if (!thumbStickEvent) {
+                        const ControllerButton button
+                            = ControllerButtonFromSdlEvent(event);
+                        SDL_utils::setMouseCursorEnabled(false);
+                        l_render = this->keyPress(event, SDLK_UNKNOWN, button)
+                            || l_render;
+                        if (m_retVal) l_loop = false;
+                    }
                     break;
                 }
                 case SDL_TEXTINPUT:
@@ -163,6 +200,22 @@ int CWindow::execute()
                 SDL_JoystickGetDeviceInstanceID(i));
             if (controller == nullptr) continue;
             l_render = this->gamepadHold(controller) || l_render;
+        }
+
+        // Thumb stick movement.
+        AxisDirection dir = axisDirectionRepeater.Get(axisDirection);
+        if (dir.x != AxisDirectionX::NONE) {
+            l_render
+                = this->keyPress(event, SDLK_UNKNOWN,
+                      dir.x == AxisDirectionX::LEFT ? ControllerButton::LEFT
+                                                    : ControllerButton::RIGHT)
+                || l_render;
+        }
+        if (dir.y != AxisDirectionY::NONE) {
+            l_render = this->keyPress(event, SDLK_UNKNOWN,
+                           dir.y == AxisDirectionY::UP ? ControllerButton::UP
+                                                       : ControllerButton::DOWN)
+                || l_render;
         }
 #endif
 
