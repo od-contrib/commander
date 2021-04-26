@@ -82,6 +82,17 @@ if (USE_SDL2)
   else()
     find_package(SDL2 2.0.10 REQUIRED) # for SDL_SIMD_ALIGNED
   endif()
+  if(TARGET SDL2::SDL2)
+    set(SDL2_TARGET SDL2::SDL2)
+  else()
+    # On some distros, such as vitasdk, only the SDL2::SDL2-static target is available.
+    set(SDL2_TARGET SDL2::SDL2-static)
+    # Alias to SDL2::SDL2 because some finder scripts may refer to SDL2::SDL2.
+    add_library(SDL2::SDL2 ALIAS SDL2::SDL2-static)
+  endif()
+
+  # The finder scripts use SDL2::Core to refer to SDL2::SDL2.
+  add_library(SDL2::Core ALIAS SDL2::SDL2)
   find_package(SDL2_image REQUIRED)
 else()
   find_package(SDL REQUIRED)
@@ -101,7 +112,7 @@ else ()
   # SDL_gfx: rotozoom only.
   if (USE_SDL2)
     add_library(SDL2_gfx STATIC third_party/SDL2_gfx-1.0.4/SDL2_rotozoom.c)
-    target_link_libraries(SDL2_gfx PUBLIC SDL2::Core)
+    target_link_libraries(SDL2_gfx PUBLIC ${SDL2_TARGET})
     target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL2_gfx-1.0.4/)
     set(SDL2_GFX_LIBRARIES SDL2_gfx)
   else()
@@ -130,7 +141,7 @@ else (WITH_SYSTEM_SDL_TTF)
   find_package(Freetype REQUIRED)
   if (USE_SDL2)
     add_library(SDL2_ttf STATIC third_party/SDL2_ttf/SDL_ttf.c)
-    target_link_libraries(SDL2_ttf SDL2::Core ${FREETYPE_LIBRARIES})
+    target_link_libraries(SDL2_ttf ${SDL2_TARGET} ${FREETYPE_LIBRARIES})
     target_include_directories(SDL2_ttf PRIVATE ${FREETYPE_INCLUDE_DIRS})
     target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL2_ttf/)
     set(SDL2_TTF_LIBRARIES SDL2_ttf)
@@ -154,7 +165,7 @@ set_target_properties(${BIN_TARGET} PROPERTIES
 
 if (USE_SDL2)
   target_link_libraries(${BIN_TARGET} PRIVATE
-    SDL2::Core
+    ${SDL2_TARGET}
     SDL2::Image
     ${SDL2_TTF_LIBRARIES}
     ${SDL2_GFX_LIBRARIES}
