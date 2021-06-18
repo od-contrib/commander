@@ -8,6 +8,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#include "controller_buttons.h"
 #include "sdl_backports.h"
 #include "sdl_ptrs.h"
 #include "sdl_ttf_multifont.h"
@@ -104,10 +105,11 @@ class CKeyboard : public CWindow
     void onResize() override;
 
     // Key press management
-    const bool keyPress(const SDL_Event &p_event) override;
+    bool keyPress(const SDL_Event &event, SDLC_Keycode key,
+        ControllerButton button) override;
 
     // Key hold management
-    const bool keyHold(void) override;
+    bool keyHold() override;
 
     bool mouseDown(int button, int x, int y) override;
 
@@ -170,7 +172,9 @@ class CKeyboard : public CWindow
 
     // Input config:
     SDLC_Keycode osk_backspace_;
+    ControllerButton osk_gamepad_backspace_;
     SDLC_Keycode osk_cancel_;
+    ControllerButton osk_gamepad_cancel_;
 };
 
 #endif

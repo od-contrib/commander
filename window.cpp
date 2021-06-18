@@ -97,12 +97,27 @@ int CWindow::execute()
                         l_render = true;
                         break;
                     }
-                    l_render = this->keyPress(event) || l_render;
+                    l_render = this->keyPress(event, event.key.keysym.sym,
+                                   ControllerButton::NONE)
+                        || l_render;
                     if (m_retVal) l_loop = false;
                     break;
                 }
                 case SDL_QUIT: return m_retVal;
 #ifdef USE_SDL2
+                case SDL_CONTROLLERDEVICEADDED:
+                    SDL_GameControllerOpen(event.cdevice.which);
+                    break;
+                case SDL_CONTROLLERAXISMOTION:
+                case SDL_CONTROLLERBUTTONDOWN: {
+                    const ControllerButton button
+                        = ControllerButtonFromSdlEvent(event);
+                    SDL_utils::setMouseCursorEnabled(false);
+                    l_render = this->keyPress(event, SDLK_UNKNOWN, button)
+                        || l_render;
+                    if (m_retVal) l_loop = false;
+                    break;
+                }
                 case SDL_TEXTINPUT:
                 case SDL_TEXTEDITING:
                     l_render = textInput(event) || l_render;
@@ -183,16 +198,18 @@ void CWindow::triggerOnResize() {
     for (auto *window : Globals::g_windows) window->onResize();
 }
 
-const bool CWindow::keyPress(const SDL_Event &p_event)
+bool CWindow::keyPress(
+    const SDL_Event &event, SDLC_Keycode key, ControllerButton button)
 {
     // Reset timer if running
     if (m_timer)
         m_timer = 0;
-    m_lastPressed = p_event.key.keysym.sym;
+    if (key != SDLK_UNKNOWN) m_lastPressed = key;
+    if (button != ControllerButton::NONE) m_lastPressedButton = button;
     return false;
 }
 
-const bool CWindow::keyHold(void)
+bool CWindow::keyHold()
 {
     // Default behavior
     return false;

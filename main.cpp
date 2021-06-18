@@ -93,7 +93,13 @@ int main(int argc, char *argv[])
     putenv(l_s);
 
     // Init SDL
-    SDL_Init(SDL_INIT_VIDEO);
+    {
+        std::uint32_t init_flags = SDL_INIT_VIDEO;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+        init_flags |= SDL_INIT_GAMECONTROLLER;
+#endif
+        SDL_Init(init_flags);
+    }
     if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF | IMG_INIT_WEBP) == 0) {
         std::cerr << "IMG_Init failed" << std::endl;
     } else {

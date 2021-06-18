@@ -98,44 +98,48 @@ void CCommander::onResize()
     m_panelRight.setX(X_RIGHT);
 }
 
-const bool CCommander::keyPress(const SDL_Event &p_event)
+bool CCommander::keyPress(
+    const SDL_Event &event, SDLC_Keycode key, ControllerButton button)
 {
-    CWindow::keyPress(p_event);
-    const auto sym = p_event.key.keysym.sym;
+    CWindow::keyPress(event, key, button);
     const auto &c = config();
-    if (sym == c.key_system) {
+    if (key == c.key_system || button == c.gamepad_system) {
         if (openSystemMenu()) m_panelSource->refresh();
         return true;
     }
-    if (sym == c.key_up) return m_panelSource->moveCursorUp(1);
-    if (sym == c.key_down) return m_panelSource->moveCursorDown(1);
-    if (sym == c.key_pageup)
+    if (key == c.key_up || button == c.gamepad_up)
+        return m_panelSource->moveCursorUp(1);
+    if (key == c.key_down || button == c.gamepad_down)
+        return m_panelSource->moveCursorDown(1);
+    if (key == c.key_pageup || button == c.gamepad_pageup)
         return m_panelSource->moveCursorUp(NB_VISIBLE_LINES - 1);
-    if (sym == c.key_pagedown)
+    if (key == c.key_pagedown || button == c.gamepad_pagedown)
         return m_panelSource->moveCursorDown(NB_VISIBLE_LINES - 1);
-    if (sym == c.key_left) {
+    if (key == c.key_left || button == c.gamepad_left) {
         if (m_panelSource != &m_panelRight) return false;
         m_panelSource = &m_panelLeft;
         m_panelTarget = &m_panelRight;
         return true;
     }
-    if (sym == c.key_right) {
+    if (key == c.key_right || button == c.gamepad_right) {
         if (m_panelSource != &m_panelLeft) return false;
         m_panelSource = &m_panelRight;
         m_panelTarget = &m_panelLeft;
         return true;
     }
-    if (sym == c.key_open) return itemMenu();
-    if (sym == c.key_parent) return m_panelSource->goToParentDir();
-    if (sym == c.key_operation) {
+    if (key == c.key_open || button == c.gamepad_open) return itemMenu();
+    if (key == c.key_parent || button == c.gamepad_parent)
+        return m_panelSource->goToParentDir();
+    if (key == c.key_operation || button == c.gamepad_operation) {
         // If there's no file in the select list, add current file
         if (m_panelSource->getSelectList().empty()
             && m_panelSource->getHighlightedItem() != "..")
             m_panelSource->addToSelectList(false);
         return operationMenu();
     }
-    if (sym == c.key_select) return m_panelSource->addToSelectList(true);
-    if (sym == c.key_transfer) {
+    if (key == c.key_select || button == c.gamepad_select)
+        return m_panelSource->addToSelectList(true);
+    if (key == c.key_transfer || button == c.gamepad_transfer) {
         if (m_panelSource->isDirectoryHighlighted()
             && m_panelSource->getHighlightedItem() != "..") {
             return m_panelTarget->open(m_panelSource->getHighlightedItemFull());
@@ -145,7 +149,7 @@ const bool CCommander::keyPress(const SDL_Event &p_event)
     return false;
 }
 
-const bool CCommander::keyHold(void)
+bool CCommander::keyHold()
 {
     const auto &c = config();
     if (m_lastPressed == c.key_up)

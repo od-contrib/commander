@@ -389,44 +389,47 @@ void CKeyboard::render(const bool p_focus) const
         screen.surface);
 }
 
-const bool CKeyboard::keyPress(const SDL_Event &p_event)
+bool CKeyboard::keyPress(
+    const SDL_Event &event, SDLC_Keycode key, ControllerButton button)
 {
-    CWindow::keyPress(p_event);
+    CWindow::keyPress(event, key, button);
     const auto &c = config();
-    const auto keysym = p_event.key.keysym;
-    const auto sym = keysym.sym;
-    if (sym == osk_cancel_) {
+    if (key == osk_cancel_ || button == osk_gamepad_cancel_) {
         m_retVal = -1;
         return true;
     }
-    if (sym == osk_backspace_) return text_edit_.backspace();
-    if (sym == c.key_up) return moveCursorUp(/*p_loop=*/true);
-    if (sym == c.key_down) return moveCursorDown(/*p_loop=*/true);
-    if (sym == c.key_left)
+    if (key == osk_backspace_ || button == osk_gamepad_backspace_)
+        return text_edit_.backspace();
+    if (key == c.key_up || button == c.gamepad_up)
+        return moveCursorUp(/*p_loop=*/true);
+    if (key == c.key_down || button == c.gamepad_down)
+        return moveCursorDown(/*p_loop=*/true);
+    if (key == c.key_left || button == c.gamepad_left)
         return isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
                                    : moveCursorLeft(true);
-    if (sym == c.key_right)
+    if (key == c.key_right || button == c.gamepad_right)
         return isFocusOnTextEdit() ? text_edit_.moveCursorNext()
                                    : moveCursorRight(true);
-    if (sym == c.key_operation) { // X => Space
+    if (key == c.key_operation || button == c.gamepad_operation) { // X => Space
         text_edit_.typeText(' ');
         return true;
     }
-    if (sym == c.key_open) return pressFocusedKey(); // A => press button
-    if (sym == c.key_pagedown) {
+    if (key == c.key_open || button == c.gamepad_open)
+        return pressFocusedKey(); // A => press button
+    if (key == c.key_pagedown || button == c.gamepad_pagedown) {
         // R => Change keys forward
         keyboard_.current_keyset
             = (keyboard_.current_keyset + 1) % keyboard_.num_keysets();
         return true;
     }
-    if (sym == c.key_pageup) {
+    if (key == c.key_pageup || button == c.gamepad_pageup) {
         // L => Change keys backward
         keyboard_.current_keyset
             = (keyboard_.num_keysets() + keyboard_.current_keyset - 1)
             % keyboard_.num_keysets();
         return true;
     }
-    if (sym == c.key_transfer) {
+    if (key == c.key_transfer || button == c.gamepad_transfer) {
         // START => OK
         m_retVal = 1;
         return true;
@@ -434,29 +437,32 @@ const bool CKeyboard::keyPress(const SDL_Event &p_event)
 
 #ifdef USE_SDL2
     // Paste on CTRL + V
-    if (sym == SDLK_v && SDL_GetModState() & KMOD_CTRL) {
+    if (key == SDLK_v && SDL_GetModState() & KMOD_CTRL) {
         text_edit_.typeText(SDL_GetClipboardText());
         return true;
     }
 #endif
 
-    switch (sym) {
-        case SDLK_BACKSPACE: return text_edit_.backspace();
-        case SDLK_DELETE: return text_edit_.del();
-        case SDLK_HOME: return text_edit_.setCursorToStart();
-        case SDLK_END: return text_edit_.setCursorToEnd();
-        default:
+    if (event.type == SDL_KEYDOWN) {
+        switch (key) {
+            case SDLK_BACKSPACE: return text_edit_.backspace();
+            case SDLK_DELETE: return text_edit_.del();
+            case SDLK_HOME: return text_edit_.setCursorToStart();
+            case SDLK_END: return text_edit_.setCursorToEnd();
+            default:
 #ifndef USE_SDL2
-            if ((keysym.unicode & 0xFF80) == 0) {
-                const unsigned char c = keysym.unicode & 0x7F;
-                if (std::isprint(c)) {
-                    text_edit_.typeText(c);
-                    return true;
+                if ((event.key.keysym.unicode & 0xFF80) == 0) {
+                    const unsigned char c = event.key.keysym.unicode & 0x7F;
+                    if (std::isprint(c)) {
+                        text_edit_.typeText(c);
+                        return true;
+                    }
                 }
-            }
 #endif
-            return false;
+                return false;
+        }
     }
+    return false;
 }
 
 bool CKeyboard::textInput(const SDL_Event &event)
@@ -478,7 +484,7 @@ bool CKeyboard::textInput(const SDL_Event &event)
     return false;
 }
 
-const bool CKeyboard::keyHold(void)
+bool CKeyboard::keyHold()
 {
     const auto &c = config();
     if (m_lastPressed == c.key_up)

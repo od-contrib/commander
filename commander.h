@@ -27,10 +27,11 @@ class CCommander : public CWindow
     void onResize() override;
 
     // Key press management
-    const bool keyPress(const SDL_Event &p_event) override;
+    bool keyPress(const SDL_Event &event, SDLC_Keycode key,
+        ControllerButton button) override;
 
     // Key hold management
-    const bool keyHold(void) override;
+    bool keyHold() override;
 
     bool mouseDown(int button, int x, int y) override;
     bool mouseWheel(int dx, int dy) override;
