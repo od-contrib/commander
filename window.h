@@ -3,6 +3,7 @@
 
 #include <SDL.h>
 
+#include "controller_buttons.h"
 #include "sdl_backports.h"
 
 class CWindow
@@ -46,10 +47,11 @@ class CWindow
     virtual bool mouseWheel(int dx, int dy);
 
     // Key press management
-    virtual const bool keyPress(const SDL_Event &p_event);
+    virtual bool keyPress(
+        const SDL_Event &event, SDLC_Keycode key, ControllerButton button);
 
     // Key hold management
-    virtual const bool keyHold(void);
+    virtual bool keyHold();
 
     // SDL2 text input events: SDL_TEXTINPUT and SDL_TEXTEDITING
     virtual bool textInput(const SDL_Event &event);
@@ -61,6 +63,7 @@ class CWindow
     unsigned int m_timer;
 
     SDLC_Keycode m_lastPressed;
+    ControllerButton m_lastPressedButton;
 
     // Return value
     int m_retVal;

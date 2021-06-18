@@ -87,12 +87,14 @@ void ImageViewer::render(const bool focused) const
 }
 
 // Key press management
-const bool ImageViewer::keyPress(const SDL_Event &event)
+bool ImageViewer::keyPress(
+    const SDL_Event &event, SDLC_Keycode key, ControllerButton button)
 {
-    CWindow::keyPress(event);
+    CWindow::keyPress(event, key, button);
     const auto &c = config();
     const auto sym = event.key.keysym.sym;
-    if (sym == c.key_system || sym == c.key_parent) {
+    if (key == c.key_system || button == c.gamepad_system || key == c.key_parent
+        || button == c.gamepad_parent) {
         m_retVal = -1;
         return true;
     }

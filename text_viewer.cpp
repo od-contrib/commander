@@ -160,26 +160,32 @@ void TextViewer::render(const bool focused) const
     }
 }
 
-const bool TextViewer::keyPress(const SDL_Event &event)
+bool TextViewer::keyPress(
+    const SDL_Event &event, SDLC_Keycode key, ControllerButton button)
 {
-    CWindow::keyPress(event);
+    CWindow::keyPress(event, key, button);
     const auto &c = config();
     const auto sym = event.key.keysym.sym;
-    if (sym == c.key_system || sym == c.key_parent) {
+    if (key == c.key_system || button == c.gamepad_system || key == c.key_parent
+        || button == c.gamepad_parent) {
         m_retVal = -1;
         return true;
     }
-    if (sym == c.key_open || sym == c.key_operation) return editLine();
-    if (sym == c.key_up) return moveUp(1);
-    if (sym == c.key_down) return moveDown(1);
-    if (sym == c.key_pageup) return moveUp(numFullViewportLines() - 1);
-    if (sym == c.key_pagedown) return moveDown(numFullViewportLines() - 1);
-    if (sym == c.key_left) return moveLeft();
-    if (sym == c.key_right) return moveRight();
+    if (key == c.key_open || button == c.gamepad_open || key == c.key_operation
+        || button == c.gamepad_operation)
+        return editLine();
+    if (key == c.key_up || button == c.gamepad_up) return moveUp(1);
+    if (key == c.key_down || button == c.gamepad_down) return moveDown(1);
+    if (key == c.key_pageup || button == c.gamepad_pageup)
+        return moveUp(numFullViewportLines() - 1);
+    if (key == c.key_pagedown || button == c.gamepad_pagedown)
+        return moveDown(numFullViewportLines() - 1);
+    if (key == c.key_left || button == c.gamepad_left) return moveLeft();
+    if (key == c.key_right || button == c.gamepad_right) return moveRight();
     return false;
 }
 
-const bool TextViewer::keyHold()
+bool TextViewer::keyHold()
 {
     const auto &c = config();
     if (m_lastPressed == c.key_up) return tick(c.key_up) && moveUp(1);

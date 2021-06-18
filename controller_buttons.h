@@ -1,7 +1,10 @@
-#include <cstdint>
-
 #ifndef CONTROLLER_BUTTONS_H_
 #define CONTROLLER_BUTTONS_H_
+
+#include <cstdint>
+
+#include <SDL_events.h>
+#include <SDL_version.h>
 
 // Similar to SDL_GameControllerButton but also defines triggers (L2/R2).
 //
@@ -26,5 +29,10 @@ enum class ControllerButton : std::uint8_t {
     START,
     SELECT,
 };
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+// Must be called exactly once per SDL event.
+ControllerButton ControllerButtonFromSdlEvent(const SDL_Event &event);
+#endif
 
 #endif // CONTROLLER_BUTTONS_H_

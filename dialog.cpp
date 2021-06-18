@@ -205,30 +205,34 @@ void CDialog::render(const bool p_focus) const
     }
 }
 
-const bool CDialog::keyPress(const SDL_Event &p_event)
+bool CDialog::keyPress(
+    const SDL_Event &event, SDLC_Keycode key, ControllerButton button)
 {
-    CWindow::keyPress(p_event);
+    CWindow::keyPress(event, key, button);
     const auto &c = config();
-    const auto sym = p_event.key.keysym.sym;
-    if (sym == c.key_parent || sym == c.key_system) {
+    if (key == c.key_parent || button == c.gamepad_parent || key == c.key_system
+        || button == c.gamepad_system) {
         m_retVal = -1;
         return true;
     }
-    if (sym == c.key_up) return moveCursorUp(/*p_loop=*/true);
-    if (sym == c.key_down) return moveCursorDown(/*p_loop=*/true);
-    if (sym == c.key_pageup) {
+    if (key == c.key_up || button == c.gamepad_up)
+        return moveCursorUp(/*p_loop=*/true);
+    if (key == c.key_down || button == c.gamepad_down)
+        return moveCursorDown(/*p_loop=*/true);
+    if (key == c.key_pageup || button == c.gamepad_pageup) {
         if (m_highlightedLine == 0) return false;
         m_highlightedLine = 0;
         return true;
     }
-    if (sym == c.key_pagedown) {
+    if (key == c.key_pagedown || button == c.gamepad_pagedown) {
         if (m_highlightedLine + 1 < m_nbOptions) {
             m_highlightedLine = m_nbOptions - 1;
             return true;
         }
         return false;
     }
-    if (sym == c.key_open || sym == c.key_operation) {
+    if (key == c.key_open || button == c.gamepad_open || key == c.key_operation
+        || button == c.gamepad_operation) {
         m_retVal = static_cast<int>(m_highlightedLine + 1);
         return true;
     }
@@ -305,7 +309,7 @@ const bool CDialog::moveCursorDown(const bool p_loop)
     return l_ret;
 }
 
-const bool CDialog::keyHold(void)
+bool CDialog::keyHold()
 {
     const auto &c = config();
     if (m_lastPressed == c.key_up)

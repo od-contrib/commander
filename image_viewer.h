@@ -19,7 +19,8 @@ class ImageViewer : public CWindow {
   private:
     void init();
     void render(const bool focused) const override;
-    const bool keyPress(const SDL_Event &event) override;
+    bool keyPress(const SDL_Event &event, SDLC_Keycode key,
+        ControllerButton button) override;
     void onResize() override;
     bool isFullScreen() const override { return true; }
 

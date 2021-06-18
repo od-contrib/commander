@@ -19,8 +19,9 @@ class TextViewer : public CWindow {
     void init();
 
     void render(const bool focused) const override;
-    const bool keyPress(const SDL_Event &event) override;
-    const bool keyHold() override;
+    bool keyPress(const SDL_Event &event, SDLC_Keycode key,
+        ControllerButton button) override;
+    bool keyHold() override;
     bool mouseDown(int button, int x, int y) override;
     bool mouseWheel(int dx, int dy) override;
 
