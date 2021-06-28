@@ -394,11 +394,11 @@ bool CKeyboard::keyPress(
 {
     CWindow::keyPress(event, key, button);
     const auto &c = config();
-    if (key == osk_cancel_ || button == osk_gamepad_cancel_) {
+    if (key == osk_cancel_ || button == c.gamepad_parent) {
         m_retVal = -1;
         return true;
     }
-    if (key == osk_backspace_ || button == osk_gamepad_backspace_)
+    if (key == osk_backspace_ || button == c.gamepad_system)
         return text_edit_.backspace();
     if (key == c.key_up || button == c.gamepad_up)
         return moveCursorUp(/*p_loop=*/true);
@@ -484,32 +484,55 @@ bool CKeyboard::textInput(const SDL_Event &event)
     return false;
 }
 
+bool CKeyboard::actionUp() { return moveCursorUp(/*p_loop=*/false); }
+bool CKeyboard::actionDown() { return moveCursorDown(/*p_loop=*/false); }
+bool CKeyboard::actionLeft()
+{
+    return isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
+                               : moveCursorLeft(/*p_loop=*/false);
+}
+bool CKeyboard::actionRight()
+{
+    return isFocusOnTextEdit() ? text_edit_.moveCursorNext()
+                               : moveCursorRight(/*p_loop=*/false);
+}
+bool CKeyboard::actionOpen() { return pressFocusedKey(); }
+bool CKeyboard::actionBackspace() { return text_edit_.backspace(); }
+bool CKeyboard::actionOperation()
+{
+    text_edit_.typeText(' ');
+    return true;
+}
+
 bool CKeyboard::keyHold()
 {
     const auto &c = config();
-    if (m_lastPressed == c.key_up)
-        return tick(c.key_up) && moveCursorUp(/*p_loop=*/false);
-    if (m_lastPressed == c.key_down)
-        return tick(c.key_down) && moveCursorDown(/*p_loop=*/false);
-    if (m_lastPressed == c.key_left)
-        return tick(c.key_left)
-            && (isFocusOnTextEdit() ? text_edit_.moveCursorPrev()
-                                    : moveCursorLeft(/*p_loop=*/false));
-    if (m_lastPressed == c.key_right)
-        return tick(c.key_right)
-            && (isFocusOnTextEdit() ? text_edit_.moveCursorNext()
-                                    : moveCursorRight(/*p_loop=*/false));
-    if (m_lastPressed == c.key_open) // A => Add letter
-        return tick(c.key_open) && pressFocusedKey();
-    if (m_lastPressed == osk_backspace_)
-        return tick(osk_backspace_) && text_edit_.backspace();
-    if (m_lastPressed == c.key_operation) { // X => Space
-        if (!tick(c.key_operation)) return false;
-        text_edit_.typeText(' ');
-        return true;
-    }
+    if (tick(c.key_up)) return actionUp();
+    if (tick(c.key_down)) return actionDown();
+    if (tick(c.key_left)) return actionLeft();
+    if (tick(c.key_right)) return actionRight();
+    if (tick(c.key_open)) return actionOpen(); // A => Add letter
+    if (tick(c.key_system)) return actionBackspace();
+    if (tick(c.key_operation)) return actionOperation(); // X => Space
     return false;
 }
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+bool CKeyboard::gamepadHold(SDL_GameController *controller)
+{
+    const auto &c = config();
+    if (tick(controller, c.gamepad_up)) return actionUp();
+    if (tick(controller, c.gamepad_down)) return actionDown();
+    if (tick(controller, c.gamepad_left)) return actionLeft();
+    if (tick(controller, c.gamepad_right)) return actionRight();
+    if (tick(controller, c.gamepad_open))
+        return actionOpen(); // A => Add letter
+    if (tick(controller, c.gamepad_system)) return actionBackspace();
+    if (tick(controller, c.gamepad_operation))
+        return actionOperation(); // X => Space
+    return false;
+}
+#endif
 
 bool CKeyboard::mouseDown(int button, int x, int y)
 {

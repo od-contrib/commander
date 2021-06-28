@@ -312,12 +312,21 @@ const bool CDialog::moveCursorDown(const bool p_loop)
 bool CDialog::keyHold()
 {
     const auto &c = config();
-    if (m_lastPressed == c.key_up)
-        return tick(c.key_up) && moveCursorUp(/*p_loop=*/false);
-    if (m_lastPressed == c.key_down)
-        return tick(c.key_down) && moveCursorDown(/*p_loop=*/false);
+    if (tick(c.key_up)) return moveCursorUp(/*p_loop=*/false);
+    if (tick(c.key_down)) return moveCursorDown(/*p_loop=*/false);
     return false;
 }
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+bool CDialog::gamepadHold(SDL_GameController *controller)
+{
+    const auto &c = config();
+    if (tick(controller, c.gamepad_up)) return moveCursorUp(/*p_loop=*/false);
+    if (tick(controller, c.gamepad_down))
+        return moveCursorDown(/*p_loop=*/false);
+    return false;
+}
+#endif
 
 const unsigned int &CDialog::getHighlightedIndex(void) const
 {

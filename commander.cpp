@@ -107,14 +107,12 @@ bool CCommander::keyPress(
         if (openSystemMenu()) m_panelSource->refresh();
         return true;
     }
-    if (key == c.key_up || button == c.gamepad_up)
-        return m_panelSource->moveCursorUp(1);
-    if (key == c.key_down || button == c.gamepad_down)
-        return m_panelSource->moveCursorDown(1);
+    if (key == c.key_up || button == c.gamepad_up) return actionUp();
+    if (key == c.key_down || button == c.gamepad_down) return actionDown();
     if (key == c.key_pageup || button == c.gamepad_pageup)
-        return m_panelSource->moveCursorUp(NB_VISIBLE_LINES - 1);
+        return actionPageUp();
     if (key == c.key_pagedown || button == c.gamepad_pagedown)
-        return m_panelSource->moveCursorDown(NB_VISIBLE_LINES - 1);
+        return actionPageDown();
     if (key == c.key_left || button == c.gamepad_left) {
         if (m_panelSource != &m_panelRight) return false;
         m_panelSource = &m_panelLeft;
@@ -138,7 +136,7 @@ bool CCommander::keyPress(
         return operationMenu();
     }
     if (key == c.key_select || button == c.gamepad_select)
-        return m_panelSource->addToSelectList(true);
+        return actionSelect();
     if (key == c.key_transfer || button == c.gamepad_transfer) {
         if (m_panelSource->isDirectoryHighlighted()
             && m_panelSource->getHighlightedItem() != "..") {
@@ -149,23 +147,41 @@ bool CCommander::keyPress(
     return false;
 }
 
+bool CCommander::actionUp() { return m_panelSource->moveCursorUp(1); }
+bool CCommander::actionDown() { return m_panelSource->moveCursorDown(1); }
+bool CCommander::actionPageUp()
+{
+    return m_panelSource->moveCursorUp(NB_VISIBLE_LINES - 1);
+}
+bool CCommander::actionPageDown()
+{
+    return m_panelSource->moveCursorDown(NB_VISIBLE_LINES - 1);
+}
+bool CCommander::actionSelect() { return m_panelSource->addToSelectList(true); }
+
 bool CCommander::keyHold()
 {
     const auto &c = config();
-    if (m_lastPressed == c.key_up)
-        return tick(c.key_up) && m_panelSource->moveCursorUp(1);
-    if (m_lastPressed == c.key_down)
-        return tick(c.key_down) && m_panelSource->moveCursorDown(1);
-    if (m_lastPressed == c.key_pageup)
-        return tick(c.key_pageup)
-            && m_panelSource->moveCursorUp(NB_VISIBLE_LINES - 1);
-    if (m_lastPressed == c.key_pagedown)
-        return tick(c.key_pagedown)
-            && m_panelSource->moveCursorDown(NB_VISIBLE_LINES - 1);
-    if (m_lastPressed == c.key_select)
-        return tick(c.key_select) && m_panelSource->addToSelectList(true);
+    if (tick(c.key_up)) return actionUp();
+    if (tick(c.key_down)) return actionDown();
+    if (tick(c.key_pageup)) return actionPageUp();
+    if (tick(c.key_pagedown)) return actionPageDown();
+    if (tick(c.key_select)) return actionSelect();
     return false;
 }
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+bool CCommander::gamepadHold(SDL_GameController *controller)
+{
+    const auto &c = config();
+    if (tick(controller, c.gamepad_up)) return actionUp();
+    if (tick(controller, c.gamepad_down)) return actionDown();
+    if (tick(controller, c.gamepad_pageup)) return actionPageUp();
+    if (tick(controller, c.gamepad_pagedown)) return actionPageDown();
+    if (tick(controller, c.gamepad_select)) return actionSelect();
+    return false;
+}
+#endif
 
 CPanel *CCommander::focusPanelAt(int *x, int *y, bool *changed)
 {
