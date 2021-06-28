@@ -80,7 +80,10 @@ if (USE_SDL2)
   if (WITH_SYSTEM_SDL_TTF)
     find_package(SDL2 REQUIRED)
   else()
-    find_package(SDL2 2.0.10 REQUIRED) # for SDL_SIMD_ALIGNED
+    # Here we want to say:
+    # find_package(SDL2 2.0.10 REQUIRED) # for SDL_SIMD_ALIGNED
+    # However, Ubuntu 20.04 is missing `sdl-config-version.cmake`, so we can't.
+    find_package(SDL2 REQUIRED) # for SDL_SIMD_ALIGNED
   endif()
   if(TARGET SDL2::SDL2)
     set(SDL2_TARGET SDL2::SDL2)
