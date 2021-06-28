@@ -87,15 +87,26 @@ if (USE_SDL2)
   endif()
   if(TARGET SDL2::SDL2)
     set(SDL2_TARGET SDL2::SDL2)
-  else()
+    # The finder scripts use SDL2::Core to refer to SDL2::SDL2.
+    add_library(SDL2::Core ALIAS SDL2::SDL2)
+  elseif(TARGET SDL2::SDL2-static)
     # On some distros, such as vitasdk, only the SDL2::SDL2-static target is available.
-    set(SDL2_TARGET SDL2::SDL2-static)
     # Alias to SDL2::SDL2 because some finder scripts may refer to SDL2::SDL2.
     add_library(SDL2::SDL2 ALIAS SDL2::SDL2-static)
+    # The finder scripts use SDL2::Core to refer to SDL2::SDL2.
+    add_library(SDL2::Core ALIAS SDL2::SDL2-static)
+  else()
+    # Assume an older Debian derivate that comes with an sdl2-config.cmake
+    # that only defines `SDL2_LIBRARIES` (as -lSDL2) and `SDL2_INCLUDE_DIRS`.
+    add_library(SDL2_lib INTERFACE)
+    target_link_libraries(SDL2_lib INTERFACE ${SDL2_LIBRARIES})
+    target_include_directories(SDL2_lib INTERFACE ${SDL2_INCLUDE_DIRS})
+    # Can't define an INTERFACE target with ::, so alias instead
+    add_library(SDL2::SDL2 ALIAS SDL2_lib)
+    # The finder scripts use SDL2::Core to refer to SDL2::SDL2.
+    add_library(SDL2::Core ALIAS SDL2_lib)
   endif()
 
-  # The finder scripts use SDL2::Core to refer to SDL2::SDL2.
-  add_library(SDL2::Core ALIAS SDL2::SDL2)
   find_package(SDL2_image REQUIRED)
 else()
   find_package(SDL REQUIRED)
@@ -115,7 +126,7 @@ else ()
   # SDL_gfx: rotozoom only.
   if (USE_SDL2)
     add_library(SDL2_gfx STATIC third_party/SDL2_gfx-1.0.4/SDL2_rotozoom.c)
-    target_link_libraries(SDL2_gfx PUBLIC ${SDL2_TARGET})
+    target_link_libraries(SDL2_gfx PUBLIC SDL2::SDL2)
     target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL2_gfx-1.0.4/)
     set(SDL2_GFX_LIBRARIES SDL2_gfx)
   else()
@@ -144,7 +155,7 @@ else (WITH_SYSTEM_SDL_TTF)
   find_package(Freetype REQUIRED)
   if (USE_SDL2)
     add_library(SDL2_ttf STATIC third_party/SDL2_ttf/SDL_ttf.c)
-    target_link_libraries(SDL2_ttf ${SDL2_TARGET} ${FREETYPE_LIBRARIES})
+    target_link_libraries(SDL2_ttf SDL2::SDL2 ${FREETYPE_LIBRARIES})
     target_include_directories(SDL2_ttf PRIVATE ${FREETYPE_INCLUDE_DIRS})
     target_include_directories(${BIN_TARGET} PUBLIC third_party/SDL2_ttf/)
     set(SDL2_TTF_LIBRARIES SDL2_ttf)
@@ -168,7 +179,7 @@ set_target_properties(${BIN_TARGET} PROPERTIES
 
 if (USE_SDL2)
   target_link_libraries(${BIN_TARGET} PRIVATE
-    ${SDL2_TARGET}
+    SDL2::SDL2
     SDL2::Image
     ${SDL2_TTF_LIBRARIES}
     ${SDL2_GFX_LIBRARIES}
