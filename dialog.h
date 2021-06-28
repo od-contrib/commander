@@ -62,6 +62,9 @@ class CDialog : public CWindow
 
     // Key hold management
     bool keyHold() override;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+    bool gamepadHold(SDL_GameController *controller) override;
+#endif
 
     bool mouseDown(int button, int x, int y) override;
     bool mouseWheel(int dx, int dy) override;

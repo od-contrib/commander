@@ -101,6 +101,14 @@ class CKeyboard : public CWindow
         std::uint32_t border_color, std::uint32_t bg_color,
         SDL_Color sdl_bg_color) const;
 
+    bool actionUp();
+    bool actionDown();
+    bool actionLeft();
+    bool actionRight();
+    bool actionOpen();
+    bool actionBackspace();
+    bool actionOperation();
+
     // Window resized.
     void onResize() override;
 
@@ -110,6 +118,9 @@ class CKeyboard : public CWindow
 
     // Key hold management
     bool keyHold() override;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+    bool gamepadHold(SDL_GameController *controller) override;
+#endif
 
     bool mouseDown(int button, int x, int y) override;
 
@@ -172,9 +183,7 @@ class CKeyboard : public CWindow
 
     // Input config:
     SDLC_Keycode osk_backspace_;
-    ControllerButton osk_gamepad_backspace_;
     SDLC_Keycode osk_cancel_;
-    ControllerButton osk_gamepad_cancel_;
 };
 
 #endif

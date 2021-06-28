@@ -6,6 +6,10 @@
 #include <SDL_events.h>
 #include <SDL_version.h>
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+#include <SDL_gamecontroller.h>
+#endif
+
 // Similar to SDL_GameControllerButton but also defines triggers (L2/R2).
 //
 // NOTE: A, B, X, Y refer to physical positions on an XBox 360 controller.
@@ -33,6 +37,8 @@ enum class ControllerButton : std::uint8_t {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 // Must be called exactly once per SDL event.
 ControllerButton ControllerButtonFromSdlEvent(const SDL_Event &event);
+bool IsControllerButtonDown(
+    SDL_GameController *controller, ControllerButton button);
 #endif
 
 #endif // CONTROLLER_BUTTONS_H_

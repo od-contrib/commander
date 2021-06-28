@@ -1,11 +1,13 @@
 #include "controller_buttons.h"
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
+namespace {
+bool trigger_left_is_down;
+bool trigger_right_is_down;
+} // namespace
+
 ControllerButton ControllerButtonFromSdlEvent(const SDL_Event &event)
 {
-    static bool trigger_left_is_down;
-    static bool trigger_right_is_down;
-
     switch (event.type) {
         case SDL_CONTROLLERAXISMOTION:
             switch (event.caxis.axis) {
@@ -62,5 +64,57 @@ ControllerButton ControllerButtonFromSdlEvent(const SDL_Event &event)
         default: break;
     }
     return ControllerButton::NONE;
+}
+
+bool IsControllerButtonDown(
+    SDL_GameController *controller, ControllerButton button)
+{
+    switch (button) {
+        case ControllerButton::UP:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
+        case ControllerButton::DOWN:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+        case ControllerButton::LEFT:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+        case ControllerButton::RIGHT:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+        case ControllerButton::A:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_A);
+        case ControllerButton::B:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_B);
+        case ControllerButton::X:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_X);
+        case ControllerButton::Y:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_Y);
+        case ControllerButton::LEFTSHOULDER:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+        case ControllerButton::RIGHTSHOULDER:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+        case ControllerButton::TRIGGERLEFT: return trigger_left_is_down;
+        case ControllerButton::TRIGGERRIGHT: return trigger_right_is_down;
+        case ControllerButton::LEFTSTICK:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_LEFTSTICK);
+        case ControllerButton::RIGHTSTICK:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
+        case ControllerButton::START:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_START);
+        case ControllerButton::SELECT:
+            return SDL_GameControllerGetButton(
+                controller, SDL_CONTROLLER_BUTTON_BACK);
+    }
+    return false;
 }
 #endif

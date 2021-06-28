@@ -16,9 +16,6 @@ class CWindow
     // Execute main loop of the window
     int execute();
 
-    // Return value
-    const int getReturnValue(void) const;
-
     // Draw window
     virtual void render(const bool p_focus) const = 0;
 
@@ -52,6 +49,9 @@ class CWindow
 
     // Key hold management
     virtual bool keyHold();
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+    virtual bool gamepadHold(SDL_GameController *controller);
+#endif
 
     // SDL2 text input events: SDL_TEXTINPUT and SDL_TEXTEDITING
     virtual bool textInput(const SDL_Event &event);
@@ -59,8 +59,13 @@ class CWindow
     // Timer tick
     bool tick(SDLC_Keycode p_held);
 
-    // Timer for key hold
-    unsigned int m_timer;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+    bool tick(SDL_GameController *controller, ControllerButton button);
+#endif
+
+    // Timers for repeated events
+    unsigned int m_keyHoldCountdown;
+    unsigned int m_controllerButtonCountdown;
 
     SDLC_Keycode m_lastPressed;
     ControllerButton m_lastPressedButton;

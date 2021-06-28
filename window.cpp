@@ -11,10 +11,11 @@
 #define KEYHOLD_TIMER_FIRST   12
 #define KEYHOLD_TIMER         3
 
-CWindow::CWindow(void):
-    m_timer(0),
-    m_lastPressed(SDLK_0),
-    m_retVal(0)
+CWindow::CWindow(void)
+    : m_keyHoldCountdown(0)
+    , m_controllerButtonCountdown(0)
+    , m_lastPressed(SDLK_0)
+    , m_retVal(0)
 {
     // Add window to the lists for render
     Globals::g_windows.push_back(this);
@@ -153,6 +154,18 @@ int CWindow::execute()
         }
         // Handle key hold
         if (!l_loop) break;
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+        const int num_joysticks = SDL_NumJoysticks();
+        for (int i = 0; i < num_joysticks; ++i) {
+            if (!SDL_IsGameController(i)) continue;
+            SDL_GameController *controller = SDL_GameControllerFromInstanceID(
+                SDL_JoystickGetDeviceInstanceID(i));
+            if (controller == nullptr) continue;
+            l_render = this->gamepadHold(controller) || l_render;
+        }
+#endif
+
         l_render = this->keyHold() || l_render;
         // Render if necessary
         if (l_render)
@@ -202,69 +215,90 @@ bool CWindow::keyPress(
     const SDL_Event &event, SDLC_Keycode key, ControllerButton button)
 {
     // Reset timer if running
-    if (m_timer)
-        m_timer = 0;
+    if (m_keyHoldCountdown) m_keyHoldCountdown = 0;
     if (key != SDLK_UNKNOWN) m_lastPressed = key;
-    if (button != ControllerButton::NONE) m_lastPressedButton = button;
+    if (button != ControllerButton::NONE) {
+        m_controllerButtonCountdown = 0;
+        m_lastPressedButton = button;
+    }
     return false;
 }
 
-bool CWindow::keyHold()
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+bool CWindow::keyHold() { return false; }
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+bool CWindow::gamepadHold([[maybe_unused]] SDL_GameController *controller)
 {
-    // Default behavior
     return false;
 }
+#endif
 
-bool CWindow::textInput(const SDL_Event &event) { return false; }
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+bool CWindow::textInput([[maybe_unused]] const SDL_Event &event)
+{
+    return false;
+}
 
 void CWindow::onResize() { }
 
-#ifdef USE_SDL2
-bool CWindow::tick(SDL_Keycode keycode)
-#else
-bool CWindow::tick(SDLKey keycode)
-#endif
+bool CWindow::tick(SDLC_Keycode keycode)
 {
-#ifdef USE_SDL2
-    const bool held = SDL_GetKeyboardState(NULL)[SDL_GetScancodeFromKey(keycode)];
+    if (m_lastPressed != keycode) return false;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+    const bool held
+        = SDL_GetKeyboardState(NULL)[SDL_GetScancodeFromKey(keycode)];
 #else
     const bool held = SDL_GetKeyState(NULL)[keycode];
 #endif
-    if (held)
-    {
-        if (m_timer)
-        {
-            --m_timer;
-            if (!m_timer)
-            {
+    if (held) {
+        if (m_keyHoldCountdown != 0) {
+            --m_keyHoldCountdown;
+            if (m_keyHoldCountdown == 0) {
                 // Timer continues
-                m_timer = KEYHOLD_TIMER;
+                m_keyHoldCountdown = KEYHOLD_TIMER;
                 // Trigger!
                 return true;
             }
-        }
-        else
-        {
+        } else {
             // Start timer
-            m_timer = KEYHOLD_TIMER_FIRST;
+            m_keyHoldCountdown = KEYHOLD_TIMER_FIRST;
         }
-    }
-    else
-    {
+    } else {
         // Stop timer if running
-        if (m_timer)
-            m_timer = 0;
+        if (m_keyHoldCountdown != 0) m_keyHoldCountdown = 0;
     }
     return false;
 }
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+bool CWindow::tick(SDL_GameController *controller, ControllerButton button)
+{
+    if (controller == nullptr || m_lastPressedButton != button) return false;
+    if (IsControllerButtonDown(controller, button)) {
+        if (m_controllerButtonCountdown != 0) {
+            --m_controllerButtonCountdown;
+            if (m_controllerButtonCountdown == 0) {
+                // Timer continues
+                m_controllerButtonCountdown = KEYHOLD_TIMER;
+                // Trigger!
+                return true;
+            }
+        } else {
+            // Start timer
+            m_controllerButtonCountdown = KEYHOLD_TIMER_FIRST;
+        }
+    } else {
+        // Stop timer if running
+        if (m_controllerButtonCountdown != 0) m_controllerButtonCountdown = 0;
+    }
+    return false;
+}
+#endif
+
 bool CWindow::mouseDown(int button, int x, int y) { return false; }
 bool CWindow::mouseWheel(int dx, int dy) { return false; }
-
-const int CWindow::getReturnValue(void) const
-{
-    return m_retVal;
-}
 
 bool CWindow::isFullScreen(void) const
 {

@@ -188,16 +188,30 @@ bool TextViewer::keyPress(
 bool TextViewer::keyHold()
 {
     const auto &c = config();
-    if (m_lastPressed == c.key_up) return tick(c.key_up) && moveUp(1);
-    if (m_lastPressed == c.key_down) return tick(c.key_down) && moveDown(1);
-    if (m_lastPressed == c.key_pageup)
-        return tick(c.key_pageup) && moveUp(numFullViewportLines() - 1);
-    if (m_lastPressed == c.key_pagedown)
-        return tick(c.key_pagedown) && moveDown(numFullViewportLines() - 1);
-    if (m_lastPressed == c.key_left) return tick(c.key_left) && moveLeft();
-    if (m_lastPressed == c.key_right) return tick(c.key_right) && moveRight();
+    if (tick(c.key_up)) return moveUp(1);
+    if (tick(c.key_down)) return moveDown(1);
+    if (tick(c.key_pageup)) return moveUp(numFullViewportLines() - 1);
+    if (tick(c.key_pagedown)) return moveDown(numFullViewportLines() - 1);
+    if (tick(c.key_left)) return moveLeft();
+    if (tick(c.key_right)) return moveRight();
     return false;
 }
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+bool TextViewer::gamepadHold(SDL_GameController *controller)
+{
+    const auto &c = config();
+    if (tick(controller, c.gamepad_up)) return moveUp(1);
+    if (tick(controller, c.gamepad_down)) return moveDown(1);
+    if (tick(controller, c.gamepad_pageup))
+        return moveUp(numFullViewportLines() - 1);
+    if (tick(controller, c.gamepad_pagedown))
+        return moveDown(numFullViewportLines() - 1);
+    if (tick(controller, c.gamepad_left)) return moveLeft();
+    if (tick(controller, c.gamepad_right)) return moveRight();
+    return false;
+}
+#endif
 
 int TextViewer::getLineAt(int x, int y) const
 {
