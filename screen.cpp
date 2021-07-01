@@ -74,7 +74,7 @@ int Screen::init()
     int window_w = screen.actual_w;
     int window_h = screen.actual_h;
     window = SDL_CreateWindow("Commander", SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED, window_h, window_h, window_flags);
+        SDL_WINDOWPOS_UNDEFINED, window_w, window_h, window_flags);
     if (window == nullptr) {
         SDL_Log("Failed to create window: %s", SDL_GetError());
         return 1;
@@ -101,6 +101,9 @@ int Screen::init()
     SDL_GetWindowSize(window, &window_w, &window_h);
     setPhysicalResolution(window_w, window_h);
     screen.surface = SDL_GetWindowSurface(window);
+    if (screen.surface == nullptr) {
+        SDL_Log("SDL_GetWindowSurface failed: %s", SDL_GetError());
+    }
 #else
     surface = SetVideoMode(screen.actual_w, screen.actual_h, SCREEN_BPP,
         SDL_SWSURFACE | SDL_RESIZABLE);
