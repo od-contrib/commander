@@ -87,8 +87,8 @@ CResourceManager& CResourceManager::instance()
 }
 
 CResourceManager::CResourceManager()
-    : m_low_dpi_fonts(ShouldUseLowDpiFonts())
-    , m_fonts(LoadFonts(m_low_dpi_fonts))
+    : m_low_dpi_fonts(false)
+    , m_fonts({})
     , m_ppu_x(0)
     , m_ppu_y(0)
 {
