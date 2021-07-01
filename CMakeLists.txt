@@ -89,10 +89,18 @@ if (USE_SDL2)
   if(TARGET SDL2::SDL2)
     set(SDL2_TARGET SDL2::SDL2)
     # The finder scripts use SDL2::Core to refer to SDL2::SDL2.
+    if(CMAKE_VERSION VERSION_LESS "3.18")
+      # Aliasing local targets is not supported on CMake < 3.18, so make it global.
+      set_target_properties(SDL2::SDL2 PROPERTIES IMPORTED_GLOBAL TRUE)
+    endif()
     add_library(SDL2::Core ALIAS SDL2::SDL2)
   elseif(TARGET SDL2::SDL2-static)
     # On some distros, such as vitasdk, only the SDL2::SDL2-static target is available.
     # Alias to SDL2::SDL2 because some finder scripts may refer to SDL2::SDL2.
+    if(CMAKE_VERSION VERSION_LESS "3.18")
+      # Aliasing local targets is not supported on CMake < 3.18, so make it global.
+      set_target_properties(SDL2::SDL2-static PROPERTIES IMPORTED_GLOBAL TRUE)
+    endif()
     add_library(SDL2::SDL2 ALIAS SDL2::SDL2-static)
     # The finder scripts use SDL2::Core to refer to SDL2::SDL2.
     add_library(SDL2::Core ALIAS SDL2::SDL2-static)
