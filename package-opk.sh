@@ -21,8 +21,6 @@ main() {
   local ext="$TARGET"
   if [[ $TARGET == rg350 ]]; then
     ext=gcw0
-  elif [[ $TARGET == lepus ]]; then
-    ext=lepus
   fi
   local -a files=(
     "opkg/default.$ext.desktop"
