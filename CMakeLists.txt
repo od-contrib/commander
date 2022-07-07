@@ -5,10 +5,12 @@ project(DinguxCommander
   LANGUAGES C CXX)
 
 set(TARGET_PLATFORM host CACHE STRING "Target platform")
-set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS host retrofw gcw0 rg350 rs90 rg99)
+set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS host retrofw lepus gcw0 rg350 rs90 rg99)
 
 if(TARGET_PLATFORM STREQUAL "retrofw")
   include(CMake/retrofw_defs.cmake)
+elseif(TARGET_PLATFORM STREQUAL "lepus")
+  include(CMake/lepus_defs.cmake)
 elseif(TARGET_PLATFORM STREQUAL "gcw0")
   include(CMake/rg350_defs.cmake)
 elseif(TARGET_PLATFORM STREQUAL "rg350")
