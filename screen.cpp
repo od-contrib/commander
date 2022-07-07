@@ -58,7 +58,7 @@ int Screen::init()
                     = std::min(best.current_w / static_cast<float>(screen.w),
                         best.current_h / static_cast<float>(screen.h));
                 screen.ppu_x = screen.ppu_y = std::min(scale, 2.0f);
-            } else if (best.current_w != screen.w) {
+            } else {
                 // E.g. RS07 with 480x272 screen.
                 screen.ppu_x = screen.ppu_y = 1;
             }

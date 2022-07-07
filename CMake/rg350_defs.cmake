@@ -1,4 +1,6 @@
 set(USE_SDL2 OFF)
+SET(PPU_Y 2)
+
 set(PATH_DEFAULT \"/media/sdcard\")
 
 set(CMDR_KEY_UP SDLK_UP) # Up
