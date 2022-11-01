@@ -1,6 +1,6 @@
 /*
   SDL_ttf:  A companion library to SDL for working with TrueType (tm) fonts
-  Copyright (C) 2001-2021 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 2001-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -33,7 +33,8 @@
 #include FT_TRUETYPE_IDS_H
 #include FT_IMAGE_H
 
-/* Enable rendering with color */
+/* Enable rendering with color
+ * Freetype may need to be compiled with FT_CONFIG_OPTION_USE_PNG */
 #if defined(FT_HAS_COLOR)
 #  define TTF_USE_COLOR 1
 #else
@@ -51,9 +52,33 @@
 #include FT_MODULE_H
 #endif
 
-/* Enable HarfBuzz for Complex text rendering */
+/* Enable HarfBuzz for Complex text rendering
+ * Freetype may need to be compiled with FT_CONFIG_OPTION_USE_HARFBUZZ */
 #ifndef TTF_USE_HARFBUZZ
 #  define TTF_USE_HARFBUZZ 0
+#endif
+
+#if defined(SDL_BUILD_MAJOR_VERSION) && defined(SDL_COMPILE_TIME_ASSERT)
+SDL_COMPILE_TIME_ASSERT(SDL_BUILD_MAJOR_VERSION,
+                        SDL_TTF_MAJOR_VERSION == SDL_BUILD_MAJOR_VERSION);
+SDL_COMPILE_TIME_ASSERT(SDL_BUILD_MINOR_VERSION,
+                        SDL_TTF_MINOR_VERSION == SDL_BUILD_MINOR_VERSION);
+SDL_COMPILE_TIME_ASSERT(SDL_BUILD_MICRO_VERSION,
+                        SDL_TTF_PATCHLEVEL == SDL_BUILD_MICRO_VERSION);
+#endif
+
+#if defined(SDL_COMPILE_TIME_ASSERT)
+SDL_COMPILE_TIME_ASSERT(SDL_TTF_MAJOR_VERSION_min, SDL_TTF_MAJOR_VERSION >= 0);
+/* Limited only by the need to fit in SDL_version */
+SDL_COMPILE_TIME_ASSERT(SDL_TTF_MAJOR_VERSION_max, SDL_TTF_MAJOR_VERSION <= 255);
+
+SDL_COMPILE_TIME_ASSERT(SDL_TTF_MINOR_VERSION_min, SDL_TTF_MINOR_VERSION >= 0);
+/* Limited only by the need to fit in SDL_version */
+SDL_COMPILE_TIME_ASSERT(SDL_TTF_MINOR_VERSION_max, SDL_TTF_MINOR_VERSION <= 255);
+
+SDL_COMPILE_TIME_ASSERT(SDL_TTF_PATCHLEVEL_min, SDL_TTF_PATCHLEVEL >= 0);
+/* Limited by its encoding in SDL_VERSIONNUM and in the ABI versions */
+SDL_COMPILE_TIME_ASSERT(SDL_TTF_PATCHLEVEL_max, SDL_TTF_PATCHLEVEL <= 99);
 #endif
 
 #if TTF_USE_HARFBUZZ
@@ -94,7 +119,7 @@ int TTF_SetScript(int script) /* hb_script_t */
 #endif
 
 /* Round glyph width to 16 bytes use NEON instructions */
-#if defined(__ARM_NEON)
+#if 0 /*defined(__ARM_NEON)*/
 #  define HAVE_NEON_INTRINSICS 1
 #endif
 
@@ -151,7 +176,7 @@ static SDL_INLINE int hasNEON()
 #define GLYPH_ITALICS  0x0366AL
 
 /* Handy routines for converting from fixed point 26.6 */
-#define FT_FLOOR(X) (((X) & -64) / 64)
+#define FT_FLOOR(X) (int)(((X) & -64) / 64)
 #define FT_CEIL(X)  FT_FLOOR((X) + 63)
 
 /* Handy routine for converting to fixed point 26.6 */
@@ -166,11 +191,13 @@ static SDL_INLINE int hasNEON()
 #define DIVIDE_BY_255(x)    DIVIDE_BY_255_SIGNED(x, 1)
 
 
-#define CACHED_METRICS  0x10
+#define CACHED_METRICS  0x20
+
 #define CACHED_BITMAP   0x01
 #define CACHED_PIXMAP   0x02
 #define CACHED_COLOR    0x04
-#define CACHED_SUBPIX   0x08
+#define CACHED_LCD      0x08
+#define CACHED_SUBPIX   0x10
 
 
 typedef struct {
@@ -263,8 +290,15 @@ struct _TTF_Font {
     int render_subpixel;
 #if TTF_USE_HARFBUZZ
     hb_font_t *hb_font;
+    /* If HB_SCRIPT_INVALID, use global default script */
+    hb_script_t hb_script;
+    /* If HB_DIRECTION_INVALID, use global default direction */
+    hb_direction_t hb_direction;
 #endif
     int render_sdf;
+
+    /* Extra layout setting for wrapped text */
+    int horizontal_align;
 };
 
 /* Tell if SDL_ttf has to handle the style */
@@ -277,9 +311,9 @@ struct _TTF_Font {
 #define TTF_STYLE_NO_GLYPH_CHANGE   (TTF_STYLE_UNDERLINE | TTF_STYLE_STRIKETHROUGH)
 
 /* The FreeType font engine/library */
-static FT_Library library;
+static FT_Library library = NULL;
 static int TTF_initialized = 0;
-static int TTF_byteswapped = 0;
+static SDL_bool TTF_byteswapped = SDL_FALSE;
 
 #define TTF_CHECK_INITIALIZED(errval)                   \
     if (!TTF_initialized) {                             \
@@ -296,7 +330,8 @@ static int TTF_byteswapped = 0;
 typedef enum {
     RENDER_SOLID = 0,
     RENDER_SHADED,
-    RENDER_BLENDED
+    RENDER_BLENDED,
+    RENDER_LCD
 } render_mode_t;
 
 typedef enum {
@@ -321,7 +356,7 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
         SDL_Color fg, SDL_Color bg, Uint32 wrapLength, render_mode_t render_mode);
 
 static SDL_INLINE int Find_GlyphByIndex(TTF_Font *font, FT_UInt idx,
-        int want_bitmap, int want_pixmap, int want_color, int want_subpixel,
+        int want_bitmap, int want_pixmap, int want_color, int want_lcd, int want_subpixel,
         int translation, c_glyph **out_glyph, TTF_Image **out_image);
 
 static void Flush_Cache(TTF_Font *font);
@@ -384,7 +419,8 @@ static SDL_INLINE void BG_Blended_Color(const TTF_Image *image, Uint32 *destinat
                     tmp = *src++;
                     alpha = tmp >> 24;
                     tmp &= ~0xFF000000;
-                    alpha =  DIVIDE_BY_255(fg_alpha * alpha) << 24;
+                    alpha = fg_alpha * alpha;
+                    alpha =  DIVIDE_BY_255(alpha) << 24;
                     *dst++ = tmp | alpha
                     , width);
             /* *INDENT-ON* */
@@ -393,6 +429,73 @@ static SDL_INLINE void BG_Blended_Color(const TTF_Image *image, Uint32 *destinat
         }
     }
 }
+
+/* Blend with LCD rendering */
+static SDL_INLINE void BG_Blended_LCD(const TTF_Image *image, Uint32 *destination, Sint32 srcskip, Uint32 dstskip, SDL_Color *fg)
+{
+    const Uint32 *src   = (Uint32 *)image->buffer;
+    Uint32      *dst    = destination;
+    Uint32       width  = image->width;
+    Uint32       height = image->rows;
+
+    Uint32 tmp, bg;
+    Uint32 r, g, b;
+    Uint8 fg_r, fg_g, fg_b;
+    Uint8 bg_r, bg_g, bg_b;
+    Uint32 bg_a;
+
+    int x, y = 0;
+
+    fg_r = fg->r;
+    fg_g = fg->g;
+    fg_b = fg->b;
+
+    while (height--) {
+        y++;
+        x = 0;
+        /* *INDENT-OFF* */
+        DUFFS_LOOP4(
+                x++;
+                tmp = *src++;
+
+                if (tmp) {
+                    bg = *dst;
+
+                    bg_a = bg & 0xff000000;
+                    bg_r = (bg >> 16) & 0xff;
+                    bg_g = (bg >> 8) & 0xff;
+                    bg_b = (bg >> 0) & 0xff;
+
+                    r = (tmp >> 16) & 0xff;
+                    g = (tmp >> 8) & 0xff;
+                    b = (tmp >> 0) & 0xff;
+
+                    r = fg_r * r + bg_r * (255 - r) + 127;
+                    r = DIVIDE_BY_255(r);
+
+                    g = fg_g * g + bg_g * (255 - g) + 127;
+                    g = DIVIDE_BY_255(g);
+
+                    b = fg_b * b + bg_b * (255 - b) + 127;
+                    b = DIVIDE_BY_255(b);
+
+                    r <<= 16;
+                    g <<= 8;
+                    b <<= 0;
+
+                    *dst = r | g | b | bg_a;
+                }
+                dst++;
+
+                , width);
+        /* *INDENT-ON* */
+        src = (const Uint32 *)((const Uint8 *)src + srcskip);
+        dst = (Uint32 *)((Uint8 *)dst + dstskip);
+    }
+
+}
+
+#if TTF_USE_SDF
 
 /* Blended Opaque SDF */
 static SDL_INLINE void BG_Blended_Opaque_SDF(const TTF_Image *image, Uint32 *destination, Sint32 srcskip, Uint32 dstskip)
@@ -449,6 +552,8 @@ static SDL_INLINE void BG_Blended_SDF(const TTF_Image *image, Uint32 *destinatio
         dst  = (Uint32 *)((Uint8 *)dst + dstskip);
     }
 }
+
+#endif /* TTF_USE_SDF */
 
 /* Blended Opaque */
 static SDL_INLINE void BG_Blended_Opaque(const TTF_Image *image, Uint32 *destination, Sint32 srcskip, Uint32 dstskip)
@@ -894,10 +999,23 @@ static SDL_INLINE void BG_NEON(const TTF_Image *image, Uint8 *destination, Sint3
 #endif
 
 /* Underline and Strikethrough style. Draw a line at the given row. */
-static void Draw_Line(const SDL_Surface *textbuf, int row, int line_width, int line_thickness, Uint32 color, const render_mode_t render_mode)
+static void Draw_Line(TTF_Font *font, const SDL_Surface *textbuf, int column, int row, int line_width, int line_thickness, Uint32 color, const render_mode_t render_mode)
 {
     int tmp    = row + line_thickness - textbuf->h;
-    Uint8 *dst = (Uint8 *)textbuf->pixels + row * textbuf->pitch;
+    int x_offset = column * textbuf->format->BytesPerPixel;
+    Uint8 *dst = (Uint8 *)textbuf->pixels + row * textbuf->pitch + x_offset;
+#if TTF_USE_HARFBUZZ
+    hb_direction_t hb_direction = font->hb_direction;
+
+    if (hb_direction == HB_DIRECTION_INVALID) {
+        hb_direction = g_hb_direction;
+    }
+
+    /* No Underline/Strikethrough style if direction is vertical */
+    if (hb_direction == HB_DIRECTION_TTB || hb_direction == HB_DIRECTION_BTT) {
+        return;
+    }
+#endif
 
     /* Not needed because of "font->height = SDL_max(font->height, bottom_row);".
      * But if you patch to render textshaping and break line in middle of a cluster,
@@ -911,7 +1029,7 @@ static void Draw_Line(const SDL_Surface *textbuf, int row, int line_width, int l
     /* Wrapped mode with an unbroken line: 'line_width' is greater that 'textbuf->w' */
     line_width = SDL_min(line_width, textbuf->w);
 
-    if (render_mode == RENDER_BLENDED) {
+    if (render_mode == RENDER_BLENDED || render_mode == RENDER_LCD) {
         while (line_thickness--) {
             SDL_memset4(dst, color, line_width);
             dst += textbuf->pitch;
@@ -924,7 +1042,7 @@ static void Draw_Line(const SDL_Surface *textbuf, int row, int line_width, int l
     }
 }
 
-static void clip_glyph(int *_x, int *_y, TTF_Image *image, const SDL_Surface *textbuf)
+static void clip_glyph(int *_x, int *_y, TTF_Image *image, const SDL_Surface *textbuf, int is_lcd)
 {
     int above_w;
     int above_h;
@@ -932,8 +1050,7 @@ static void clip_glyph(int *_x, int *_y, TTF_Image *image, const SDL_Surface *te
     int y = *_y;
 
     int srcbpp = 1;
-    if (image->is_color) {
-        /* This isn't tested because colored image never ends up left clipped */
+    if (image->is_color || is_lcd) {
         srcbpp = 4;
     }
 
@@ -1003,14 +1120,15 @@ static int Get_Alignement()
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-value"
 #endif
-#define BUILD_RENDER_LINE(NAME, IS_BLENDED, IS_BLENDED_OPAQUE, WB_WP_WC, WS, BLIT_GLYPH_BLENDED_OPAQUE_OPTIM, BLIT_GLYPH_BLENDED_OPTIM, BLIT_GLYPH_OPTIM) \
+#define BUILD_RENDER_LINE(NAME, IS_BLENDED, IS_BLENDED_OPAQUE, IS_LCD, WB_WP_WC, WS, BLIT_GLYPH_BLENDED_OPAQUE_OPTIM, BLIT_GLYPH_BLENDED_OPTIM, BLIT_GLYPH_OPTIM) \
                                                                                                                         \
 static SDL_INLINE                                                                                                       \
-int Render_Line_##NAME(TTF_Font *font, SDL_Surface *textbuf, int xstart, int ystart, Uint8 fg_alpha)                    \
+int Render_Line_##NAME(TTF_Font *font, SDL_Surface *textbuf, int xstart, int ystart, SDL_Color *fg)                     \
 {                                                                                                                       \
     const int alignment = Get_Alignement() - 1;                                                                         \
-    const int bpp = ((IS_BLENDED) ? 4 : 1);                                                                             \
+    const int bpp = ((IS_BLENDED || IS_LCD) ? 4 : 1);                                                                   \
     unsigned int i;                                                                                                     \
+    Uint8 fg_alpha = (fg ? fg->a : 0);                                                                                  \
     for (i = 0; i < font->pos_len; i++) {                                                                               \
         FT_UInt idx = font->pos_buf[i].index;                                                                           \
         int x       = font->pos_buf[i].x;                                                                               \
@@ -1039,15 +1157,24 @@ int Render_Line_##NAME(TTF_Font *font, SDL_Surface *textbuf, int xstart, int yst
                 /* Compute dst */                                                                                       \
                 dst  = (Uint8 *)textbuf->pixels + y * textbuf->pitch + x * bpp;                                         \
                 /* Align dst, get remainder, shift & align glyph width */                                               \
-                remainder = ((size_t)dst & alignment) / bpp;                                                            \
-                dst  = (Uint8 *)((size_t)dst & ~alignment);                                                             \
+                remainder = ((uintptr_t)dst & alignment) / bpp;                                                         \
+                dst  = (Uint8 *)((uintptr_t)dst & ~alignment);                                                          \
                 image->buffer -= remainder;                                                                             \
                 image->width   = (image->width + remainder + alignment) & ~alignment;                                   \
                 /* Compute srcskip, dstskip */                                                                          \
                 srcskip = image->pitch - image->width;                                                                  \
                 dstskip = textbuf->pitch - image->width * bpp;                                                          \
                 /* Render glyph at (x, y) with optimized copy functions */                                              \
-                if (!IS_BLENDED || image->is_color == 0) {                                                              \
+                if (IS_LCD) {                                                                                           \
+                    image->buffer = saved_buffer;                                                                       \
+                    image->buffer += alignment;                                                                         \
+                    image->width = saved_width;                                                                         \
+                    dst = (Uint8 *)textbuf->pixels + y * textbuf->pitch + x * bpp;                                      \
+                    /* Compute srcskip, dstskip */                                                                      \
+                    srcskip = image->pitch - 4 * image->width;                                                          \
+                    dstskip = textbuf->pitch - image->width * bpp;                                                      \
+                    BG_Blended_LCD(image, (Uint32 *)dst, srcskip, dstskip, fg);                                         \
+                } else if (!IS_BLENDED || image->is_color == 0) {                                                       \
                     if (IS_BLENDED_OPAQUE) {                                                                            \
                         BLIT_GLYPH_BLENDED_OPAQUE_OPTIM(image, (Uint32 *)dst, srcskip, dstskip);                        \
                     } else if (IS_BLENDED) {                                                                            \
@@ -1071,14 +1198,17 @@ int Render_Line_##NAME(TTF_Font *font, SDL_Surface *textbuf, int xstart, int yst
                 /* Modify a copy, and clip it */                                                                        \
                 TTF_Image image_clipped = *image;                                                                       \
                 /* Intersect image glyph at (x,y) with textbuf */                                                       \
-                clip_glyph(&x, &y, &image_clipped, textbuf);                                                            \
+                clip_glyph(&x, &y, &image_clipped, textbuf, IS_LCD);                                                    \
                 /* Compute dst */                                                                                       \
                 dst = (Uint8 *)textbuf->pixels + y * textbuf->pitch + x * bpp;                                          \
                 /* Compute srcskip, dstskip */                                                                          \
                 srcskip = image_clipped.pitch - image_clipped.width;                                                    \
                 dstskip = textbuf->pitch - image_clipped.width * bpp;                                                   \
                 /* Render glyph at (x, y) */                                                                            \
-                if (!IS_BLENDED || image->is_color == 0) {                                                              \
+                if (IS_LCD) {                                                                                           \
+                    srcskip -= 3 * image_clipped.width;                                                                 \
+                    BG_Blended_LCD(&image_clipped, (Uint32 *)dst, srcskip, dstskip, fg);                                \
+                } else if (!IS_BLENDED || image->is_color == 0) {                                                       \
                     if (IS_BLENDED_OPAQUE) {                                                                            \
                         BG_Blended_Opaque(&image_clipped, (Uint32 *)dst, srcskip, dstskip);                             \
                     } else if (IS_BLENDED) {                                                                            \
@@ -1101,107 +1231,125 @@ int Render_Line_##NAME(TTF_Font *font, SDL_Surface *textbuf, int xstart, int yst
 }                                                                                                                       \
                                                                                                                         \
 
-#define BITMAP  CACHED_BITMAP, 0, 0
-#define PIXMAP  0, CACHED_PIXMAP, 0
-#define COLOR   0, 0, CACHED_COLOR
+#define BITMAP  CACHED_BITMAP, 0, 0, 0
+#define PIXMAP  0, CACHED_PIXMAP, 0, 0
+#define COLOR   0, 0, CACHED_COLOR, 0
+#define LCD     0, 0, 0, CACHED_LCD
 
 #define SUBPIX  CACHED_SUBPIX
 
-/* BUILD_RENDER_LINE(NAME, IS_BLENDED, IS_BLENDED_OPAQUE, WANT_BITMAP_PIXMAP_COLOR, WANT_SUBPIXEL, BLIT_GLYPH_BLENDED_OPAQUE_OPTIM, BLIT_GLYPH_BLENDED_OPTIM, BLIT_GLYPH_OPTIM) */
+/* BUILD_RENDER_LINE(NAME, IS_BLENDED, IS_BLENDED_OPAQUE, WANT_BITMAP_PIXMAP_COLOR_LCD, WANT_SUBPIXEL, BLIT_GLYPH_BLENDED_OPAQUE_OPTIM, BLIT_GLYPH_BLENDED_OPTIM, BLIT_GLYPH_OPTIM) */
 
 #if defined(HAVE_SSE2_INTRINSICS)
-BUILD_RENDER_LINE(SSE_Shaded            , 0, 0, PIXMAP, 0     ,                       ,                , BG_SSE     )
-BUILD_RENDER_LINE(SSE_Blended           , 1, 0,  COLOR, 0     ,                       , BG_Blended_SSE ,            )
-BUILD_RENDER_LINE(SSE_Blended_Opaque    , 1, 1,  COLOR, 0     , BG_Blended_Opaque_SSE ,                ,            )
-BUILD_RENDER_LINE(SSE_Solid             , 0, 0, BITMAP, 0     ,                       ,                , BG_SSE     )
-BUILD_RENDER_LINE(SSE_Shaded_SP         , 0, 0, PIXMAP, SUBPIX,                       ,                , BG_SSE     )
-BUILD_RENDER_LINE(SSE_Blended_SP        , 1, 0,  COLOR, SUBPIX,                       , BG_Blended_SSE ,            )
-BUILD_RENDER_LINE(SSE_Blended_Opaque_SP , 1, 1,  COLOR, SUBPIX, BG_Blended_Opaque_SSE ,                ,            )
+BUILD_RENDER_LINE(SSE_Shaded            , 0, 0, 0, PIXMAP, 0     ,                       ,                , BG_SSE     )
+BUILD_RENDER_LINE(SSE_Blended           , 1, 0, 0,  COLOR, 0     ,                       , BG_Blended_SSE ,            )
+BUILD_RENDER_LINE(SSE_Blended_Opaque    , 1, 1, 0,  COLOR, 0     , BG_Blended_Opaque_SSE ,                ,            )
+BUILD_RENDER_LINE(SSE_Solid             , 0, 0, 0, BITMAP, 0     ,                       ,                , BG_SSE     )
+BUILD_RENDER_LINE(SSE_Shaded_SP         , 0, 0, 0, PIXMAP, SUBPIX,                       ,                , BG_SSE     )
+BUILD_RENDER_LINE(SSE_Blended_SP        , 1, 0, 0,  COLOR, SUBPIX,                       , BG_Blended_SSE ,            )
+BUILD_RENDER_LINE(SSE_Blended_Opaque_SP , 1, 1, 0,  COLOR, SUBPIX, BG_Blended_Opaque_SSE ,                ,            )
+BUILD_RENDER_LINE(SSE_LCD               , 0, 0, 1,    LCD, 0,                            ,                ,            )
+BUILD_RENDER_LINE(SSE_LCD_SP            , 0, 0, 1,    LCD, SUBPIX,                       ,                ,            )
 #endif
 
 #if defined(HAVE_NEON_INTRINSICS)
-BUILD_RENDER_LINE(NEON_Shaded           , 0, 0, PIXMAP, 0     ,                       ,                , BG_NEON    )
-BUILD_RENDER_LINE(NEON_Blended          , 1, 0,  COLOR, 0     ,                       , BG_Blended_NEON,            )
-BUILD_RENDER_LINE(NEON_Blended_Opaque   , 1, 1,  COLOR, 0     , BG_Blended_Opaque_NEON,                ,            )
-BUILD_RENDER_LINE(NEON_Solid            , 0, 0, BITMAP, 0     ,                       ,                , BG_NEON    )
-BUILD_RENDER_LINE(NEON_Shaded_SP        , 0, 0, PIXMAP, SUBPIX,                       ,                , BG_NEON    )
-BUILD_RENDER_LINE(NEON_Blended_SP       , 1, 0,  COLOR, SUBPIX,                       , BG_Blended_NEON,            )
-BUILD_RENDER_LINE(NEON_Blended_Opaque_SP, 1, 1,  COLOR, SUBPIX, BG_Blended_Opaque_NEON,                ,            )
+BUILD_RENDER_LINE(NEON_Shaded           , 0, 0, 0, PIXMAP, 0     ,                       ,                , BG_NEON    )
+BUILD_RENDER_LINE(NEON_Blended          , 1, 0, 0,  COLOR, 0     ,                       , BG_Blended_NEON,            )
+BUILD_RENDER_LINE(NEON_Blended_Opaque   , 1, 1, 0,  COLOR, 0     , BG_Blended_Opaque_NEON,                ,            )
+BUILD_RENDER_LINE(NEON_Solid            , 0, 0, 0, BITMAP, 0     ,                       ,                , BG_NEON    )
+BUILD_RENDER_LINE(NEON_Shaded_SP        , 0, 0, 0, PIXMAP, SUBPIX,                       ,                , BG_NEON    )
+BUILD_RENDER_LINE(NEON_Blended_SP       , 1, 0, 0,  COLOR, SUBPIX,                       , BG_Blended_NEON,            )
+BUILD_RENDER_LINE(NEON_Blended_Opaque_SP, 1, 1, 0,  COLOR, SUBPIX, BG_Blended_Opaque_NEON,                ,            )
+BUILD_RENDER_LINE(NEON_LCD              , 0, 0, 1,    LCD, 0     ,                       ,                ,            )
+BUILD_RENDER_LINE(NEON_LCD_SP           , 0, 0, 1,    LCD, SUBPIX,                       ,                ,            )
 #endif
 
 #if defined(HAVE_BLIT_GLYPH_64)
-BUILD_RENDER_LINE(64_Shaded             , 0, 0, PIXMAP, 0     ,                       ,                , BG_64      )
-BUILD_RENDER_LINE(64_Blended            , 1, 0,  COLOR, 0     ,                       , BG_Blended_32  ,            )
-BUILD_RENDER_LINE(64_Blended_Opaque     , 1, 1,  COLOR, 0     , BG_Blended_Opaque_32  ,                ,            )
-BUILD_RENDER_LINE(64_Solid              , 0, 0, BITMAP, 0     ,                       ,                , BG_64      )
-BUILD_RENDER_LINE(64_Shaded_SP          , 0, 0, PIXMAP, SUBPIX,                       ,                , BG_64      )
-BUILD_RENDER_LINE(64_Blended_SP         , 1, 0,  COLOR, SUBPIX,                       , BG_Blended_32  ,            )
-BUILD_RENDER_LINE(64_Blended_Opaque_SP  , 1, 1,  COLOR, SUBPIX, BG_Blended_Opaque_32  ,                ,            )
+BUILD_RENDER_LINE(64_Shaded             , 0, 0, 0, PIXMAP, 0     ,                       ,                , BG_64      )
+BUILD_RENDER_LINE(64_Blended            , 1, 0, 0,  COLOR, 0     ,                       , BG_Blended_32  ,            )
+BUILD_RENDER_LINE(64_Blended_Opaque     , 1, 1, 0,  COLOR, 0     , BG_Blended_Opaque_32  ,                ,            )
+BUILD_RENDER_LINE(64_Solid              , 0, 0, 0, BITMAP, 0     ,                       ,                , BG_64      )
+BUILD_RENDER_LINE(64_Shaded_SP          , 0, 0, 0, PIXMAP, SUBPIX,                       ,                , BG_64      )
+BUILD_RENDER_LINE(64_Blended_SP         , 1, 0, 0,  COLOR, SUBPIX,                       , BG_Blended_32  ,            )
+BUILD_RENDER_LINE(64_Blended_Opaque_SP  , 1, 1, 0,  COLOR, SUBPIX, BG_Blended_Opaque_32  ,                ,            )
+BUILD_RENDER_LINE(64_LCD                , 0, 0, 1,    LCD, 0     ,                       ,                ,            )
+BUILD_RENDER_LINE(64_LCD_SP             , 0, 0, 1,    LCD, SUBPIX,                       ,                ,            )
 #elif defined(HAVE_BLIT_GLYPH_32)
-BUILD_RENDER_LINE(32_Shaded             , 0, 0, PIXMAP, 0     ,                       ,                , BG_32      )
-BUILD_RENDER_LINE(32_Blended            , 1, 0,  COLOR, 0     ,                       , BG_Blended_32  ,            )
-BUILD_RENDER_LINE(32_Blended_Opaque     , 1, 1,  COLOR, 0     , BG_Blended_Opaque_32  ,                ,            )
-BUILD_RENDER_LINE(32_Solid              , 0, 0, BITMAP, 0     ,                       ,                , BG_32      )
-BUILD_RENDER_LINE(32_Shaded_SP          , 0, 0, PIXMAP, SUBPIX,                       ,                , BG_32      )
-BUILD_RENDER_LINE(32_Blended_SP         , 1, 0,  COLOR, SUBPIX,                       , BG_Blended_32  ,            )
-BUILD_RENDER_LINE(32_Blended_Opaque_SP  , 1, 1,  COLOR, SUBPIX, BG_Blended_Opaque_32  ,                ,            )
+BUILD_RENDER_LINE(32_Shaded             , 0, 0, 0, PIXMAP, 0     ,                       ,                , BG_32      )
+BUILD_RENDER_LINE(32_Blended            , 1, 0, 0,  COLOR, 0     ,                       , BG_Blended_32  ,            )
+BUILD_RENDER_LINE(32_Blended_Opaque     , 1, 1, 0,  COLOR, 0     , BG_Blended_Opaque_32  ,                ,            )
+BUILD_RENDER_LINE(32_Solid              , 0, 0, 0, BITMAP, 0     ,                       ,                , BG_32      )
+BUILD_RENDER_LINE(32_Shaded_SP          , 0, 0, 0, PIXMAP, SUBPIX,                       ,                , BG_32      )
+BUILD_RENDER_LINE(32_Blended_SP         , 1, 0, 0,  COLOR, SUBPIX,                       , BG_Blended_32  ,            )
+BUILD_RENDER_LINE(32_Blended_Opaque_SP  , 1, 1, 0,  COLOR, SUBPIX, BG_Blended_Opaque_32  ,                ,            )
+BUILD_RENDER_LINE(32_LCD                , 0, 0, 1,    LCD, 0     ,                       ,                ,            )
+BUILD_RENDER_LINE(32_LCD_SP             , 0, 0, 1,    LCD, SUBPIX,                       ,                ,            )
 #else
-BUILD_RENDER_LINE(8_Shaded              , 0, 0, PIXMAP, 0     ,                       ,                , BG         )
-BUILD_RENDER_LINE(8_Blended             , 1, 0,  COLOR, 0     ,                       , BG_Blended     ,            )
-BUILD_RENDER_LINE(8_Blended_Opaque      , 1, 1,  COLOR, 0     , BG_Blended_Opaque     ,                ,            )
-BUILD_RENDER_LINE(8_Solid               , 0, 0, BITMAP, 0     ,                       ,                , BG         )
-BUILD_RENDER_LINE(8_Shaded_SP           , 0, 0, PIXMAP, SUBPIX,                       ,                , BG         )
-BUILD_RENDER_LINE(8_Blended_SP          , 1, 0,  COLOR, SUBPIX,                       , BG_Blended     ,            )
-BUILD_RENDER_LINE(8_Blended_Opaque_SP   , 1, 1,  COLOR, SUBPIX, BG_Blended_Opaque     ,                ,            )
+BUILD_RENDER_LINE(8_Shaded              , 0, 0, 0, PIXMAP, 0     ,                       ,                , BG         )
+BUILD_RENDER_LINE(8_Blended             , 1, 0, 0,  COLOR, 0     ,                       , BG_Blended     ,            )
+BUILD_RENDER_LINE(8_Blended_Opaque      , 1, 1, 0,  COLOR, 0     , BG_Blended_Opaque     ,                ,            )
+BUILD_RENDER_LINE(8_Solid               , 0, 0, 0, BITMAP, 0     ,                       ,                , BG         )
+BUILD_RENDER_LINE(8_Shaded_SP           , 0, 0, 0, PIXMAP, SUBPIX,                       ,                , BG         )
+BUILD_RENDER_LINE(8_Blended_SP          , 1, 0, 0,  COLOR, SUBPIX,                       , BG_Blended     ,            )
+BUILD_RENDER_LINE(8_Blended_Opaque_SP   , 1, 1, 0,  COLOR, SUBPIX, BG_Blended_Opaque     ,                ,            )
+BUILD_RENDER_LINE(8_LCD                 , 0, 0, 1,    LCD, 0     ,                       ,                ,            )
+BUILD_RENDER_LINE(8_LCD_SP              , 0, 0, 1,    LCD, SUBPIX,                       ,                ,            )
 #endif
 
 
 #if TTF_USE_SDF
-int (*Render_Line_SDF_Shaded)() = NULL;
-BUILD_RENDER_LINE(SDF_Blended           , 1, 0,  COLOR, 0     ,                       , BG_Blended_SDF ,            )
-BUILD_RENDER_LINE(SDF_Blended_Opaque    , 1, 1,  COLOR, 0     , BG_Blended_Opaque_SDF ,                ,            )
-int (*Render_Line_SDF_Solid)() = NULL;
-int (*Render_Line_SDF_Shaded_SP)() = NULL;
-BUILD_RENDER_LINE(SDF_Blended_SP        , 1, 0,  COLOR, SUBPIX,                       , BG_Blended_SDF ,            )
-BUILD_RENDER_LINE(SDF_Blended_Opaque_SP , 1, 1,  COLOR, SUBPIX, BG_Blended_Opaque_SDF ,                ,            )
+static int (*Render_Line_SDF_Shaded)(TTF_Font *font, SDL_Surface *textbuf, int xstart, int ystart, SDL_Color *fg) = NULL;
+BUILD_RENDER_LINE(SDF_Blended           , 1, 0, 0,  COLOR, 0     ,                       , BG_Blended_SDF ,            )
+BUILD_RENDER_LINE(SDF_Blended_Opaque    , 1, 1, 0,  COLOR, 0     , BG_Blended_Opaque_SDF ,                ,            )
+static int (*Render_Line_SDF_Solid)(TTF_Font *font, SDL_Surface *textbuf, int xstart, int ystart, SDL_Color *fg) = NULL;
+static int (*Render_Line_SDF_Shaded_SP)(TTF_Font *font, SDL_Surface *textbuf, int xstart, int ystart, SDL_Color *fg) = NULL;
+BUILD_RENDER_LINE(SDF_Blended_SP        , 1, 0, 0,  COLOR, SUBPIX,                       , BG_Blended_SDF ,            )
+BUILD_RENDER_LINE(SDF_Blended_Opaque_SP , 1, 1, 0,  COLOR, SUBPIX, BG_Blended_Opaque_SDF ,                ,            )
+static int (*Render_Line_SDF_LCD)(TTF_Font *font, SDL_Surface *textbuf, int xstart, int ystart, SDL_Color *fg) = NULL;
+static int (*Render_Line_SDF_LCD_SP)(TTF_Font *font, SDL_Surface *textbuf, int xstart, int ystart, SDL_Color *fg) = NULL;
 #endif
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 
-static SDL_INLINE int Render_Line(const render_mode_t render_mode, int subpixel, TTF_Font *font, SDL_Surface *textbuf, int xstart, int ystart, Uint8 fg_alpha)
+static SDL_INLINE int Render_Line(const render_mode_t render_mode, int subpixel, TTF_Font *font, SDL_Surface *textbuf, int xstart, int ystart, SDL_Color fg)
 {
     /* Render line (pos_buf) to textbuf at (xstart, ystart) */
 
     /* Subpixel with RENDER_SOLID doesn't make sense. */
     /* (and 'cached->subpixel.translation' would need to distinguish bitmap/pixmap). */
-
-    int is_opaque = (fg_alpha == SDL_ALPHA_OPAQUE);
+    int is_opaque = (fg.a == SDL_ALPHA_OPAQUE);
 
 #define Call_Specific_Render_Line(NAME)                                                                     \
         if (render_mode == RENDER_SHADED) {                                                                 \
             if (subpixel == 0) {                                                                            \
-                return Render_Line_##NAME##_Shaded(font, textbuf, xstart, ystart, 0);                       \
+                return Render_Line_##NAME##_Shaded(font, textbuf, xstart, ystart, NULL);                    \
             } else {                                                                                        \
-                return Render_Line_##NAME##_Shaded_SP(font, textbuf, xstart, ystart, 0);                    \
+                return Render_Line_##NAME##_Shaded_SP(font, textbuf, xstart, ystart, NULL);                 \
             }                                                                                               \
         } else if (render_mode == RENDER_BLENDED) {                                                         \
             if (is_opaque) {                                                                                \
                 if (subpixel == 0) {                                                                        \
-                    return Render_Line_##NAME##_Blended_Opaque(font, textbuf, xstart, ystart, 0);           \
+                    return Render_Line_##NAME##_Blended_Opaque(font, textbuf, xstart, ystart, NULL);        \
                 } else {                                                                                    \
-                    return Render_Line_##NAME##_Blended_Opaque_SP(font, textbuf, xstart, ystart, 0);        \
+                    return Render_Line_##NAME##_Blended_Opaque_SP(font, textbuf, xstart, ystart, NULL);     \
                 }                                                                                           \
             } else {                                                                                        \
                 if (subpixel == 0) {                                                                        \
-                    return Render_Line_##NAME##_Blended(font, textbuf, xstart, ystart, fg_alpha);           \
+                    return Render_Line_##NAME##_Blended(font, textbuf, xstart, ystart, &fg);                \
                 } else {                                                                                    \
-                    return Render_Line_##NAME##_Blended_SP(font, textbuf, xstart, ystart, fg_alpha);        \
+                    return Render_Line_##NAME##_Blended_SP(font, textbuf, xstart, ystart, &fg);             \
                 }                                                                                           \
             }                                                                                               \
+        } else if (render_mode == RENDER_LCD) {                                                             \
+            if (subpixel == 0) {                                                                            \
+                return Render_Line_##NAME##_LCD(font, textbuf, xstart, ystart, &fg);                        \
+            } else {                                                                                        \
+                return Render_Line_##NAME##_LCD_SP(font, textbuf, xstart, ystart, &fg);                     \
+            }                                                                                               \
         } else {                                                                                            \
-            return Render_Line_##NAME##_Solid(font, textbuf, xstart, ystart, 0);                            \
+            return Render_Line_##NAME##_Solid(font, textbuf, xstart, ystart, NULL);                         \
         }
 
 #if TTF_USE_SDF
@@ -1229,37 +1377,85 @@ static SDL_INLINE int Render_Line(const render_mode_t render_mode, int subpixel,
 #endif
 }
 
-static SDL_Surface* Create_Surface_Solid(int width, int height, SDL_Color fg, Uint32 *color)
-{
-    const int alignment = Get_Alignement() - 1;
-    SDL_Surface *textbuf;
-    Sint64 size;
+#ifndef SIZE_MAX
+# define SIZE_MAX ((size_t) -1)
+#endif
 
-    /* Create a surface with memory:
-     * - pitch is rounded to alignment
-     * - adress is aligned
-     */
+#if !SDL_VERSION_ATLEAST(2, 23, 1)
+SDL_FORCE_INLINE int compat_size_add_overflow (size_t a,
+                                               size_t b,
+                                               size_t *ret)
+{
+    if (b > SIZE_MAX - a) {
+        return -1;
+    }
+    *ret = a + b;
+    return 0;
+}
+
+SDL_FORCE_INLINE int compat_size_mul_overflow (size_t a,
+                                               size_t b,
+                                               size_t *ret)
+{
+    if (a != 0 && b > SIZE_MAX / a) {
+        return -1;
+    }
+    *ret = a * b;
+    return 0;
+}
+
+#define SDL_size_add_overflow(a, b, r) compat_size_add_overflow(a, b, r)
+#define SDL_size_mul_overflow(a, b, r) compat_size_mul_overflow(a, b, r)
+#endif /* SDL < 2.23.1 */
+
+/* Create a surface with memory:
+ * - pitch is rounded to alignment
+ * - address is aligned
+ *
+ * If format is 4 bytes per pixel, bgcolor is used to initialize each
+ * 4-byte word in the image data.
+ *
+ * Otherwise, the low byte of format is used to initialize each byte
+ * in the image data.
+ */
+static SDL_Surface *AllocateAlignedPixels(size_t width, size_t height, SDL_PixelFormatEnum format, Uint32 bgcolor)
+{
+    const size_t alignment = Get_Alignement() - 1;
+    const size_t bytes_per_pixel = SDL_BYTESPERPIXEL(format);
+    SDL_Surface *textbuf = NULL;
+    size_t size;
+    size_t data_bytes;
     void *pixels, *ptr;
-    /* Worse case at the end of line pulling 'alignment' extra blank pixels */
-    int pitch = width + alignment;
-    pitch += alignment;
+    size_t pitch;
+
+    /* Worst case at the end of line pulling 'alignment' extra blank pixels */
+    if (width > SDL_MAX_SINT32 ||
+        height > SDL_MAX_SINT32 ||
+        SDL_size_add_overflow(width, alignment, &pitch) ||
+        SDL_size_mul_overflow(pitch, bytes_per_pixel, &pitch) ||
+        SDL_size_add_overflow(pitch, alignment, &pitch) ||
+        pitch > SDL_MAX_SINT32) {
+        return NULL;
+    }
     pitch &= ~alignment;
-    size = height * pitch + sizeof (void *) + alignment;
-    if (size < 0 || size > SDL_MAX_SINT32) {
+
+    if (SDL_size_mul_overflow(height, pitch, &data_bytes) ||
+        SDL_size_add_overflow(data_bytes, sizeof (void *) + alignment, &size) ||
+        size > SDL_MAX_SINT32) {
         /* Overflow... */
         return NULL;
     }
 
-    ptr = SDL_malloc((size_t)size);
+    ptr = SDL_malloc(size);
     if (ptr == NULL) {
         return NULL;
     }
 
     /* address is aligned */
-    pixels = (void *)(((size_t)ptr + sizeof(void *) + alignment) & ~alignment);
+    pixels = (void *)(((uintptr_t)ptr + sizeof(void *) + alignment) & ~alignment);
     ((void **)pixels)[-1] = ptr;
 
-    textbuf = SDL_CreateRGBSurfaceWithFormatFrom(pixels, width, height, 0, pitch, SDL_PIXELFORMAT_INDEX8);
+    textbuf = SDL_CreateRGBSurfaceWithFormatFrom(pixels, (int)width, (int)height, 0, (int)pitch, format);
     if (textbuf == NULL) {
         SDL_free(ptr);
         return NULL;
@@ -1269,8 +1465,22 @@ static SDL_Surface* Create_Surface_Solid(int width, int height, SDL_Color fg, Ui
     textbuf->flags &= ~SDL_PREALLOC;
     textbuf->flags |= SDL_SIMD_ALIGNED;
 
-    /* Initialize with background to 0 */
-    SDL_memset(pixels, 0, height * pitch);
+    if (bytes_per_pixel == 4) {
+        SDL_memset4(pixels, bgcolor, data_bytes / 4);
+    }
+    else {
+        SDL_memset(pixels, (bgcolor & 0xff), data_bytes);
+    }
+
+    return textbuf;
+}
+
+static SDL_Surface* Create_Surface_Solid(int width, int height, SDL_Color fg, Uint32 *color)
+{
+    SDL_Surface *textbuf = AllocateAlignedPixels(width, height, SDL_PIXELFORMAT_INDEX8, 0);
+    if (textbuf == NULL) {
+        return NULL;
+    }
 
     /* Underline/Strikethrough color style */
     *color = 1;
@@ -1294,47 +1504,11 @@ static SDL_Surface* Create_Surface_Solid(int width, int height, SDL_Color fg, Ui
 
 static SDL_Surface* Create_Surface_Shaded(int width, int height, SDL_Color fg, SDL_Color bg, Uint32 *color)
 {
-    const int alignment = Get_Alignement() - 1;
-    SDL_Surface *textbuf;
-    Sint64 size;
+    SDL_Surface *textbuf = AllocateAlignedPixels(width, height, SDL_PIXELFORMAT_INDEX8, 0);
     Uint8 bg_alpha = bg.a;
-
-    /* Create a surface with memory:
-     * - pitch is rounded to alignment
-     * - adress is aligned
-     */
-    void *pixels, *ptr;
-    /* Worse case at the end of line pulling 'alignment' extra blank pixels */
-    int pitch = width + alignment;
-    pitch += alignment;
-    pitch &= ~alignment;
-    size = height * pitch + sizeof (void *) + alignment;
-    if (size < 0 || size > SDL_MAX_SINT32) {
-        /* Overflow... */
-        return NULL;
-    }
-
-    ptr = SDL_malloc((size_t)size);
-    if (ptr == NULL) {
-        return NULL;
-    }
-
-    /* address is aligned */
-    pixels = (void *)(((size_t)ptr + sizeof(void *) + alignment) & ~alignment);
-    ((void **)pixels)[-1] = ptr;
-
-    textbuf = SDL_CreateRGBSurfaceWithFormatFrom(pixels, width, height, 0, pitch, SDL_PIXELFORMAT_INDEX8);
     if (textbuf == NULL) {
-        SDL_free(ptr);
         return NULL;
     }
-
-    /* Let SDL handle the memory allocation */
-    textbuf->flags &= ~SDL_PREALLOC;
-    textbuf->flags |= SDL_SIMD_ALIGNED;
-
-    /* Initialize with background to 0 */
-    SDL_memset(pixels, 0, height * pitch);
 
     /* Underline/Strikethrough color style */
     *color = NUM_GRAYS - 1;
@@ -1383,11 +1557,10 @@ static SDL_Surface* Create_Surface_Shaded(int width, int height, SDL_Color fg, S
 
 static SDL_Surface *Create_Surface_Blended(int width, int height, SDL_Color fg, Uint32 *color)
 {
-    const int alignment = Get_Alignement() - 1;
     SDL_Surface *textbuf = NULL;
     Uint32 bgcolor;
 
-    /* Background color */
+    /* Background color: initialize with fg and 0 alpha */
     bgcolor = (fg.r << 16) | (fg.g << 8) | fg.b;
 
     /* Underline/Strikethrough color style */
@@ -1395,43 +1568,10 @@ static SDL_Surface *Create_Surface_Blended(int width, int height, SDL_Color fg, 
 
     /* Create the target surface if required */
     if (width != 0) {
-        /* Create a surface with memory:
-         * - pitch is rounded to alignment
-         * - adress is aligned
-         */
-        Sint64 size;
-        void *pixels, *ptr;
-        /* Worse case at the end of line pulling 'alignment' extra blank pixels */
-        int pitch = (width + alignment) * 4;
-        pitch += alignment;
-        pitch &= ~alignment;
-        size = height * pitch + sizeof (void *) + alignment;
-        if (size < 0 || size > SDL_MAX_SINT32) {
-            /* Overflow... */
-            return NULL;
-        }
-
-        ptr = SDL_malloc((size_t)size);
-        if (ptr == NULL) {
-            return NULL;
-        }
-
-        /* address is aligned */
-        pixels = (void *)(((size_t)ptr + sizeof(void *) + alignment) & ~alignment);
-        ((void **)pixels)[-1] = ptr;
-
-        textbuf = SDL_CreateRGBSurfaceWithFormatFrom(pixels, width, height, 0, pitch, SDL_PIXELFORMAT_ARGB8888);
+        textbuf = AllocateAlignedPixels(width, height, SDL_PIXELFORMAT_ARGB8888, bgcolor);
         if (textbuf == NULL) {
-            SDL_free(ptr);
             return NULL;
         }
-
-        /* Let SDL handle the memory allocation */
-        textbuf->flags &= ~SDL_PREALLOC;
-        textbuf->flags |= SDL_SIMD_ALIGNED;
-
-        /* Initialize with fg and 0 alpha */
-        SDL_memset4(pixels, bgcolor, (height * pitch) / 4);
 
         /* Support alpha blending */
         if (fg.a != SDL_ALPHA_OPAQUE) {
@@ -1441,6 +1581,34 @@ static SDL_Surface *Create_Surface_Blended(int width, int height, SDL_Color fg, 
 
     return textbuf;
 }
+
+static SDL_Surface* Create_Surface_LCD(int width, int height, SDL_Color fg, SDL_Color bg, Uint32 *color)
+{
+    SDL_Surface *textbuf = NULL;
+    Uint32 bgcolor;
+
+    /* Background color */
+    bgcolor = (bg.a << 24) | (bg.r << 16) | (bg.g << 8) | bg.b;
+
+    /* Underline/Strikethrough color style */
+    *color = (bg.a << 24) | (fg.r << 16) | (fg.g << 8) | fg.b;
+
+    /* Create the target surface if required */
+    if (width != 0) {
+        textbuf = AllocateAlignedPixels(width, height, SDL_PIXELFORMAT_ARGB8888, bgcolor);
+        if (textbuf == NULL) {
+            return NULL;
+        }
+
+        /* Support alpha blending */
+        if (bg.a != SDL_ALPHA_OPAQUE) {
+            SDL_SetSurfaceBlendMode(textbuf, SDL_BLENDMODE_BLEND);
+        }
+    }
+
+    return textbuf;
+}
+
 
 /* rcg06192001 get linked library's version. */
 const SDL_version* TTF_Linked_Version(void)
@@ -1453,7 +1621,7 @@ const SDL_version* TTF_Linked_Version(void)
 /* This function tells the library whether UNICODE text is generally
    byteswapped.  A UNICODE BOM character at the beginning of a string
    will override this setting for that string.  */
-void TTF_ByteSwappedUNICODE(int swapped)
+void TTF_ByteSwappedUNICODE(SDL_bool swapped)
 {
     TTF_byteswapped = swapped;
 }
@@ -1535,6 +1703,32 @@ int TTF_Init(void)
 #endif
     }
     return status;
+}
+
+SDL_COMPILE_TIME_ASSERT(FT_Int, sizeof(int) == sizeof(FT_Int)); /* just in case. */
+void TTF_GetFreeTypeVersion(int *major, int *minor, int *patch)
+{
+    FT_Library_Version(library, major, minor, patch);
+}
+
+void TTF_GetHarfBuzzVersion(int *major, int *minor, int *patch)
+{
+    unsigned int hb_major = 0;
+    unsigned int hb_minor = 0;
+    unsigned int hb_micro = 0;
+
+#if TTF_USE_HARFBUZZ
+    hb_version(&hb_major, &hb_minor, &hb_micro);
+#endif
+    if (major) {
+        *major = (int)hb_major;
+    }
+    if (minor) {
+        *minor = (int)hb_minor;
+    }
+    if (patch) {
+        *patch = (int)hb_micro;
+    }
 }
 
 static unsigned long RWread(
@@ -1685,6 +1879,10 @@ TTF_Font* TTF_OpenFontIndexDPIRW(SDL_RWops *src, int freesrc, int ptsize, long i
      * So unless you call hb_ft_font_set_load_flags to match what flags you use for rendering,
      * you will get mismatching advances and raster. */
     hb_ft_font_set_load_flags(font->hb_font, FT_LOAD_DEFAULT | font->ft_load_target);
+
+    /* By default the script / direction are inherited from global variables */
+    font->hb_script = HB_SCRIPT_INVALID;
+    font->hb_direction = HB_DIRECTION_INVALID;
 #endif
 
     if (TTF_SetFontSizeDPI(font, ptsize, hdpi, vdpi) < 0) {
@@ -1905,11 +2103,18 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
 
     error = FT_Load_Glyph(font->face, cached->index, ft_load);
     if (error) {
-        return error;
+        goto ft_failure;
     }
 
     /* Get our glyph shortcut */
     slot = font->face->glyph;
+
+    if (want & CACHED_LCD) {
+        if (slot->format == FT_GLYPH_FORMAT_BITMAP) {
+            TTF_SetError("LCD mode not possible with bitmap font");
+            return -1;
+        }
+    }
 
     /* Get the glyph metrics, always needed */
     if (cached->stored == 0) {
@@ -1973,10 +2178,9 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
         /* Adjust for SDF */
         if (font->render_sdf) {
             /* Default 'spread' property */
-            cached->sz_width += 16;
-            cached->sz_rows  += 16;
+            cached->sz_width += 2 * 8;
+            cached->sz_rows  += 2 * 8;
         }
-
 
         cached->stored |= CACHED_METRICS;
     }
@@ -1984,6 +2188,7 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
     if (((want & CACHED_BITMAP) && !(cached->stored & CACHED_BITMAP)) ||
         ((want & CACHED_PIXMAP) && !(cached->stored & CACHED_PIXMAP)) ||
         ((want & CACHED_COLOR) && !(cached->stored & CACHED_COLOR)) ||
+        ((want & CACHED_LCD) && !(cached->stored & CACHED_LCD)) ||
          (want & CACHED_SUBPIX)
        ) {
         const int  mono  = (want & CACHED_BITMAP);
@@ -2001,6 +2206,9 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
                 ft_render_mode = FT_RENDER_MODE_SDF;
             }
 #endif
+            if ((want & CACHED_LCD)) {
+                ft_render_mode = FT_RENDER_MODE_LCD;
+            }
         }
 
         /* Subpixel translation, flush previous datas */
@@ -2028,14 +2236,14 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
 
             error = FT_Get_Glyph(slot, &glyph);
             if (error) {
-                return error;
+                goto ft_failure;
             }
 
             if (font->outline_val > 0) {
                 FT_Stroker stroker;
                 error = FT_Stroker_New(library, &stroker);
                 if (error) {
-                    return error;
+                    goto ft_failure;
                 }
                 FT_Stroker_Set(stroker, font->outline_val * 64, FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
                 FT_Glyph_Stroke(&glyph, stroker, 1 /* delete the original glyph */);
@@ -2046,7 +2254,7 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
             error = FT_Glyph_To_Bitmap(&glyph, ft_render_mode, 0, 1);
             if (error) {
                 FT_Done_Glyph(glyph);
-                return error;
+                goto ft_failure;
             }
 
             /* Access bitmap content by typecasting */
@@ -2060,7 +2268,7 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
             /* Render the glyph */
             error = FT_Render_Glyph(slot, ft_render_mode);
             if (error) {
-                return error;
+                goto ft_failure;
             }
 
             /* Access bitmap from slot */
@@ -2094,6 +2302,9 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
             dst->pitch += 3 * dst->width;
         }
 #endif
+        if (src->pixel_mode == FT_PIXEL_MODE_LCD) {
+            dst->pitch += 3 * dst->width;
+        }
 
         if (dst->rows != 0) {
             unsigned int i;
@@ -2103,7 +2314,8 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
             dst->buffer = (unsigned char *)SDL_malloc(alignment + dst->pitch * dst->rows);
 
             if (!dst->buffer) {
-                return FT_Err_Out_Of_Memory;
+                error = FT_Err_Out_Of_Memory;
+                goto ft_failure;
             }
 
             /* Memset */
@@ -2139,18 +2351,16 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
                     quotient  = src->width;
                     remainder = 0;
 #endif
-#if TTF_USE_SDF
-                } else if (src->pixel_mode == FT_PIXEL_MODE_GRAY16) {
-                    quotient  = src->width;
+                } else if (src->pixel_mode == FT_PIXEL_MODE_LCD) {
+                    quotient  = src->width / 3;
                     remainder = 0;
-#endif
                 } else {
                     quotient  = src->width;
                     remainder = 0;
                 }
 
 /* FT_RENDER_MODE_MONO and src->pixel_mode MONO */
-#ifdef _WIN32
+#ifdef _MSC_VER
 #pragma warning(push, 1)
 #pragma warning(disable:4127)
 #endif
@@ -2225,8 +2435,6 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
                     }                                                       \
                 }
 
-
-
                 if (mono) {
                     if (src->pixel_mode == FT_PIXEL_MODE_MONO) {
                         while (quotient--) {
@@ -2272,23 +2480,46 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
                 } else if (src->pixel_mode == FT_PIXEL_MODE_BGRA) {
                     SDL_memcpy(dstp, srcp, 4 * src->width);
 #endif
-#if TTF_USE_SDF
-                } else if (src->pixel_mode == FT_PIXEL_MODE_GRAY16) {
-                    /* FT_RENDER_MODE_SDF and src->pixel_mode GRAY16 in FT_F6Dot10
-                       for default spread value: 8 */
+                } else if (src->pixel_mode == FT_PIXEL_MODE_LCD) {
                     while (quotient--) {
-                        Sint16 s = *(Uint16 *)srcp;
-                        srcp += 2;
-                        Uint8 alpha = (s < 0) ? s >> 5 : 255;
+                        Uint8 alpha = 0;
+                        Uint8 r, g, b;
+                        r = *srcp++;
+                        g = *srcp++;
+                        b = *srcp++;
+                        *dstp++ = b;
+                        *dstp++ = g;
+                        *dstp++ = r;
                         *dstp++ = alpha;
                     }
-#endif
                 } else {
+#if TTF_USE_SDF
+                    if (ft_render_mode != FT_RENDER_MODE_SDF) {
+                        SDL_memcpy(dstp, srcp, src->width);
+                    } else {
+                        int x;
+                        for (x = 0; x < src->width; x++) {
+                            Uint8 s = srcp[x];
+                            Uint8 d;
+                            if (s < 128) {
+                                d = 256 - (128 - s) * 2;
+                            } else {
+                                d = 255;
+                                /* some glitch ?
+                                if (s == 255) {
+                                    d = 0;
+                                }*/
+                            }
+                            dstp[x] = d;
+                        }
+                    }
+#else
                     SDL_memcpy(dstp, srcp, src->width);
+#endif
                 }
             }
         }
-#ifdef _WIN32
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 
@@ -2335,6 +2566,8 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
         /* Mark that we rendered this format */
         if (mono) {
             cached->stored |= CACHED_BITMAP;
+        } else if (src->pixel_mode == FT_PIXEL_MODE_LCD) {
+            cached->stored |= CACHED_LCD;
         } else {
 #if TTF_USE_COLOR
             if (want & CACHED_COLOR) {
@@ -2364,10 +2597,14 @@ static FT_Error Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int transl
 
     /* We're done, this glyph is cached since 'stored' is not 0 */
     return 0;
+
+ft_failure:
+    TTF_SetFTError("Couldn't find glyph", error);
+    return -1;
 }
 
 static SDL_INLINE int Find_GlyphByIndex(TTF_Font *font, FT_UInt idx,
-        const int want_bitmap, const int want_pixmap, const int want_color, const int want_subpixel,
+        int want_bitmap, int want_pixmap, int want_color, int want_lcd, int want_subpixel,
         int translation, c_glyph **out_glyph, TTF_Image **out_image)
 {
     /* cache size is 256, get key by masking */
@@ -2377,7 +2614,7 @@ static SDL_INLINE int Find_GlyphByIndex(TTF_Font *font, FT_UInt idx,
         *out_glyph = glyph;
     }
 
-    if (want_pixmap || want_color) {
+    if (want_pixmap || want_color || want_lcd) {
         *out_image = &glyph->pixmap;
     }
 
@@ -2390,7 +2627,7 @@ static SDL_INLINE int Find_GlyphByIndex(TTF_Font *font, FT_UInt idx,
         /* No a real cache, but if it always advances by integer pixels (eg translation 0 or same as previous),
          * this allows to render as fast as normal mode. */
         int retval;
-        int want = CACHED_METRICS | want_bitmap | want_pixmap | want_color | want_subpixel;
+        int want = CACHED_METRICS | want_bitmap | want_pixmap | want_color | want_lcd | want_subpixel;
 
         if (glyph->stored && glyph->index != idx) {
             Flush_Glyph(glyph);
@@ -2404,19 +2641,24 @@ static SDL_INLINE int Find_GlyphByIndex(TTF_Font *font, FT_UInt idx,
             return 0;
         }
 
+        if (want_color || want_pixmap || want_lcd) {
+            if (glyph->stored & (CACHED_COLOR|CACHED_PIXMAP|CACHED_LCD)) {
+                Flush_Glyph(glyph);
+            }
+        }
+
         glyph->index = idx;
         retval = Load_Glyph(font, glyph, want, translation);
         if (retval == 0) {
             return 0;
         } else {
-            TTF_SetFTError("Couldn't find glyph", retval);
             return -1;
         }
     }
     else
     {
         int retval;
-        const int want = CACHED_METRICS | want_bitmap | want_pixmap | want_color;
+        const int want = CACHED_METRICS | want_bitmap | want_pixmap | want_color | want_lcd;
 
         /* Faster check as it gets inlined */
         if (want_pixmap) {
@@ -2431,6 +2673,10 @@ static SDL_INLINE int Find_GlyphByIndex(TTF_Font *font, FT_UInt idx,
             if ((glyph->stored & CACHED_COLOR) && glyph->index == idx) {
                 return 0;
             }
+        } else if (want_lcd) {
+            if ((glyph->stored & CACHED_LCD) && glyph->index == idx) {
+                return 0;
+            }
         } else {
             /* Get metrics */
             if (glyph->stored && glyph->index == idx) {
@@ -2438,10 +2684,10 @@ static SDL_INLINE int Find_GlyphByIndex(TTF_Font *font, FT_UInt idx,
             }
         }
 
-        /* Cache cannot contain both PIXMAP and COLOR (unless COLOR is actually not colored). 
+        /* Cache cannot contain both PIXMAP and COLOR (unless COLOR is actually not colored) and LCD
            So, if it's already used, clear it */
-        if (want_color || want_pixmap) {
-            if (glyph->stored & (CACHED_COLOR|CACHED_PIXMAP)) {
+        if (want_color || want_pixmap || want_lcd) {
+            if (glyph->stored & (CACHED_COLOR|CACHED_PIXMAP|CACHED_LCD)) {
                 Flush_Glyph(glyph);
             }
         }
@@ -2455,7 +2701,6 @@ static SDL_INLINE int Find_GlyphByIndex(TTF_Font *font, FT_UInt idx,
         if (retval == 0) {
             return 0;
         } else {
-            TTF_SetFTError("Couldn't find glyph", retval);
             return -1;
         }
     }
@@ -2482,7 +2727,7 @@ static SDL_INLINE FT_UInt get_char_index(TTF_Font *font, Uint32 ch)
 static SDL_INLINE int Find_GlyphMetrics(TTF_Font *font, Uint32 ch, c_glyph **out_glyph)
 {
     FT_UInt idx = get_char_index(font, ch);
-    return Find_GlyphByIndex(font, idx, 0, 0, 0, 0, 0, out_glyph, NULL);
+    return Find_GlyphByIndex(font, idx, 0, 0, 0, 0, 0, 0, out_glyph, NULL);
 }
 
 void TTF_CloseFont(TTF_Font *font)
@@ -2526,9 +2771,21 @@ static size_t LATIN1_to_UTF8_len(const char *text)
 /* Gets the number of bytes needed to convert a UCS2 string to UTF-8 */
 static size_t UCS2_to_UTF8_len(const Uint16 *text)
 {
+    SDL_bool swapped = TTF_byteswapped;
     size_t bytes = 1;
     while (*text) {
         Uint16 ch = *text++;
+        if (ch == UNICODE_BOM_NATIVE) {
+            swapped = SDL_FALSE;
+            continue;
+        }
+        if (ch == UNICODE_BOM_SWAPPED) {
+            swapped = SDL_TRUE;
+            continue;
+        }
+        if (swapped) {
+            ch = SDL_Swap16(ch);
+        }
         if (ch <= 0x7F) {
             bytes += 1;
         } else if (ch <= 0x7FF) {
@@ -2558,16 +2815,16 @@ static void LATIN1_to_UTF8(const char *src, Uint8 *dst)
 /* Convert a UCS-2 string to a UTF-8 string */
 static void UCS2_to_UTF8(const Uint16 *src, Uint8 *dst)
 {
-    int swapped = TTF_byteswapped;
+    SDL_bool swapped = TTF_byteswapped;
 
     while (*src) {
         Uint16 ch = *src++;
         if (ch == UNICODE_BOM_NATIVE) {
-            swapped = 0;
+            swapped = SDL_FALSE;
             continue;
         }
         if (ch == UNICODE_BOM_SWAPPED) {
-            swapped = 1;
+            swapped = SDL_TRUE;
             continue;
         }
         if (swapped) {
@@ -2762,12 +3019,14 @@ int TTF_FontFaceIsFixedWidth(const TTF_Font *font)
     return FT_IS_FIXED_WIDTH(font->face);
 }
 
-char* TTF_FontFaceFamilyName(const TTF_Font *font)
+const char *
+TTF_FontFaceFamilyName(const TTF_Font *font)
 {
     return font->face->family_name;
 }
 
-char* TTF_FontFaceStyleName(const TTF_Font *font)
+const char *
+TTF_FontFaceStyleName(const TTF_Font *font)
 {
     return font->face->style_name;
 }
@@ -2819,6 +3078,53 @@ int TTF_GlyphMetrics32(TTF_Font *font, Uint32 ch,
     return 0;
 }
 
+int TTF_SetFontDirection(TTF_Font *font, TTF_Direction direction)
+{
+#if TTF_USE_HARFBUZZ
+    hb_direction_t dir;
+    if (direction == TTF_DIRECTION_LTR) {
+        dir = HB_DIRECTION_LTR;
+    } else if (direction == TTF_DIRECTION_RTL) {
+        dir = HB_DIRECTION_RTL;
+    } else if (direction == TTF_DIRECTION_TTB) {
+        dir = HB_DIRECTION_TTB;
+    } else if (direction == TTF_DIRECTION_BTT) {
+        dir = HB_DIRECTION_BTT;
+    } else {
+        return -1;
+    }
+    font->hb_direction = dir;
+    return 0;
+#else
+    (void) direction;
+    return -1;
+#endif
+}
+
+int TTF_SetFontScriptName(TTF_Font *font, const char *script)
+{
+#if TTF_USE_HARFBUZZ
+    Uint8 a, b, c, d;
+    hb_script_t scr;
+
+    if (script == NULL || SDL_strlen(script) != 4) {
+        return -1;
+    }
+
+    a = script[0];
+    b = script[1];
+    c = script[2];
+    d = script[3];
+
+    scr = HB_TAG(a, b, c, d);
+    font->hb_script = scr;
+    return 0;
+#else
+    (void) script;
+    return -1;
+#endif
+}
+
 static int TTF_Size_Internal(TTF_Font *font,
         const char *text, const str_type_t str_type,
         int *w, int *h, int *xstart, int *ystart,
@@ -2831,11 +3137,14 @@ static int TTF_Size_Internal(TTF_Font *font,
     Uint8 *utf8_alloc = NULL;
     c_glyph *glyph;
 #if TTF_USE_HARFBUZZ
+    hb_direction_t hb_direction;
+    hb_script_t hb_script;
     hb_buffer_t *hb_buffer = NULL;
     unsigned int g;
     unsigned int glyph_count;
     hb_glyph_info_t *hb_glyph_info;
     hb_glyph_position_t *hb_glyph_position;
+    int y = 0;
 #else
     size_t textlen;
     int skip_first = 1;
@@ -2885,9 +3194,21 @@ static int TTF_Size_Internal(TTF_Font *font,
        goto failure;
     }
 
+
+    hb_direction = font->hb_direction;
+    hb_script = font->hb_script;
+
+    if (hb_script == HB_SCRIPT_INVALID) {
+        hb_script = g_hb_script;
+    }
+
+    if (hb_direction == HB_DIRECTION_INVALID) {
+        hb_direction = g_hb_direction;
+    }
+
     /* Set global configuration */
-    hb_buffer_set_direction(hb_buffer, g_hb_direction);
-    hb_buffer_set_script(hb_buffer, g_hb_script);
+    hb_buffer_set_direction(hb_buffer, hb_direction);
+    hb_buffer_set_script(hb_buffer, hb_script);
 
     /* Layout the text */
     hb_buffer_add_utf8(hb_buffer, text, -1, 0, -1);
@@ -2902,6 +3223,7 @@ static int TTF_Size_Internal(TTF_Font *font,
     {
         FT_UInt idx   = hb_glyph_info[g].codepoint;
         int x_advance = hb_glyph_position[g].x_advance;
+        int y_advance = hb_glyph_position[g].y_advance;
         int x_offset  = hb_glyph_position[g].x_offset;
         int y_offset  = hb_glyph_position[g].y_offset;
 #else
@@ -2918,7 +3240,7 @@ static int TTF_Size_Internal(TTF_Font *font,
             continue;
         }
 #endif
-        if (Find_GlyphByIndex(font, idx, 0, 0, 0, 0, 0, &glyph, NULL) < 0) {
+        if (Find_GlyphByIndex(font, idx, 0, 0, 0, 0, 0, 0, &glyph, NULL) < 0) {
             goto failure;
         }
 
@@ -2928,6 +3250,7 @@ static int TTF_Size_Internal(TTF_Font *font,
             font->pos_max *= 2;
             font->pos_buf = (PosBuf_t *)SDL_realloc(font->pos_buf, font->pos_max * sizeof (font->pos_buf[0]));
             if (font->pos_buf == NULL) {
+                font->pos_max /= 2;
                 font->pos_buf = saved;
                 TTF_SetError("Out of memory");
                 goto failure;
@@ -2937,8 +3260,9 @@ static int TTF_Size_Internal(TTF_Font *font,
 #if TTF_USE_HARFBUZZ
         /* Compute positions */
         pos_x  = x                     + x_offset;
-        pos_y  = F26Dot6(font->ascent) - y_offset;
+        pos_y  = y + F26Dot6(font->ascent) - y_offset;
         x     += x_advance;
+        y     += y_advance;
 #else
         /* Compute positions */
         x += prev_advance;
@@ -2994,11 +3318,13 @@ static int TTF_Size_Internal(TTF_Font *font,
         if (measure_width) {
             int cw = SDL_max(maxx, FT_FLOOR(x + prev_advance)) - minx;
             cw += 2 * font->outline_val;
+            if (cw <= measure_width) {
+                current_width = cw;
+                char_count += 1;
+            }
             if (cw >= measure_width) {
                 break;
             }
-            current_width = cw;
-            char_count += 1;
         }
     }
 
@@ -3010,12 +3336,18 @@ static int TTF_Size_Internal(TTF_Font *font,
     if (xstart) {
         *xstart = (minx < 0)? -minx : 0;
         *xstart += font->outline_val;
+        if (font->render_sdf) {
+            *xstart += 8; /* Default 'spread' property */
+        }
     }
 
     /* Initial y start: compensation for a negative y offset */
     if (ystart) {
         *ystart = (miny < 0)? -miny : 0;
         *ystart += font->outline_val;
+        if (font->render_sdf) {
+            *ystart += 8; /* Default 'spread' property */
+        }
     }
 
     /* Fill the bounds rectangle */
@@ -3036,7 +3368,21 @@ static int TTF_Size_Internal(TTF_Font *font,
             *extent = current_width;
         }
         if (count) {
-            *count = char_count;
+#if TTF_USE_HARFBUZZ
+            if (char_count == glyph_count) {
+                /* The higher level code doesn't know about ligatures,
+                 * so if we've covered all the glyphs, report the full
+                 * string length.
+                 *
+                 * If we have to line wrap somewhere in the middle, we
+                 * might be off by the number of ligatures, but there
+                 * isn't an easy way around that without using hb_buffer
+                 * at that level instead.
+                 */
+                *count = (int)SDL_utf8strlen(text);
+            } else
+#endif
+                *count = char_count;
         }
     }
 
@@ -3103,6 +3449,11 @@ static SDL_Surface* TTF_Render_Internal(TTF_Font *font, const char *text, const 
     TTF_CHECK_POINTER(font, NULL);
     TTF_CHECK_POINTER(text, NULL);
 
+    if (render_mode == RENDER_LCD && !FT_IS_SCALABLE(font->face)) {
+        TTF_SetError("LCD rendering is not available for non-scalable font");
+        goto failure;
+    }
+
     /* Convert input string to default encoding UTF-8 */
     if (str_type == STR_TEXT) {
         utf8_alloc = SDL_stack_alloc(Uint8, LATIN1_to_UTF8_len(text));
@@ -3138,8 +3489,10 @@ static SDL_Surface* TTF_Render_Internal(TTF_Font *font, const char *text, const 
         textbuf = Create_Surface_Solid(width, height, fg, &color);
     } else if (render_mode == RENDER_SHADED) {
         textbuf = Create_Surface_Shaded(width, height, fg, bg, &color);
-    } else { /* render_mode == RENDER_BLENDED */
+    } else if (render_mode == RENDER_BLENDED) {
         textbuf = Create_Surface_Blended(width, height, fg, &color);
+    } else { /* render_mode == RENDER_LCD */
+        textbuf = Create_Surface_LCD(width, height, fg, bg, &color);
     }
 
     if (textbuf == NULL) {
@@ -3147,17 +3500,17 @@ static SDL_Surface* TTF_Render_Internal(TTF_Font *font, const char *text, const 
     }
 
     /* Render one text line to textbuf at (xstart, ystart) */
-    if (Render_Line(render_mode, font->render_subpixel, font, textbuf, xstart, ystart, fg.a) < 0) {
+    if (Render_Line(render_mode, font->render_subpixel, font, textbuf, xstart, ystart, fg) < 0) {
         goto failure;
     }
 
     /* Apply underline or strikethrough style, if needed */
     if (TTF_HANDLE_STYLE_UNDERLINE(font)) {
-        Draw_Line(textbuf, ystart + font->underline_top_row, width, font->line_thickness, color, render_mode);
+        Draw_Line(font, textbuf, 0, ystart + font->underline_top_row, width, font->line_thickness, color, render_mode);
     }
 
     if (TTF_HANDLE_STYLE_STRIKETHROUGH(font)) {
-        Draw_Line(textbuf, ystart + font->strikethrough_top_row, width, font->line_thickness, color, render_mode);
+        Draw_Line(font, textbuf, 0, ystart + font->strikethrough_top_row, width, font->line_thickness, color, render_mode);
     }
 
     if (utf8_alloc) {
@@ -3255,9 +3608,50 @@ SDL_Surface* TTF_RenderUNICODE_Blended(TTF_Font *font, const Uint16 *text, SDL_C
     return TTF_Render_Internal(font, (const char *)text, STR_UNICODE, fg, fg /* unused */, RENDER_BLENDED);
 }
 
+SDL_Surface* TTF_RenderText_LCD(TTF_Font *font, const char *text, SDL_Color fg, SDL_Color bg)
+{
+    return TTF_Render_Internal(font, text, STR_TEXT, fg, bg, RENDER_LCD);
+}
+
+SDL_Surface* TTF_RenderUTF8_LCD(TTF_Font *font, const char *text, SDL_Color fg, SDL_Color bg)
+{
+    return TTF_Render_Internal(font, text, STR_UTF8, fg, bg, RENDER_LCD);
+}
+
+SDL_Surface* TTF_RenderUNICODE_LCD(TTF_Font *font, const Uint16 *text, SDL_Color fg, SDL_Color bg)
+{
+    return TTF_Render_Internal(font, (const char *)text, STR_UNICODE, fg, bg, RENDER_LCD);
+}
+
+SDL_Surface* TTF_RenderGlyph_LCD(TTF_Font *font, Uint16 ch, SDL_Color fg, SDL_Color bg)
+{
+    return TTF_RenderGlyph32_LCD(font, ch, fg, bg);
+}
+
+SDL_Surface* TTF_RenderGlyph32_LCD(TTF_Font *font, Uint32 ch, SDL_Color fg, SDL_Color bg)
+{
+    Uint8 utf8[7];
+
+    TTF_CHECK_POINTER(font, NULL);
+
+    if (!Char_to_UTF8(ch, utf8)) {
+        return NULL;
+    }
+
+    return TTF_RenderUTF8_LCD(font, (char *)utf8, fg, bg);
+}
+
 static SDL_bool CharacterIsDelimiter(Uint32 c)
 {
     if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+        return SDL_TRUE;
+    }
+    return SDL_FALSE;
+}
+
+static SDL_bool CharacterIsNewLine(Uint32 c)
+{
+    if (c == '\n') {
         return SDL_TRUE;
     }
     return SDL_FALSE;
@@ -3277,6 +3671,11 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
     TTF_CHECK_INITIALIZED(NULL);
     TTF_CHECK_POINTER(font, NULL);
     TTF_CHECK_POINTER(text, NULL);
+
+    if (render_mode == RENDER_LCD && !FT_IS_SCALABLE(font->face)) {
+        TTF_SetError("LCD rendering is not available for non-scalable font");
+        goto failure;
+    }
 
     /* Convert input string to default encoding UTF-8 */
     if (str_type == STR_TEXT) {
@@ -3314,21 +3713,31 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
         goto failure;
     }
 
+    /* wrapLength is unsigned, but don't allow negative values */
+    if ((int)wrapLength < 0) {
+        TTF_SetError("Invalid parameter 'wrapLength'");
+        goto failure;
+    }
+
     numLines = 1;
 
-    if (wrapLength > 0 && *text_cpy) {
+    if (*text_cpy) {
         int maxNumLines = 0;
         size_t textlen = SDL_strlen(text_cpy);
         numLines = 0;
 
         do {
             int extent = 0, max_count = 0, char_count = 0;
-            size_t save_textlen = (size_t)-1;
+            size_t save_textlen = (size_t)(-1);
             char *save_text  = NULL;
 
             if (numLines >= maxNumLines) {
                 char **saved = strLines;
-                maxNumLines += (width / wrapLength) + 1;
+                if (wrapLength == 0) {
+                    maxNumLines += 32;
+                } else {
+                    maxNumLines += (width / wrapLength) + 1;
+                }
                 strLines = (char **)SDL_realloc(strLines, maxNumLines * sizeof (*strLines));
                 if (strLines == NULL) {
                     strLines = saved;
@@ -3344,8 +3753,15 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
                 goto failure;
             }
 
+            if (wrapLength != 0) {
+                if (max_count == 0) {
+                    max_count = 1;
+                }
+            }
+
             while (textlen > 0) {
                 int inc = 0;
+                int is_delim;
                 Uint32 c = UTF8_getch(text_cpy, textlen, &inc);
                 text_cpy += inc;
                 textlen -= inc;
@@ -3356,8 +3772,11 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
 
                 char_count += 1;
 
+                /* With wrapLength == 0, normal text rendering but newline aware */
+                is_delim = (wrapLength > 0) ?  CharacterIsDelimiter(c) : CharacterIsNewLine(c);
+
                 /* Record last delimiter position */
-                if (CharacterIsDelimiter(c)) {
+                if (is_delim) {
                     save_textlen = textlen;
                     save_text = text_cpy;
                     /* Break, if new line */
@@ -3384,10 +3803,42 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
     lineskip = TTF_FontLineSkip(font);
     rowHeight = SDL_max(height, lineskip);
 
-    width  = (numLines > 1) ? wrapLength : width;
-    /* Don't go above wrapLength if you have only 1 line which hasn't been cut */
-    if (wrapLength > 0) {
-        width = SDL_min((int)wrapLength, width);
+    if (wrapLength == 0) {
+        /* Find the max of all line lengths */
+        if (numLines > 1) {
+            width = 0;
+            for (i = 0; i < numLines; i++) {
+                char save_c = 0;
+                int w, h;
+
+                /* Add end-of-line */
+                if (strLines) {
+                    text = strLines[i];
+                    if (i + 1 < numLines) {
+                        save_c = strLines[i + 1][0];
+                        strLines[i + 1][0] = '\0';
+                    }
+                }
+
+                if (TTF_SizeUTF8(font, text, &w, &h) == 0) {
+                    width = SDL_max(w, width);
+                }
+
+                /* Remove end-of-line */
+                if (strLines) {
+                    if (i + 1 < numLines) {
+                        strLines[i + 1][0] = save_c;
+                    }
+                }
+            }
+        }
+    } else {
+        if (numLines <= 1 && font->horizontal_align == TTF_WRAPPED_ALIGN_LEFT) {
+            /* Don't go above wrapLength if you have only 1 line which hasn't been cut */
+            width = SDL_min((int)wrapLength, width);
+        } else {
+            width = wrapLength;
+        }
     }
     height = rowHeight + lineskip * (numLines - 1);
 
@@ -3400,8 +3851,10 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
         textbuf = Create_Surface_Solid(width, height, fg, &color);
     } else if (render_mode == RENDER_SHADED) {
         textbuf = Create_Surface_Shaded(width, height, fg, bg, &color);
-    } else { /* render_mode == RENDER_BLENDED */
+    } else if (render_mode == RENDER_BLENDED) {
         textbuf = Create_Surface_Blended(width, height, fg, &color);
+    } else { /* render_mode == RENDER_LCD */
+        textbuf = Create_Surface_LCD(width, height, fg, bg, &color);
     }
 
     if (textbuf == NULL) {
@@ -3410,7 +3863,7 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
 
     /* Render each line */
     for (i = 0; i < numLines; i++) {
-        int xstart, ystart, line_width;
+        int xstart, ystart, line_width, xoffset;
         char save_c = 0;
 
         /* Add end-of-line */
@@ -3430,20 +3883,28 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
         /* Move to i-th line */
         ystart += i * lineskip;
 
+        /* Control left/right/center align of each bit of text */
+        if (font->horizontal_align == TTF_WRAPPED_ALIGN_RIGHT) {
+            xoffset = width - line_width;
+        } else if (font->horizontal_align == TTF_WRAPPED_ALIGN_CENTER) {
+            xoffset = width / 2 - line_width / 2;
+        } else {
+            xoffset = 0;
+        }
+
         /* Render one text line to textbuf at (xstart, ystart) */
-        if (Render_Line(render_mode, font->render_subpixel, font, textbuf, xstart, ystart, fg.a) < 0) {
+        if (Render_Line(render_mode, font->render_subpixel, font, textbuf, xstart + xoffset, ystart, fg) < 0) {
             goto failure;
         }
 
         /* Apply underline or strikethrough style, if needed */
         if (TTF_HANDLE_STYLE_UNDERLINE(font)) {
-            Draw_Line(textbuf, ystart + font->underline_top_row, line_width, font->line_thickness, color, render_mode);
+            Draw_Line(font, textbuf, xoffset, ystart + font->underline_top_row, line_width, font->line_thickness, color, render_mode);
         }
 
         if (TTF_HANDLE_STYLE_STRIKETHROUGH(font)) {
-            Draw_Line(textbuf, ystart + font->strikethrough_top_row, line_width, font->line_thickness, color, render_mode);
+            Draw_Line(font, textbuf, xoffset, ystart + font->strikethrough_top_row, line_width, font->line_thickness, color, render_mode);
         }
-
         /* Remove end-of-line */
         if (strLines) {
             if (i + 1 < numLines) {
@@ -3515,6 +3976,21 @@ SDL_Surface* TTF_RenderUTF8_Blended_Wrapped(TTF_Font *font, const char *text, SD
 SDL_Surface* TTF_RenderUNICODE_Blended_Wrapped(TTF_Font *font, const Uint16 *text, SDL_Color fg, Uint32 wrapLength)
 {
     return TTF_Render_Wrapped_Internal(font, (const char *)text, STR_UNICODE, fg, fg /* unused */, wrapLength, RENDER_BLENDED);
+}
+
+SDL_Surface* TTF_RenderText_LCD_Wrapped(TTF_Font *font, const char *text, SDL_Color fg, SDL_Color bg, Uint32 wrapLength)
+{
+    return TTF_Render_Wrapped_Internal(font, text, STR_TEXT, fg, bg, wrapLength, RENDER_LCD);
+}
+
+SDL_Surface* TTF_RenderUTF8_LCD_Wrapped(TTF_Font *font, const char *text, SDL_Color fg, SDL_Color bg, Uint32 wrapLength)
+{
+    return TTF_Render_Wrapped_Internal(font, text, STR_UTF8, fg, bg, wrapLength, RENDER_LCD);
+}
+
+SDL_Surface* TTF_RenderUNICODE_LCD_Wrapped(TTF_Font *font, const Uint16 *text, SDL_Color fg, SDL_Color bg, Uint32 wrapLength)
+{
+    return TTF_Render_Wrapped_Internal(font, (const char *)text, STR_UNICODE, fg, bg, wrapLength, RENDER_LCD);
 }
 
 SDL_Surface* TTF_RenderGlyph_Blended(TTF_Font *font, Uint16 ch, SDL_Color fg)
@@ -3657,8 +4133,28 @@ int TTF_SetFontSDF(TTF_Font *font, SDL_bool on_off)
 
 SDL_bool TTF_GetFontSDF(const TTF_Font *font)
 {
-    TTF_CHECK_POINTER(font, -1);
+    TTF_CHECK_POINTER(font, SDL_FALSE);
     return font->render_sdf;
+}
+
+void TTF_SetFontWrappedAlign(TTF_Font *font, int align)
+{
+    TTF_CHECK_POINTER(font,);
+
+    /* input not checked, unknown values assumed to be TTF_WRAPPED_ALIGN_LEFT */
+    if (align == TTF_WRAPPED_ALIGN_CENTER) {
+        font->horizontal_align = TTF_WRAPPED_ALIGN_CENTER;
+    } else if (align == TTF_WRAPPED_ALIGN_RIGHT) {
+        font->horizontal_align = TTF_WRAPPED_ALIGN_RIGHT;
+    } else {
+        font->horizontal_align = TTF_WRAPPED_ALIGN_LEFT;
+    }
+}
+
+int TTF_GetFontWrappedAlign(const TTF_Font *font)
+{
+    TTF_CHECK_POINTER(font,-1);
+    return font->horizontal_align;
 }
 
 void TTF_Quit(void)
@@ -3666,6 +4162,7 @@ void TTF_Quit(void)
     if (TTF_initialized) {
         if (--TTF_initialized == 0) {
             FT_Done_FreeType(library);
+            library = NULL;
         }
     }
 }
