@@ -369,7 +369,7 @@ const std::string &CPanel::getHighlightedItem(void) const
     return m_fileLister[m_highlightedLine].m_name;
 }
 
-const std::string CPanel::getHighlightedItemFull(void) const
+std::string CPanel::getHighlightedItemFull(void) const
 {
     return m_currentPath + (m_currentPath == "/" ? "" : "/") + m_fileLister[m_highlightedLine].m_name;
 }

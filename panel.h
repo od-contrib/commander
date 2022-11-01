@@ -45,7 +45,7 @@ class CPanel
     const std::string &getHighlightedItem(void) const;
 
     // Selected file with full path
-    const std::string getHighlightedItemFull(void) const;
+    std::string getHighlightedItemFull(void) const;
 
     // Current path
     const std::string &getCurrentPath(void) const;

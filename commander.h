@@ -51,6 +51,8 @@ class CCommander : public CWindow
     bool itemMenu() const;
     bool operationMenu() const;
 
+    void ViewFile(std::string &&path) const;
+
     const bool openCopyMenu(void) const;
     void openExecuteMenu(void) const;
 

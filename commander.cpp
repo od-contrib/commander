@@ -316,7 +316,6 @@ const bool CCommander::openCopyMenu(void) const
             return true;
         });
 
-        
         l_dialog.addOption(m_panelSource == &m_panelLeft ? "Symlink >" : "< Symlink");
         handlers.push_back([&]() {
             File_utils::symlinkFile(l_list, m_panelTarget->getCurrentPath());
@@ -342,7 +341,7 @@ const bool CCommander::openCopyMenu(void) const
             File_utils::removeFile(l_list);
             return true;
         });
-        const int delete_option = handlers.size(); 
+        const int delete_option = handlers.size();
 
         l_dialog.addOption("Disk used");
         handlers.push_back([&]() {
@@ -468,25 +467,25 @@ OpenFileResult OpenFileDialog(const std::string &path,
     return options[dlg.execute()];
 }
 
-void ViewFile(const std::string &path)
+} // namespace
+
+void CCommander::ViewFile(std::string &&path) const
 {
     // Check size
     constexpr std::size_t kMaxFileSize = 16777216; // = 16 MB
     const auto file_size = File_utils::getFileSize(path);
     if (file_size > kMaxFileSize) {
         ErrorDialog(path, "Error:", "File too large (>16 MiB)");
-    } else {
-        ImageViewer image_viewer(path);
-        if (image_viewer.ok()) {
-            image_viewer.execute();
-            return;
-        }
-
-        TextViewer(path).execute();
+        return;
     }
-}
+    ImageViewer image_viewer(m_panelSource);
+    if (image_viewer.ok()) {
+        image_viewer.execute();
+        return;
+    }
 
-} // namespace
+    TextViewer(path).execute();
+}
 
 void CCommander::openExecuteMenu(void) const
 {
