@@ -9,7 +9,7 @@ env:
 
 jobs:
   linux_appimage_x86_64_sdl1:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Install APT packages (build dependencies) - SDL1.2
@@ -63,7 +63,7 @@ jobs:
   linux_appimage_x86_64_sdl2:
     # The vendored SDL_ttf version that we need requires SDL 2.0.10+,
     # not available on older versions of Ubuntu.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Install APT packages (build dependencies) - SDL2

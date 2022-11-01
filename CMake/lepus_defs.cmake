@@ -2,6 +2,7 @@ set(USE_SDL2 OFF)
 SET(PPU_Y 2)
 
 set(PATH_DEFAULT \"/media\")
+set(FILE_SYSTEM \"/dev/mmcblk0p2\")
 
 set(CMDR_KEY_UP SDLK_UP) # Up
 set(CMDR_KEY_RIGHT SDLK_RIGHT) # Right

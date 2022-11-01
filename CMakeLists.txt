@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13) # CMP0083 NEW
+cmake_minimum_required(VERSION 3.21)
 
 project(DinguxCommander
   VERSION 0.0.1
