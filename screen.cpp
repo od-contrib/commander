@@ -26,7 +26,28 @@ SDL_Surface *SetVideoMode(int width, int height, int bpp, std::uint32_t flags)
 }
 #endif
 
+void MaybeHeuristicAutoscale(const Config &cfg, int best_w, int best_h)
+{
+    if (!cfg.disp_autoscale) return;
+    if (screen.actual_w == best_w && screen.actual_h == best_h) return;
+
+    // If the display resolution doesn't match the configured one:
+    // 1. Increase the resolution.
+    // 2. Use 2x DPI if the horizontal resolution is >2x the configured one.
+    if (cfg.disp_autoscale_dpi) {
+        if (best_w >= screen.w * 2) {
+            // E.g. 640x480. Upscale to the smaller of the two.
+            const float scale = std::min(best_w / static_cast<float>(screen.w),
+                best_h / static_cast<float>(screen.h));
+            screen.ppu_x = screen.ppu_y = std::min(scale, 2.0f);
+        } else {
+            // E.g. RS07 with 480x272 screen.
+            screen.ppu_x = screen.ppu_y = 1;
+        }
+    }
 }
+
+} // namespace
 
 int Screen::init()
 {
@@ -44,27 +65,8 @@ int Screen::init()
         "Best video mode reported as: %dx%d bpp=%d hw_available=%u\n",
         best.current_w, best.current_h, best.vfmt->BitsPerPixel,
         best.hw_available);
-
-    // If the display resolution doesn't match the configured one:
-    // 1. Increase the resolution.
-    // 2. Use 2x DPI if the horizontal resolution is >2x the configured one.
-    if (cfg.disp_autoscale
-        && (best.current_w != screen.actual_w
-            || best.current_h != screen.actual_h)) {
-        if (cfg.disp_autoscale_dpi) {
-            if (best.current_w >= screen.w * 2) {
-                // E.g. 640x480. Upscale to the smaller of the two.
-                const float scale
-                    = std::min(best.current_w / static_cast<float>(screen.w),
-                        best.current_h / static_cast<float>(screen.h));
-                screen.ppu_x = screen.ppu_y = std::min(scale, 2.0f);
-            } else {
-                // E.g. RS07 with 480x272 screen.
-                screen.ppu_x = screen.ppu_y = 1;
-            }
-        }
-        setPhysicalResolution(best.current_w, best.current_h);
-    }
+    MaybeHeuristicAutoscale(cfg, best.current_w, best.current_h);
+    screen.setPhysicalResolution(best.current_w, best.current_h);
 #endif
 
 #ifdef USE_SDL2
@@ -79,6 +81,7 @@ int Screen::init()
         SDL_Log("Failed to create window: %s", SDL_GetError());
         return 1;
     }
+    SDL_GetWindowSize(window, &window_w, &window_h);
     if (cfg.disp_autoscale && cfg.disp_autoscale_dpi) {
         const int disp_index = SDL_GetWindowDisplayIndex(window);
         if (disp_index != -1) {
@@ -93,13 +96,15 @@ int Screen::init()
                     vdpi, screen.ppu_x, screen.ppu_y);
             } else {
                 SDL_Log("SDL_GetDisplayDPI failed: %s", SDL_GetError());
+                MaybeHeuristicAutoscale(cfg, window_w, window_h);
             }
         } else {
             SDL_Log("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
+            MaybeHeuristicAutoscale(cfg, window_w, window_h);
         }
     }
-    SDL_GetWindowSize(window, &window_w, &window_h);
     setPhysicalResolution(window_w, window_h);
+
     screen.surface = SDL_GetWindowSurface(window);
     if (screen.surface == nullptr) {
         SDL_Log("SDL_GetWindowSurface failed: %s", SDL_GetError());
