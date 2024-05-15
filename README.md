@@ -6,6 +6,7 @@ DinguxCommander allows to:
 * Copy, move and delete multiple files.
 * View a file
 * Execute a file
+* Edit a file one line at the time
 * Rename a file or directory
 * Create a new directory
 * Display disk space used by a list of selected files/dirs
@@ -14,28 +15,41 @@ DinguxCommander allows to:
 
 ## Controls
 
-* D-pad         Move
-* L/R           Page up/page down
-* A             For a directory: open
-                For a file: view or execute
-* B             Go to parent directory / cancel
-* Y             System actions:
-                  - Select all items
-                  - Select no items
-                  - Create new directory
-                  - Display disk information
-                  - Quit program
-* X             Actions on selected items:
-                  - Copy to destination directory
-                  - Move to destination directory
-                  - Rename (appears only if 1 item is selected)
-                  - Delete
-                  - Display disk used
-* SELECT        Select highlighted item.
-                Selected items are displayed in red.
-* START         Open highlighted directory in destination panel.
-                If a file is highlighted, open current directory in destination panel.
-
+* D-pad<br />
+  Move cursor/highlight<br />
+  <br />
+* L/R<br />
+  Page up/page down<br />
+  <br />
+* A<br />
+  On a directory: Open<br />
+  On a file: View or execute<br />
+  <br />
+* B<br />
+  Go to parent directory or cancel<br />
+  <br />
+* X<br />
+  Opens a menu with actions on selected item(s):<br />
+  - Copy (to destination directory)<br />
+  - Move (to destination directory)<br />
+  - Rename (appears only if 1 item is selected)<br />
+  - Delete<br />
+  - Display disk used<br />
+  <br />
+* Y<br />
+  Opens system actions menu:<br />
+  - Select all items<br />
+  - Select no items<br />
+  - Create new directory<br />
+  - Display disk information<br />
+  - Quit program<br />
+  <br />
+* SELECT<br />
+  Select highlighted item (selected items are displayed in red)<br />
+  <br />
+* START<br />
+  Open highlighted directory in destination panel<br />
+  If a file is highlighted, open current directory in destination panel<br />
 
 ## Settings
 
@@ -75,19 +89,12 @@ To build for the host system, run:
 ```
 
 
-## DinguxCommander Credits
+## DinguxCommander credits
 
-Development: Mia<br />
-http://beyondds.free.fr<br />
-https://tardigrade-nx.github.io
-<br />
-Font: Beycan Çetin
-
-
-## OD Commander Credits
-
-Homepage:<br />
-https://wiki.batocera.org/od_commander<br />
-Development: Glem M.<br />
-https://x.com/glebm<br />
-https://github.com/glebm
+- Development<br />
+  Mia<br />
+  http://beyondds.free.fr<br />
+  https://tardigrade-nx.github.io<br />
+  <br />
+- Font<br />
+  Beycan Çetin
