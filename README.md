@@ -39,11 +39,13 @@ DinguxCommander allows to:
 
 ## Settings
 
-For instance to change the UI/font size on e.g. Steam Deck create a file called commander.cfg in /userdata/system/.config/ (also called ~/config/ or $home/.config/) with these settings in it:
+For instance to change the UI/font size on e.g. Steam Deck create a file called commander.cfg in ~/.config/ (also called $HOME/.config/) with these settings in it:
 
+```
 disp_autoscale_dpi=0
 disp_ppu_x=2.5
 disp_ppu_y=2.5
+```
 
 You can find other settings in this source file:
 https://github.com/od-contrib/commander/blob/079a84c8a8cc25e1899cb11bcfce8e9e2ed9fca9/config.h
@@ -75,12 +77,17 @@ To build for the host system, run:
 
 ## DinguxCommander Credits
 
-Homepage:      http://beyondds.free.fr/
-Development:   Mia
-Font:          Beycan Çetin
+Development: Mia<br />
+http://beyondds.free.fr<br />
+https://tardigrade-nx.github.io
+<br />
+Font: Beycan Çetin
 
 
 ## OD Commander Credits
 
-Homepage:      https://wiki.batocera.org/od_commander
-Development:   Glem M. https://x.com/glebm , https://github.com/glebm
+Homepage:<br />
+https://wiki.batocera.org/od_commander<br />
+Development: Glem M.<br />
+https://x.com/glebm<br />
+https://github.com/glebm
