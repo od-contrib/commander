@@ -21,7 +21,7 @@ DinguxCommander allows to:
   Page up/page down
     
 * A\
-  On a directory: Open
+  On a directory: Open\
   On a file: View or execute
     
 * B\
