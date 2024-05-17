@@ -11,46 +11,45 @@ DinguxCommander allows to:
 * Create a new directory
 * Display disk space used by a list of selected files/dirs
 * Display disk information (used, available, total)
-
-
+  
 ## Controls
 
-* D-pad<br />
-  Move cursor/highlight<br />
-  <br />
-* L/R<br />
-  Page up/page down<br />
-  <br />
-* A<br />
-  On a directory: Open<br />
-  On a file: View or execute<br />
-  <br />
-* B<br />
-  Go to parent directory or cancel<br />
-  <br />
-* X<br />
-  Opens a menu with actions on selected item(s):<br />
-  - Copy (to destination directory)<br />
-  - Move (to destination directory)<br />
-  - Rename (appears only if 1 item is selected)<br />
-  - Delete<br />
-  - Display disk used<br />
-  <br />
-* Y<br />
-  Opens system actions menu:<br />
-  - Select all items<br />
-  - Select no items<br />
-  - Create new directory<br />
-  - Display disk information<br />
-  - Quit program<br />
-  <br />
-* SELECT<br />
-  Select highlighted item (selected items are displayed in red)<br />
-  <br />
-* START<br />
-  Open highlighted directory in destination panel<br />
-  If a file is highlighted, open current directory in destination panel<br />
-
+* D-pad\
+  Move cursor/highlight
+    
+* L/R\
+  Page up/page down
+    
+* A\
+  On a directory: Open
+  On a file: View or execute
+    
+* B\
+  Go to parent directory or cancel
+    
+* X\
+  Opens a menu with actions on selected item(s):
+  - Copy (to destination directory)
+  - Move (to destination directory)
+  - Rename (appears only if 1 item is selected)
+  - Delete
+  - Display disk used
+    
+* Y\
+  Opens system actions menu:
+  - Select all items
+  - Select no items
+  - Create new directory
+  - Display disk information
+  - Quit program
+    
+* SELECT\
+  Select highlighted item (selected items are displayed in red)
+    
+* START\
+  Open highlighted directory in destination panel\
+  If a file is highlighted, open current directory in destination panel
+  
 ## Settings
 
 For instance to change the UI/font size on e.g. Steam Deck create a file called commander.cfg in ~/.config/ (also called $HOME/.config/) with these settings in it:
@@ -63,9 +62,7 @@ disp_ppu_y=2.5
 
 You can find other settings in this source file:
 https://github.com/od-contrib/commander/blob/079a84c8a8cc25e1899cb11bcfce8e9e2ed9fca9/config.h
-
-
-
+  
 ## Building
 
 To build for RetroFW, run:
@@ -87,14 +84,13 @@ To build for the host system, run:
 ```bash
 ./build-host.sh
 ```
-
-
+  
 ## DinguxCommander credits
 
-- Development<br />
-  Mia<br />
-  http://beyondds.free.fr<br />
-  https://tardigrade-nx.github.io<br />
-  <br />
-- Font<br />
+- Development\
+  Mia\
+  http://beyondds.free.fr
+  https://tardigrade-nx.github.io
+    
+- Font\
   Beycan Çetin
