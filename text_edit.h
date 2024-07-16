@@ -1,6 +1,7 @@
 #ifndef TEXT_EDIT_H_
 #define TEXT_EDIT_H_
 
+#include <cstdint>
 #include <string>
 
 #include <SDL.h>
