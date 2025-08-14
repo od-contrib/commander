@@ -35,6 +35,15 @@ class ImageViewer : public CWindow {
     bool ok_;
     CPanel *panel_;
     std::string filename_;
+
+    enum BackgroundMode {
+        BG_CHECKERBOARD = 0,
+        BG_BLACK = 1,
+        BG_WHITE = 2
+};
+
+    int backgroundMode_;
+    bool showTitle_;
 };
 
 #endif // IMAGE_VIEWER_H_

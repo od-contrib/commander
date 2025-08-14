@@ -7,10 +7,15 @@
 #include "sdlutils.h"
 #include "text_viewer.h"
 
-#define VIEWER_MARGIN 1
+// Background modes
+enum BackgroundMode {
+    BG_CHECKERBOARD = 0,
+    BG_BLACK        = 1,
+    BG_WHITE        = 2
+};
 
 ImageViewer::ImageViewer(CPanel *panel)
-    : panel_(panel)
+    : panel_(panel), backgroundMode_(BG_CHECKERBOARD), showTitle_(false)
 {
     init();
     setPath(panel->getHighlightedItemFull());
@@ -18,68 +23,54 @@ ImageViewer::ImageViewer(CPanel *panel)
 
 void ImageViewer::init()
 {
-    // Create background image
-    background_ = SDLSurfaceUniquePtr { SDL_utils::createImage(screen.actual_w,
-        screen.actual_h, SDL_MapRGB(screen.surface->format, COLOR_BG_1)) };
-
-    // Transparency grid background.
-    constexpr int kTransparentBgRectSize = 10;
-    const Uint32 colors[2] = {
-        SDL_MapRGB(background_->format, 240, 240, 240),
-        SDL_MapRGB(background_->format, 155, 155, 155),
+    // Create the fullscreen background surface
+    background_ = SDLSurfaceUniquePtr{
+        SDL_utils::createImage(screen.actual_w,
+            screen.actual_h, SDL_MapRGB(screen.surface->format, COLOR_BG_1))
     };
-    int j = 0;
-    const int rect_w = static_cast<int>(kTransparentBgRectSize * screen.ppu_x);
-    const int rect_h = static_cast<int>(kTransparentBgRectSize * screen.ppu_y);
-    for (int j = 0, y = Y_LIST * screen.ppu_y; y < screen.actual_h;
-         y += rect_h, ++j) {
-        for (int i = 0, x = 0; x < screen.actual_w; x += rect_w, ++i) {
-            SDL_Rect rect = SDL_utils::makeRect(x, y, rect_w, rect_h);
-            SDL_FillRect(background_.get(), &rect, colors[(i + j) % 2]);
+
+    if (backgroundMode_ == BG_CHECKERBOARD) {
+        // Checkerboard background
+        constexpr int kTransparentBgRectSize = 10;
+        const Uint32 colors[2] = {
+            SDL_MapRGB(background_->format, 240, 240, 240),
+            SDL_MapRGB(background_->format, 155, 155, 155),
+        };
+        const int rect_w = static_cast<int>(kTransparentBgRectSize * screen.ppu_x);
+        const int rect_h = static_cast<int>(kTransparentBgRectSize * screen.ppu_y);
+
+        for (int j = 0, y = 0; y < screen.actual_h; y += rect_h, ++j) {
+            for (int i = 0, x = 0; x < screen.actual_w; x += rect_w, ++i) {
+                SDL_Rect rect = SDL_utils::makeRect(x, y, rect_w, rect_h);
+                SDL_FillRect(background_.get(), &rect, colors[(i + j) % 2]);
+            }
         }
+    }
+    else if (backgroundMode_ == BG_BLACK) {
+        // Solid black background
+        SDL_FillRect(background_.get(), nullptr, SDL_MapRGB(background_->format, 0, 0, 0));
+    }
+    else if (backgroundMode_ == BG_WHITE) {
+        // Solid white background
+        SDL_FillRect(background_.get(), nullptr, SDL_MapRGB(background_->format, 255, 255, 255));
     }
 }
 
 void ImageViewer::setPath(std::string &&path)
 {
     filename_ = std::move(path);
-    image_ = nullptr; // Release memory first
-    image_ = SDLSurfaceUniquePtr { SDL_utils::loadImageToFit(
-        filename_, screen.w, screen.h - Y_LIST) };
+    image_ = nullptr;
+
+    // Load image scaled to fit the screen
+    image_ = SDLSurfaceUniquePtr{
+        SDL_utils::loadImageToFit(filename_, screen.w, screen.h)
+    };
     ok_ = (image_ != nullptr);
-    if (!ok_) return;
-
-    const auto &fonts = CResourceManager::instance().getFonts();
-
-    // Print title
-    {
-        SDL_Rect rect = SDL_utils::Rect(
-            0, 0, screen.actual_w, HEADER_H * screen.ppu_y);
-        SDL_FillRect(background_.get(), &rect,
-            SDL_MapRGB(background_->format, COLOR_BORDER));
-    }
-    {
-        SDLSurfaceUniquePtr tmp { SDL_utils::renderText(
-            fonts, filename_, Globals::g_colorTextTitle, { COLOR_TITLE_BG }) };
-        if (tmp->w > background_->w - 2 * VIEWER_MARGIN) {
-            SDL_Rect rect;
-            rect.x = tmp->w - (background_->w - 2 * VIEWER_MARGIN);
-            rect.y = 0;
-            rect.w = background_->w - 2 * VIEWER_MARGIN;
-            rect.h = tmp->h;
-            SDL_utils::applyPpuScaledSurface(VIEWER_MARGIN * screen.ppu_x,
-                HEADER_PADDING_TOP * screen.ppu_y, tmp.get(), background_.get(),
-                &rect);
-        } else {
-            SDL_utils::applyPpuScaledSurface(VIEWER_MARGIN * screen.ppu_x,
-                HEADER_PADDING_TOP * screen.ppu_y, tmp.get(),
-                background_.get());
-        }
-    }
 }
 
 void ImageViewer::onResize()
 {
+    // Recreate background and reload the image when the window is resized
     image_ = nullptr;
     background_ = nullptr;
     init();
@@ -88,11 +79,32 @@ void ImageViewer::onResize()
 
 void ImageViewer::render(const bool focused) const
 {
+    // Draw background
     SDL_utils::applyPpuScaledSurface(0, 0, background_.get(), screen.surface);
-    SDL_utils::applyPpuScaledSurface((screen.actual_w - image_->w) / 2,
-        Y_LIST * screen.ppu_y
-            + (screen.actual_h - Y_LIST * screen.ppu_y - image_->h) / 2,
-        image_.get(), screen.surface);
+
+    // Draw centered image
+    SDL_utils::applyPpuScaledSurface(
+        (screen.actual_w - image_->w) / 2,
+        (screen.actual_h - image_->h) / 2,
+        image_.get(), screen.surface
+    );
+
+    // Draw title bar if enabled
+    if (showTitle_) {
+        const auto &fonts = CResourceManager::instance().getFonts();
+
+        // Draw background rectangle for title
+        SDL_Rect rect = SDL_utils::Rect(0, 0, screen.actual_w, HEADER_H * screen.ppu_y);
+        SDL_FillRect(screen.surface, &rect, SDL_MapRGB(screen.surface->format, COLOR_BORDER));
+
+        // Render title text
+        SDLSurfaceUniquePtr tmp{
+            SDL_utils::renderText(fonts, filename_, Globals::g_colorTextTitle, { COLOR_TITLE_BG })
+        };
+
+        SDL_utils::applyPpuScaledSurface(2 * screen.ppu_x, HEADER_PADDING_TOP * screen.ppu_y,
+                                         tmp.get(), screen.surface);
+    }
 }
 
 bool ImageViewer::nextOrPreviousImage(int direction)
@@ -100,6 +112,12 @@ bool ImageViewer::nextOrPreviousImage(int direction)
     while (true) {
         if (direction == -1) {
             if (!panel_->moveCursorUp(1)) return false;
+
+            // Prevent cursor from selecting ".." in image viewer
+            if (File_utils::getFileName(panel_->getHighlightedItemFull()) == "..") {
+                panel_->moveCursorDown(1);
+                return false;
+            }
         } else {
             if (!panel_->moveCursorDown(1)) return false;
         }
@@ -120,19 +138,36 @@ bool ImageViewer::keyPress(
     CWindow::keyPress(event, key, button);
     const auto &c = config();
     const auto sym = event.key.keysym.sym;
-    if (key == c.key_system || button == c.gamepad_system || key == c.key_parent
-        || button == c.gamepad_parent) {
+
+    // Exit viewer
+    if (key == c.key_parent || button == c.gamepad_parent) {
         m_retVal = -1;
         return true;
     }
 
+    // Previous image
     if (key == c.key_left || button == c.gamepad_left || key == c.key_up
         || button == c.gamepad_up) {
         return nextOrPreviousImage(-1);
     }
+
+    // Next image
     if (key == c.key_right || button == c.gamepad_right || key == c.key_down
         || button == c.gamepad_down) {
         return nextOrPreviousImage(1);
+    }
+
+    // Cycle background mode (checkerboard → black → white)
+    if (key == c.key_operation || button == c.gamepad_operation) {
+        backgroundMode_ = (backgroundMode_ + 1) % 3;
+        init();
+        return true;
+    }
+
+    // Toggle title bar
+    if (key == c.key_system || button == c.gamepad_system) {
+        showTitle_ = !showTitle_;
+        return true;
     }
 
     return false;
