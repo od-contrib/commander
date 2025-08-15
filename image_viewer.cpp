@@ -146,16 +146,12 @@ bool ImageViewer::keyPress(
     }
 
     // Previous image
-    if (key == c.key_left || button == c.gamepad_left || key == c.key_up
-        || button == c.gamepad_up) {
-        return nextOrPreviousImage(-1);
-    }
+    if (key == c.key_up || button == c.gamepad_up ||
+        key == c.key_left || button == c.gamepad_left) return actionUp();
 
     // Next image
-    if (key == c.key_right || button == c.gamepad_right || key == c.key_down
-        || button == c.gamepad_down) {
-        return nextOrPreviousImage(1);
-    }
+    if (key == c.key_down || button == c.gamepad_down ||
+        key == c.key_right || button == c.gamepad_right) return actionDown();
 
     // Cycle background mode (checkerboard → black → white)
     if (key == c.key_operation || button == c.gamepad_operation) {
@@ -172,6 +168,29 @@ bool ImageViewer::keyPress(
 
     return false;
 }
+
+bool ImageViewer::actionUp() { return nextOrPreviousImage(-1); }
+bool ImageViewer::actionDown() { return nextOrPreviousImage(1); }
+bool ImageViewer::actionLeft() { return nextOrPreviousImage(-1); }
+bool ImageViewer::actionRight() { return nextOrPreviousImage(1); }
+
+bool ImageViewer::keyHold()
+{
+    const auto &c = config();
+    if (tick(c.key_up) || tick(c.key_left)) return actionUp();
+    if (tick(c.key_down) || tick(c.key_right)) return actionDown();
+    return false;
+}
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+bool CCommander::gamepadHold(SDL_GameController *controller)
+{
+    const auto &c = config();
+    if (tick(controller, c.gamepad_up) || tick(controller, c.gamepad_left)) return actionUp();
+    if (tick(controller, c.gamepad_down) || tick(controller, c.gamepad_right)) return actionDown();
+    return false;
+}
+#endif
 
 bool ImageViewer::mouseWheel(int dx, int dy)
 {
