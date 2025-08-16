@@ -7,15 +7,8 @@
 #include "sdlutils.h"
 #include "text_viewer.h"
 
-// Background modes
-enum BackgroundMode {
-    BG_CHECKERBOARD = 0,
-    BG_BLACK        = 1,
-    BG_WHITE        = 2
-};
-
 ImageViewer::ImageViewer(CPanel *panel)
-    : panel_(panel), backgroundMode_(BG_CHECKERBOARD), showTitle_(false)
+    : panel_(panel), showTitle_(false)
 {
     init();
     setPath(panel->getHighlightedItemFull());
@@ -28,31 +21,20 @@ void ImageViewer::init()
         SDL_utils::createImage(screen.actual_w,
             screen.actual_h, SDL_MapRGB(screen.surface->format, COLOR_BG_1))
     };
+    // Checkerboard background
+    constexpr int kTransparentBgRectSize = 10;
+    const Uint32 colors[2] = {
+        SDL_MapRGB(background_->format, 240, 240, 240),
+        SDL_MapRGB(background_->format, 155, 155, 155),
+    };
+    const int rect_w = static_cast<int>(kTransparentBgRectSize * screen.ppu_x);
+    const int rect_h = static_cast<int>(kTransparentBgRectSize * screen.ppu_y);
 
-    if (backgroundMode_ == BG_CHECKERBOARD) {
-        // Checkerboard background
-        constexpr int kTransparentBgRectSize = 10;
-        const Uint32 colors[2] = {
-            SDL_MapRGB(background_->format, 240, 240, 240),
-            SDL_MapRGB(background_->format, 155, 155, 155),
-        };
-        const int rect_w = static_cast<int>(kTransparentBgRectSize * screen.ppu_x);
-        const int rect_h = static_cast<int>(kTransparentBgRectSize * screen.ppu_y);
-
-        for (int j = 0, y = 0; y < screen.actual_h; y += rect_h, ++j) {
-            for (int i = 0, x = 0; x < screen.actual_w; x += rect_w, ++i) {
-                SDL_Rect rect = SDL_utils::makeRect(x, y, rect_w, rect_h);
-                SDL_FillRect(background_.get(), &rect, colors[(i + j) % 2]);
-            }
+    for (int j = 0, y = 0; y < screen.actual_h; y += rect_h, ++j) {
+        for (int i = 0, x = 0; x < screen.actual_w; x += rect_w, ++i) {
+            SDL_Rect rect = SDL_utils::makeRect(x, y, rect_w, rect_h);
+            SDL_FillRect(background_.get(), &rect, colors[(i + j) % 2]);
         }
-    }
-    else if (backgroundMode_ == BG_BLACK) {
-        // Solid black background
-        SDL_FillRect(background_.get(), nullptr, SDL_MapRGB(background_->format, 0, 0, 0));
-    }
-    else if (backgroundMode_ == BG_WHITE) {
-        // Solid white background
-        SDL_FillRect(background_.get(), nullptr, SDL_MapRGB(background_->format, 255, 255, 255));
     }
 }
 
@@ -152,13 +134,6 @@ bool ImageViewer::keyPress(
     // Next image
     if (key == c.key_down || button == c.gamepad_down ||
         key == c.key_right || button == c.gamepad_right) return actionDown();
-
-    // Cycle background mode (checkerboard → black → white)
-    if (key == c.key_operation || button == c.gamepad_operation) {
-        backgroundMode_ = (backgroundMode_ + 1) % 3;
-        init();
-        return true;
-    }
 
     // Toggle title bar
     if (key == c.key_system || button == c.gamepad_system) {
