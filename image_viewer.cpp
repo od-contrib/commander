@@ -7,6 +7,9 @@
 #include "sdlutils.h"
 #include "text_viewer.h"
 
+#include <algorithm>
+#include <sys/stat.h>
+
 ImageViewer::ImageViewer(CPanel *panel)
     : panel_(panel), showTitle_(false)
 {
@@ -89,28 +92,79 @@ void ImageViewer::render(const bool focused) const
     }
 }
 
+// --- Helper: check if a file is an image with supported extension ---
+static bool isSupportedImageFile(const std::string& filename) {
+    static const std::vector<std::string> exts = {".png", ".jpg", ".jpeg", ".bmp", ".gif"};
+    std::string lower = filename;
+
+    // Convert to lowercase
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+
+    for (const auto& ext : exts) {
+        if (lower.size() >= ext.size() &&
+            lower.compare(lower.size() - ext.size(), ext.size(), ext) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// --- Helper: check if a path is a directory ---
+static bool isDirectory(const std::string& path) {
+    struct stat s;
+    if (stat(path.c_str(), &s) == 0) {
+        return (s.st_mode & S_IFDIR);
+    }
+    return false;
+}
+
+// --- Helper: restore panel cursor to a previous file path ---
+// Used when no valid image is found, so the selection goes back
+// to the file that was selected before navigation started.
+static void restoreSelection(CPanel* panel, const std::string& old_path) {
+    // Try moving upwards until we find the old path
+    while (true) {
+        std::string current = panel->getHighlightedItemFull();
+        if (current == old_path) return; // found it
+        if (!panel->moveCursorUp(1)) break;
+    }
+    // If not found upwards, try moving downwards
+    while (true) {
+        std::string current = panel->getHighlightedItemFull();
+        if (current == old_path) return; // trouvé
+        if (!panel->moveCursorDown(1)) break;
+    }
+    // If not found at all, leave cursor where it is
+}
+
 bool ImageViewer::nextOrPreviousImage(int direction)
 {
+    std::string old_path = panel_->getHighlightedItemFull();
+
     while (true) {
         if (direction == -1) {
-            if (!panel_->moveCursorUp(1)) return false;
-
-            // Prevent cursor from selecting ".." in image viewer
-            if (File_utils::getFileName(panel_->getHighlightedItemFull()) == "..") {
-                panel_->moveCursorDown(1);
-                return false;
-            }
+            if (!panel_->moveCursorUp(1)) break;
         } else {
-            if (!panel_->moveCursorDown(1)) return false;
+            if (!panel_->moveCursorDown(1)) break;
         }
+
         std::string new_path = panel_->getHighlightedItemFull();
+
+        if (File_utils::getFileName(new_path) == "..") continue;
+        if (isDirectory(new_path)) continue;
+        if (!isSupportedImageFile(new_path)) continue;
 
         constexpr std::size_t kMaxFileSize = 16777216; // = 16 MB
         if (File_utils::getFileSize(new_path) > kMaxFileSize) continue;
 
         setPath(std::move(new_path));
-        if (ok()) return true;
+        return ok();
     }
+
+    // No valid image found → restore previous selection
+    restoreSelection(panel_, old_path);
+    return false;
 }
 
 // Key press management
