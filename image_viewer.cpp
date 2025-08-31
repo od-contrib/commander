@@ -7,10 +7,11 @@
 #include "sdlutils.h"
 #include "text_viewer.h"
 
-#define VIEWER_MARGIN 1
+#include <algorithm>
+#include <sys/stat.h>
 
 ImageViewer::ImageViewer(CPanel *panel)
-    : panel_(panel)
+    : panel_(panel), showTitle_(false)
 {
     init();
     setPath(panel->getHighlightedItemFull());
@@ -18,20 +19,21 @@ ImageViewer::ImageViewer(CPanel *panel)
 
 void ImageViewer::init()
 {
-    // Create background image
-    background_ = SDLSurfaceUniquePtr { SDL_utils::createImage(screen.actual_w,
-        screen.actual_h, SDL_MapRGB(screen.surface->format, COLOR_BG_1)) };
-
-    // Transparency grid background.
+    // Create the fullscreen background surface
+    background_ = SDLSurfaceUniquePtr{
+        SDL_utils::createImage(screen.actual_w,
+            screen.actual_h, SDL_MapRGB(screen.surface->format, COLOR_BG_1))
+    };
+    // Checkerboard background
     constexpr int kTransparentBgRectSize = 10;
     const Uint32 colors[2] = {
         SDL_MapRGB(background_->format, 240, 240, 240),
         SDL_MapRGB(background_->format, 155, 155, 155),
     };
-    int j = 0;
     const int rect_w = static_cast<int>(kTransparentBgRectSize * screen.ppu_x);
     const int rect_h = static_cast<int>(kTransparentBgRectSize * screen.ppu_y);
-    for (int j = 0, y = Y_LIST * screen.ppu_y; y < screen.actual_h;
+
+    for (int j = 0, y = showTitle_ ? Y_LIST * screen.ppu_y : 0; y < screen.actual_h;
          y += rect_h, ++j) {
         for (int i = 0, x = 0; x < screen.actual_w; x += rect_w, ++i) {
             SDL_Rect rect = SDL_utils::makeRect(x, y, rect_w, rect_h);
@@ -43,43 +45,18 @@ void ImageViewer::init()
 void ImageViewer::setPath(std::string &&path)
 {
     filename_ = std::move(path);
-    image_ = nullptr; // Release memory first
-    image_ = SDLSurfaceUniquePtr { SDL_utils::loadImageToFit(
-        filename_, screen.w, screen.h - Y_LIST) };
+    image_ = nullptr;
+
+    // Load image scaled to fit the screen
+    image_ = SDLSurfaceUniquePtr{
+        SDL_utils::loadImageToFit(filename_, screen.w, screen.h)
+    };
     ok_ = (image_ != nullptr);
-    if (!ok_) return;
-
-    const auto &fonts = CResourceManager::instance().getFonts();
-
-    // Print title
-    {
-        SDL_Rect rect = SDL_utils::Rect(
-            0, 0, screen.actual_w, HEADER_H * screen.ppu_y);
-        SDL_FillRect(background_.get(), &rect,
-            SDL_MapRGB(background_->format, COLOR_BORDER));
-    }
-    {
-        SDLSurfaceUniquePtr tmp { SDL_utils::renderText(
-            fonts, filename_, Globals::g_colorTextTitle, { COLOR_TITLE_BG }) };
-        if (tmp->w > background_->w - 2 * VIEWER_MARGIN) {
-            SDL_Rect rect;
-            rect.x = tmp->w - (background_->w - 2 * VIEWER_MARGIN);
-            rect.y = 0;
-            rect.w = background_->w - 2 * VIEWER_MARGIN;
-            rect.h = tmp->h;
-            SDL_utils::applyPpuScaledSurface(VIEWER_MARGIN * screen.ppu_x,
-                HEADER_PADDING_TOP * screen.ppu_y, tmp.get(), background_.get(),
-                &rect);
-        } else {
-            SDL_utils::applyPpuScaledSurface(VIEWER_MARGIN * screen.ppu_x,
-                HEADER_PADDING_TOP * screen.ppu_y, tmp.get(),
-                background_.get());
-        }
-    }
 }
 
 void ImageViewer::onResize()
 {
+    // Recreate background and reload the image when the window is resized
     image_ = nullptr;
     background_ = nullptr;
     init();
@@ -88,29 +65,107 @@ void ImageViewer::onResize()
 
 void ImageViewer::render(const bool focused) const
 {
+    // Draw background
     SDL_utils::applyPpuScaledSurface(0, 0, background_.get(), screen.surface);
-    SDL_utils::applyPpuScaledSurface((screen.actual_w - image_->w) / 2,
-        Y_LIST * screen.ppu_y
-            + (screen.actual_h - Y_LIST * screen.ppu_y - image_->h) / 2,
-        image_.get(), screen.surface);
+
+    // Draw centered image
+    SDL_utils::applyPpuScaledSurface(
+        (screen.actual_w - image_->w) / 2,
+        (screen.actual_h - image_->h) / 2,
+        image_.get(), screen.surface
+    );
+
+    // Draw title bar if enabled
+    if (showTitle_) {
+        const auto &fonts = CResourceManager::instance().getFonts();
+
+        // Draw background rectangle for title
+        SDL_Rect rect = SDL_utils::Rect(0, 0, screen.actual_w, HEADER_H * screen.ppu_y);
+        SDL_FillRect(screen.surface, &rect, SDL_MapRGB(screen.surface->format, COLOR_BORDER));
+
+        // Render title text
+        SDLSurfaceUniquePtr tmp{
+            SDL_utils::renderText(fonts, filename_, Globals::g_colorTextTitle, { COLOR_TITLE_BG })
+        };
+
+        SDL_utils::applyPpuScaledSurface(2 * screen.ppu_x, HEADER_PADDING_TOP * screen.ppu_y,
+                                         tmp.get(), screen.surface);
+    }
+}
+
+// --- Helper: check if a file is an image with supported extension ---
+static bool isSupportedImageFile(const std::string& filename) {
+    static const std::vector<std::string> exts = {".png", ".jpg", ".jpeg", ".bmp", ".gif"};
+    std::string lower = filename;
+
+    // Convert to lowercase
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+
+    for (const auto& ext : exts) {
+        if (lower.size() >= ext.size() &&
+            lower.compare(lower.size() - ext.size(), ext.size(), ext) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// --- Helper: check if a path is a directory ---
+static bool isDirectory(const std::string& path) {
+    struct stat s;
+    if (stat(path.c_str(), &s) == 0) {
+        return (s.st_mode & S_IFDIR);
+    }
+    return false;
+}
+
+// --- Helper: restore panel cursor to a previous file path ---
+// Used when no valid image is found, so the selection goes back
+// to the file that was selected before navigation started.
+static void restoreSelection(CPanel* panel, const std::string& old_path) {
+    // Try moving upwards until we find the old path
+    while (true) {
+        std::string current = panel->getHighlightedItemFull();
+        if (current == old_path) return; // found it
+        if (!panel->moveCursorUp(1)) break;
+    }
+    // If not found upwards, try moving downwards
+    while (true) {
+        std::string current = panel->getHighlightedItemFull();
+        if (current == old_path) return; // trouvé
+        if (!panel->moveCursorDown(1)) break;
+    }
+    // If not found at all, leave cursor where it is
 }
 
 bool ImageViewer::nextOrPreviousImage(int direction)
 {
+    std::string old_path = panel_->getHighlightedItemFull();
+
     while (true) {
         if (direction == -1) {
-            if (!panel_->moveCursorUp(1)) return false;
+            if (!panel_->moveCursorUp(1)) break;
         } else {
-            if (!panel_->moveCursorDown(1)) return false;
+            if (!panel_->moveCursorDown(1)) break;
         }
+
         std::string new_path = panel_->getHighlightedItemFull();
+
+        if (File_utils::getFileName(new_path) == "..") continue;
+        if (isDirectory(new_path)) continue;
+        if (!isSupportedImageFile(new_path)) continue;
 
         constexpr std::size_t kMaxFileSize = 16777216; // = 16 MB
         if (File_utils::getFileSize(new_path) > kMaxFileSize) continue;
 
         setPath(std::move(new_path));
-        if (ok()) return true;
+        return ok();
     }
+
+    // No valid image found → restore previous selection
+    restoreSelection(panel_, old_path);
+    return false;
 }
 
 // Key press management
@@ -120,23 +175,52 @@ bool ImageViewer::keyPress(
     CWindow::keyPress(event, key, button);
     const auto &c = config();
     const auto sym = event.key.keysym.sym;
-    if (key == c.key_system || button == c.gamepad_system || key == c.key_parent
-        || button == c.gamepad_parent) {
+
+    // Exit viewer
+    if (key == c.key_parent || button == c.gamepad_parent) {
         m_retVal = -1;
         return true;
     }
 
-    if (key == c.key_left || button == c.gamepad_left || key == c.key_up
-        || button == c.gamepad_up) {
-        return nextOrPreviousImage(-1);
-    }
-    if (key == c.key_right || button == c.gamepad_right || key == c.key_down
-        || button == c.gamepad_down) {
-        return nextOrPreviousImage(1);
+    // Previous image
+    if (key == c.key_up || button == c.gamepad_up ||
+        key == c.key_left || button == c.gamepad_left) return actionUp();
+
+    // Next image
+    if (key == c.key_down || button == c.gamepad_down ||
+        key == c.key_right || button == c.gamepad_right) return actionDown();
+
+    // Toggle title bar
+    if (key == c.key_system || button == c.gamepad_system) {
+        showTitle_ = !showTitle_;
+        return true;
     }
 
     return false;
 }
+
+bool ImageViewer::actionUp() { return nextOrPreviousImage(-1); }
+bool ImageViewer::actionDown() { return nextOrPreviousImage(1); }
+bool ImageViewer::actionLeft() { return nextOrPreviousImage(-1); }
+bool ImageViewer::actionRight() { return nextOrPreviousImage(1); }
+
+bool ImageViewer::keyHold()
+{
+    const auto &c = config();
+    if (tick(c.key_up) || tick(c.key_left)) return actionUp();
+    if (tick(c.key_down) || tick(c.key_right)) return actionDown();
+    return false;
+}
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+bool CCommander::gamepadHold(SDL_GameController *controller)
+{
+    const auto &c = config();
+    if (tick(controller, c.gamepad_up) || tick(controller, c.gamepad_left)) return actionUp();
+    if (tick(controller, c.gamepad_down) || tick(controller, c.gamepad_right)) return actionDown();
+    return false;
+}
+#endif
 
 bool ImageViewer::mouseWheel(int dx, int dy)
 {
