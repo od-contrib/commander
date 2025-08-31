@@ -33,7 +33,8 @@ void ImageViewer::init()
     const int rect_w = static_cast<int>(kTransparentBgRectSize * screen.ppu_x);
     const int rect_h = static_cast<int>(kTransparentBgRectSize * screen.ppu_y);
 
-    for (int j = 0, y = 0; y < screen.actual_h; y += rect_h, ++j) {
+    for (int j = 0, y = showTitle_ ? Y_LIST * screen.ppu_y : 0; y < screen.actual_h;
+         y += rect_h, ++j) {
         for (int i = 0, x = 0; x < screen.actual_w; x += rect_w, ++i) {
             SDL_Rect rect = SDL_utils::makeRect(x, y, rect_w, rect_h);
             SDL_FillRect(background_.get(), &rect, colors[(i + j) % 2]);
