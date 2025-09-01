@@ -3,6 +3,7 @@ Commander: Two-pane file manager
 Controls:
 
 D-pad   Move
+        Image viewer: previous / next image
 L/R     Page up/page down
 A       For a directory: open
         For a file: view or execute
@@ -13,6 +14,7 @@ Y       System actions:
           - Create new directory
           - Display disk information
           - Quit program
+        Image viewer: toggle filename
 X       Actions on selected items:
           - Copy to destination directory
           - Move to destination directory
