@@ -26,6 +26,7 @@
 #include "dialog.h"
 #include "error_dialog.h"
 #include "sdlutils.h"
+#include "config.h"
 
 namespace
 {
@@ -446,10 +447,12 @@ void File_utils::diskInfo(void)
 {
     std::string l_line("");
     SDL_utils::pleaseWait();
+    const auto &c = config();
     // Execute command df -h
     {
         char l_buffer[256];
-        FILE *l_pipe = popen("df -h " FILE_SYSTEM, "r");
+        std::string df_command = "df -h " + c.file_system;
+        FILE *l_pipe = popen(df_command.c_str(), "r");
         if (l_pipe == NULL)
         {
             ErrorDialog("Error getting disk info", std::strerror(errno));
@@ -457,7 +460,7 @@ void File_utils::diskInfo(void)
         }
         while (
             l_line.empty() && fgets(l_buffer, sizeof(l_buffer), l_pipe) != NULL)
-            if (strstr(l_buffer, FILE_SYSTEM) != NULL) l_line = l_buffer;
+            if (strstr(l_buffer, c.file_system.c_str()) != NULL) l_line = l_buffer;
         pclose(l_pipe);
     }
     if (!l_line.empty())
@@ -479,7 +482,7 @@ void File_utils::diskInfo(void)
     }
     else
         ErrorDialog(
-            "Error getting disk info", std::string(FILE_SYSTEM) + " not found");
+            "Error getting disk info", std::string(c.file_system) + " not found");
 }
 
 void File_utils::diskUsed(const std::vector<std::string> &p_files)
